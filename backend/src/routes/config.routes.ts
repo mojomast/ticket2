@@ -1,6 +1,10 @@
 import { Hono } from 'hono';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
+import { validateBody } from '../middleware/validate.middleware.js';
+import { brandingSchema, configValueSchema } from '../validations/config.js';
+import type { BrandingInput, ConfigValueInput } from '../validations/config.js';
 
 const app = new Hono();
 
@@ -21,8 +25,8 @@ app.get('/:key', async (c) => {
   return c.json({ data: config, error: null });
 });
 
-app.put('/branding', async (c) => {
-  const body = await c.req.json();
+app.put('/branding', validateBody(brandingSchema), async (c) => {
+  const body = c.get('body') as BrandingInput;
   const config = await prisma.systemConfig.upsert({
     where: { key: 'branding' },
     update: { value: body },
@@ -31,12 +35,13 @@ app.put('/branding', async (c) => {
   return c.json({ data: config, error: null });
 });
 
-app.put('/:key', async (c) => {
-  const body = await c.req.json();
+app.put('/:key', validateBody(configValueSchema), async (c) => {
+  const body = c.get('body') as ConfigValueInput;
+  const value = body.value as Prisma.InputJsonValue;
   const config = await prisma.systemConfig.upsert({
     where: { key: c.req.param('key') },
-    update: { value: body.value },
-    create: { key: c.req.param('key'), value: body.value },
+    update: { value },
+    create: { key: c.req.param('key'), value },
   });
   return c.json({ data: config, error: null });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
@@ -8,9 +8,16 @@ import { ROLE_LABELS } from '../../lib/constants';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, demoLogin, isLoggingIn, loginError } = useAuth();
+  const { login, demoLogin, isLoggingIn, loginError, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // If already authenticated, redirect to the appropriate dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigateByRole(user.role);
+    }
+  }, [isAuthenticated, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: personas } = useQuery({
     queryKey: ['demo', 'personas'],

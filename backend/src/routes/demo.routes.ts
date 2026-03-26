@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { AppError } from '../lib/errors.js';
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
 import { prisma } from '../lib/prisma.js';
+import { execSync } from 'child_process';
 
 const app = new Hono();
 
@@ -29,9 +30,34 @@ app.post('/reset', requireAuth, requireRole('ADMIN'), async (c) => {
     throw AppError.forbidden('Mode demo desactive');
   }
 
-  // Import and call seed function
-  // In production, this would call the shared seedDemoData function
-  // For now, return success
+  // Delete all data in proper FK dependency order
+  await prisma.$transaction([
+    prisma.workOrderNote.deleteMany(),
+    prisma.workOrder.deleteMany(),
+    prisma.appointmentProposal.deleteMany(),
+    prisma.notification.deleteMany(),
+    prisma.attachment.deleteMany(),
+    prisma.message.deleteMany(),
+    prisma.appointment.deleteMany(),
+    prisma.ticket.deleteMany(),
+    prisma.auditLog.deleteMany(),
+    prisma.systemConfig.deleteMany(),
+    prisma.backupRecord.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
+
+  // Re-seed with demo data
+  try {
+    execSync('npx prisma db seed', {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      timeout: 30000, // 30 second timeout
+    });
+  } catch (err: any) {
+    const stderr = err?.stderr?.toString() || '';
+    throw new AppError('INTERNAL_ERROR', `Erreur lors du re-seed: ${stderr.slice(0, 200)}`, 500);
+  }
+
   return c.json({ data: { message: 'Demo reset complete' }, error: null });
 });
 

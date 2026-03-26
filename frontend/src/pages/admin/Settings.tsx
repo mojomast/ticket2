@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
+import { useAuthStore } from '../../stores/auth-store';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function AdminSettings() {
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { locale, setLocale } = useAuthStore();
 
   // ---------- Form state ----------
   const [companyName, setCompanyName] = useState('');
@@ -76,6 +78,42 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Paramètres</h1>
+
+      {/* Language Toggle Section */}
+      <div className="bg-card border rounded-lg p-6 max-w-xl">
+        <h2 className="font-semibold mb-4">Langue / Language</h2>
+        <div className="flex items-center gap-3">
+          <HelpTooltip content="Changer la langue de l'interface" side="right">
+            <div className="flex rounded-md border border-input overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setLocale('fr')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  locale === 'fr'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-foreground hover:bg-muted'
+                }`}
+              >
+                Français
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale('en')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  locale === 'en'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background text-foreground hover:bg-muted'
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </HelpTooltip>
+          <span className="text-sm text-muted-foreground">
+            {locale === 'fr' ? 'Langue active : Français' : 'Active language: English'}
+          </span>
+        </div>
+      </div>
 
       <div className="bg-card border rounded-lg p-6 max-w-xl">
         <h2 className="font-semibold mb-4">Image de marque</h2>

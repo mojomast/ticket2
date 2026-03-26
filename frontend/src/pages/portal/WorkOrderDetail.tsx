@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type WorkOrder, type WorkOrderNote } from '../../api/client';
@@ -6,7 +7,7 @@ import { useToast } from '../../hooks/use-toast';
 import { formatDateTime, formatCurrency, cn } from '../../lib/utils';
 import {
   WO_STATUS_LABELS, DEVICE_TYPE_LABELS,
-  SERVICE_CATEGORY_LABELS,
+  SERVICE_CATEGORY_LABELS, WO_TERMINAL_STATUSES,
 } from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 
@@ -14,6 +15,7 @@ export default function PortalWorkOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const [noteContent, setNoteContent] = useState('');
 
   const { data: workOrder, isLoading, isError } = useQuery({
     queryKey: ['workorder', id],
@@ -49,12 +51,30 @@ export default function PortalWorkOrderDetail() {
     onError: (err: Error) => toast.error(err.message || 'Erreur'),
   });
 
+  const addNoteMutation = useMutation({
+    mutationFn: (data: { content: string; isInternal: boolean }) =>
+      api.workorders.notes.create(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workorder-notes', id] });
+      toast.success('Message envoyé');
+      setNoteContent('');
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur lors de l\'envoi'),
+  });
+
+  function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!noteContent.trim()) return;
+    addNoteMutation.mutate({ content: noteContent.trim(), isInternal: false });
+  }
+
   if (isLoading) return <div className="text-center py-8">Chargement...</div>;
   if (isError) return <div className="text-center py-8 text-red-600">Erreur lors du chargement. Veuillez réessayer.</div>;
   if (!workOrder) return <div className="text-center py-8">Bon de travail introuvable</div>;
 
   const wo: WorkOrder = workOrder;
   const pendingApproval = wo.status === 'ATTENTE_APPROBATION';
+  const isTerminal = (WO_TERMINAL_STATUSES as readonly string[]).includes(wo.status);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -224,9 +244,9 @@ export default function PortalWorkOrderDetail() {
       </div>
 
       {/* Notes (non-internal only) */}
-      {(notes as WorkOrderNote[]).length > 0 && (
-        <div className="bg-card border rounded-lg p-6">
-          <h3 className="font-semibold mb-3">Messages</h3>
+      <div className="bg-card border rounded-lg p-6">
+        <h3 className="font-semibold mb-3">Messages</h3>
+        {(notes as WorkOrderNote[]).length > 0 ? (
           <div className="space-y-3">
             {(notes as WorkOrderNote[]).map((note) => (
               <div key={note.id} className="border rounded-md p-3">
@@ -242,8 +262,32 @@ export default function PortalWorkOrderDetail() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground mb-3">Aucun message</p>
+        )}
+
+        {/* Reply form — only visible for non-terminal WOs */}
+        {!isTerminal && (
+          <form onSubmit={handleAddNote} className="space-y-2 border-t pt-3 mt-3">
+            <textarea
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              placeholder="Écrire un message..."
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={addNoteMutation.isPending || !noteContent.trim()}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {addNoteMutation.isPending ? 'Envoi...' : 'Envoyer'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

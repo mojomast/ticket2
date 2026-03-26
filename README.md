@@ -59,12 +59,14 @@ A complete IT ticket management and in-shop repair work order system built for V
 - **Customer Portal:** Ticket list, ticket detail with appointment proposals, work order status tracking with quote approval
 
 ### Additional
-- In-app notification system with bell dropdown
-- Message threads with internal (staff-only) messages
-- Database backup/restore (admin)
-- French/English internationalization
-- Demo mode with persona selector (dropdown for customers) and data reset
+- In-app notification system with bell dropdown and navigation to related ticket/WO
+- Message threads with internal (staff-only) messages, edit window (5 min), admin-only delete
+- Database backup/restore (admin) with transactional restore and confirmation dialog
+- Audit logging for ticket, work order, and user changes
+- French/English internationalization with language toggle in settings
+- Demo mode with persona selector (dropdown for customers) and data reset (admin-only)
 - User profile management
+- Contextual help system with sidebar, keyboard shortcuts, and 170+ French tooltips
 
 ---
 
@@ -201,8 +203,9 @@ ticket2/
 │       └── validations/
 │           ├── appointment.ts
 │           ├── backup.ts
+│           ├── config.ts           # Branding + config value schemas
 │           ├── message.ts
-│           ├── ticket.ts
+│           ├── ticket.ts           # Includes serviceRequestSchema
 │           ├── user.ts
 │           └── workorder.ts
 │
@@ -473,6 +476,7 @@ All authenticated endpoints require a `valitek-auth` httpOnly cookie (set on log
 | GET | `/api/health` | Health check |
 | GET | `/api/config/branding` | Public branding config |
 | GET | `/api/demo/personas` | Demo personas (DEMO_MODE only) |
+| POST | `/api/service-request` | Public service request (auto-creates customer) |
 
 #### Authentication
 | Method | Path | Description |

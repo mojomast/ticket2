@@ -5,6 +5,8 @@ import { WO_ALLOWED_TRANSITIONS } from '../types/index.js';
 import type { CreateWorkOrderInput, UpdateWorkOrderInput, WorkOrderQuoteInput, AddWorkOrderNoteInput, WorkOrderListQuery } from '../validations/workorder.js';
 import type { UserRole, WorkOrderStatus } from '@prisma/client';
 import { getPagination, buildPaginatedResponse } from '../types/index.js';
+import * as notificationService from './notification.service.js';
+import { createAuditLog } from './audit.service.js';
 
 // ─── Prisma Includes ───
 
@@ -29,7 +31,7 @@ const WORKORDER_DETAIL_INCLUDE = {
   },
 };
 
-// ─── Order Number Generation ───
+// ─── Order Number Generation (with retry loop to handle race conditions) ───
 
 async function generateOrderNumber(): Promise<string> {
   const now = new Date();
@@ -37,19 +39,25 @@ async function generateOrderNumber(): Promise<string> {
   const mm = String(now.getMonth() + 1).padStart(2, '0');
   const prefix = `BDT-${yy}${mm}`;
 
-  const latest = await prisma.workOrder.findFirst({
-    where: { orderNumber: { startsWith: prefix } },
-    orderBy: { orderNumber: 'desc' },
-    select: { orderNumber: true },
-  });
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const latest = await prisma.workOrder.findFirst({
+      where: { orderNumber: { startsWith: prefix } },
+      orderBy: { orderNumber: 'desc' },
+      select: { orderNumber: true },
+    });
 
-  let seq = 1;
-  if (latest) {
-    const lastSeq = parseInt(latest.orderNumber.slice(prefix.length), 10);
-    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+    const seq = latest
+      ? parseInt(latest.orderNumber.slice(-3), 10) + 1
+      : 1;
+    const orderNumber = `${prefix}${String(seq).padStart(3, '0')}`;
+
+    // Check if number already exists (handles race condition)
+    const exists = await prisma.workOrder.findUnique({ where: { orderNumber } });
+    if (!exists) return orderNumber;
   }
 
-  return `${prefix}${String(seq).padStart(2, '0')}`;
+  // Fallback: use timestamp-based number
+  return `${prefix}${Date.now().toString(36).toUpperCase()}`;
 }
 
 // ─── CRUD ───
@@ -102,6 +110,15 @@ export async function createWorkOrder(data: CreateWorkOrderInput, userId: string
     include: WORKORDER_DETAIL_INCLUDE,
   });
 
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'WORKORDER',
+    entityId: workOrder.id,
+    action: 'CREATED',
+    userId,
+    newValue: { orderNumber, customerName: data.customerName, reportedIssue: data.reportedIssue },
+  }).catch(() => {});
+
   return workOrder;
 }
 
@@ -109,16 +126,16 @@ export async function getWorkOrders(query: WorkOrderListQuery, userId: string, r
   const { page, limit, skip } = getPagination({ page: query.page, limit: query.limit });
 
   const where: any = { deletedAt: null };
+  const conditions: any[] = [];
 
   // Role-based filtering
   if (role === 'CUSTOMER') {
     where.customerId = userId;
   } else if (role === 'TECHNICIAN') {
     // Techs see work orders assigned to them, or unassigned ones (in RECEPTION)
-    where.OR = [
-      { technicianId: userId },
-      { technicianId: null },
-    ];
+    conditions.push({
+      OR: [{ technicianId: userId }, { technicianId: null }],
+    });
   }
   // Admin sees all
 
@@ -127,14 +144,20 @@ export async function getWorkOrders(query: WorkOrderListQuery, userId: string, r
   if (query.priority) where.priority = query.priority;
   if (query.technicianId) where.technicianId = query.technicianId;
   if (query.search) {
-    where.OR = [
-      { orderNumber: { contains: query.search, mode: 'insensitive' } },
-      { customerName: { contains: query.search, mode: 'insensitive' } },
-      { deviceBrand: { contains: query.search, mode: 'insensitive' } },
-      { deviceModel: { contains: query.search, mode: 'insensitive' } },
-      { deviceSerial: { contains: query.search, mode: 'insensitive' } },
-      { reportedIssue: { contains: query.search, mode: 'insensitive' } },
-    ];
+    conditions.push({
+      OR: [
+        { orderNumber: { contains: query.search, mode: 'insensitive' } },
+        { customerName: { contains: query.search, mode: 'insensitive' } },
+        { deviceBrand: { contains: query.search, mode: 'insensitive' } },
+        { deviceModel: { contains: query.search, mode: 'insensitive' } },
+        { deviceSerial: { contains: query.search, mode: 'insensitive' } },
+        { reportedIssue: { contains: query.search, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  if (conditions.length > 0) {
+    where.AND = conditions;
   }
 
   // Sorting
@@ -275,6 +298,26 @@ export async function changeStatus(id: string, newStatus: WorkOrderStatus, reaso
     },
   });
 
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'WORKORDER',
+    entityId: id,
+    action: 'STATUS_CHANGED',
+    userId,
+    oldValue: { status: wo.status },
+    newValue: { status: newStatus, reason },
+  }).catch(() => {});
+
+  // Fire-and-forget: notify relevant parties of status change
+  const woRecipients: string[] = [];
+  if (wo.customerId) woRecipients.push(wo.customerId);
+  if (wo.technicianId && wo.technicianId !== userId) woRecipients.push(wo.technicianId);
+  if (woRecipients.length > 0) {
+    notificationService.notifyStatusChanged(
+      id, updated.orderNumber, newStatus, woRecipients
+    ).catch(() => {});
+  }
+
   return updated;
 }
 
@@ -311,6 +354,20 @@ export async function sendQuote(id: string, data: WorkOrderQuoteInput, userId: s
       isInternal: false,
     },
   });
+
+  // Fire-and-forget: notify customer that a quote was sent
+  if (wo.customerId) {
+    notificationService.notifyQuoteSent(id, updated.orderNumber, wo.customerId).catch(() => {});
+  }
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'WORKORDER',
+    entityId: id,
+    action: 'QUOTE_SENT',
+    userId,
+    newValue: { estimatedCost: data.estimatedCost, diagnosticNotes: data.diagnosticNotes },
+  }).catch(() => {});
 
   return updated;
 }
@@ -416,7 +473,9 @@ export async function getNotes(id: string, userId: string, role: UserRole) {
 export async function getDashboardStats(userId: string, role: UserRole) {
   const baseWhere: any = { deletedAt: null };
 
-  if (role === 'TECHNICIAN') {
+  if (role === 'CUSTOMER') {
+    baseWhere.customerId = userId;
+  } else if (role === 'TECHNICIAN') {
     baseWhere.OR = [
       { technicianId: userId },
       { technicianId: null },

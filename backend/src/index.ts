@@ -22,6 +22,7 @@ import technicianRoutes from './routes/technician.routes.js';
 import demoRoutes from './routes/demo.routes.js';
 import healthRoutes from './routes/health.routes.js';
 import workorderRoutes from './routes/workorder.routes.js';
+import serviceRequestRoutes from './routes/service-request.routes.js';
 
 const app = new Hono();
 
@@ -39,6 +40,7 @@ app.onError(errorHandler);
 app.route('/api/health', healthRoutes);
 app.route('/api/auth', authRoutes);
 app.route('/api/demo', demoRoutes);
+app.route('/api/service-request', serviceRequestRoutes);
 
 // ─── Rate limit auth endpoints aggressively ───
 app.use('/api/auth/*', rateLimiter({ max: 10, window: 60 }));

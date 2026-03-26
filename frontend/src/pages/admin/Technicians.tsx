@@ -110,6 +110,18 @@ export default function AdminTechnicians() {
     },
   });
 
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      api.admin.users.update(id, { isActive }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey });
+      toast.success(variables.isActive ? 'Technicien activé' : 'Technicien désactivé');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Erreur lors du changement de statut');
+    },
+  });
+
   // ─── Handlers ───
   const handleOpenCreate = () => {
     setEditingTech(null);
@@ -337,6 +349,24 @@ export default function AdminTechnicians() {
                       >
                         {tech.isActive ? 'Actif' : 'Inactif'}
                       </span>
+                    </HelpTooltip>
+                    <HelpTooltip content={tech.isActive ? 'Désactiver ce technicien' : 'Réactiver ce technicien'} side="left">
+                      <button
+                        onClick={() =>
+                          toggleActiveMutation.mutate({
+                            id: tech.id,
+                            isActive: !tech.isActive,
+                          })
+                        }
+                        disabled={toggleActiveMutation.isPending}
+                        className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                          tech.isActive
+                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                            : 'bg-green-100 text-green-800 hover:bg-green-200'
+                        }`}
+                      >
+                        {tech.isActive ? 'Désactiver' : 'Activer'}
+                      </button>
                     </HelpTooltip>
                   </div>
                 </div>

@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Ticket,
@@ -15,6 +17,7 @@ import {
 import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from '../../lib/i18n/hook';
 import { cn } from '../../lib/utils';
+import { api } from '../../api/client';
 import type { UserRole } from '../../types';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -71,6 +74,27 @@ export default function AppSidebar() {
   const location = useLocation();
   const { t } = useTranslation();
 
+  // Fetch branding config
+  const { data: branding } = useQuery({
+    queryKey: ['config', 'branding'],
+    queryFn: api.config.branding,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const companyName = (branding?.companyName as string) || 'Valitek';
+  const logoUrl = branding?.logoUrl as string | undefined;
+  const primaryColor = branding?.primaryColor as string | undefined;
+
+  // Apply branding primary color as CSS custom property on the root element
+  useEffect(() => {
+    if (primaryColor) {
+      document.documentElement.style.setProperty('--branding-primary', primaryColor);
+    }
+    return () => {
+      document.documentElement.style.removeProperty('--branding-primary');
+    };
+  }, [primaryColor]);
+
   if (!user) return null;
 
   const items = NAV_ITEMS[user.role as UserRole] || [];
@@ -79,7 +103,14 @@ export default function AppSidebar() {
     <aside className="w-64 bg-card border-r min-h-screen flex flex-col">
       {/* Logo / Brand */}
       <div className="p-4 border-b">
-        <h1 className="text-xl font-bold text-primary">Valitek</h1>
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt={`${companyName} logo`}
+            className="h-8 w-auto mb-2 object-contain"
+          />
+        )}
+        <h1 className="text-xl font-bold text-primary">{companyName}</h1>
         <p className="text-xs text-muted-foreground mt-1">
           {user.firstName} {user.lastName}
         </p>

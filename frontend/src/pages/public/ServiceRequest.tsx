@@ -20,10 +20,10 @@ export default function ServiceRequest() {
   const [serviceMode, setServiceMode] = useState('SUR_ROUTE');
   const [priority, setPriority] = useState('NORMALE');
 
-  // Mutation to create the ticket via the API
+  // Mutation to create the ticket via the public service request endpoint
   const mutation = useMutation({
     mutationFn: () =>
-      api.tickets.create({
+      api.serviceRequest.create({
         title,
         description,
         priority,

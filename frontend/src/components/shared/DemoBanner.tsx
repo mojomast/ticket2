@@ -109,15 +109,17 @@ export default function DemoBanner() {
         </div>
 
         <div className="ml-auto">
-          <HelpTooltip content="Réinitialiser toutes les données de démonstration à leur état initial" side="bottom">
-            <button
-              onClick={() => resetMutation.mutate()}
-              disabled={resetMutation.isPending}
-              className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
-            >
-              {resetMutation.isPending ? 'Reinitialisation...' : 'Reinitialiser'}
-            </button>
-          </HelpTooltip>
+          {user?.role === 'ADMIN' && (
+            <HelpTooltip content="Réinitialiser toutes les données de démonstration à leur état initial" side="bottom">
+              <button
+                onClick={() => resetMutation.mutate()}
+                disabled={resetMutation.isPending}
+                className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+              >
+                {resetMutation.isPending ? 'Reinitialisation...' : 'Reinitialiser'}
+              </button>
+            </HelpTooltip>
+          )}
         </div>
       </div>
     </div>

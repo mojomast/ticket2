@@ -2,7 +2,10 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { ALLOWED_TRANSITIONS, parseTechPermissions, getPagination, buildPaginatedResponse } from '../types/index.js';
 import type { UserRole, TicketStatus } from '@prisma/client';
-import type { CreateTicketInput, UpdateTicketInput, TicketListQuery } from '../validations/ticket.js';
+import type { CreateTicketInput, UpdateTicketInput, TicketListQuery, ServiceRequestInput } from '../validations/ticket.js';
+import { createAuditLog } from './audit.service.js';
+import * as notificationService from './notification.service.js';
+import crypto from 'crypto';
 
 // ─── Shared Prisma includes ───
 const USER_SELECT = {
@@ -25,24 +28,32 @@ const TICKET_DETAIL_INCLUDE = {
   _count: { select: { messages: true, attachments: true } },
 };
 
-// ─── Ticket Number Generation ───
+// ─── Ticket Number Generation (with retry loop to handle race conditions) ───
 async function generateTicketNumber(): Promise<string> {
   const now = new Date();
-  const yy = now.getFullYear().toString().slice(-2);
-  const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
   const prefix = `TKT-${yy}${mm}`;
 
-  const lastTicket = await prisma.ticket.findFirst({
-    where: { ticketNumber: { startsWith: prefix } },
-    orderBy: { ticketNumber: 'desc' },
-    select: { ticketNumber: true },
-  });
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const last = await prisma.ticket.findFirst({
+      where: { ticketNumber: { startsWith: prefix } },
+      orderBy: { ticketNumber: 'desc' },
+      select: { ticketNumber: true },
+    });
 
-  const seq = lastTicket
-    ? parseInt(lastTicket.ticketNumber.slice(-2), 10) + 1
-    : 1;
+    const seq = last
+      ? parseInt(last.ticketNumber.slice(-3), 10) + 1
+      : 1;
+    const ticketNumber = `${prefix}${String(seq).padStart(3, '0')}`;
 
-  return `${prefix}${seq.toString().padStart(2, '0')}`;
+    // Check if number already exists (handles race condition)
+    const exists = await prisma.ticket.findUnique({ where: { ticketNumber } });
+    if (!exists) return ticketNumber;
+  }
+
+  // Fallback: use timestamp-based number
+  return `${prefix}${Date.now().toString(36).toUpperCase()}`;
 }
 
 // ─── CRUD ───
@@ -71,6 +82,26 @@ export async function createTicket(data: CreateTicketInput, userId: string, role
     },
     include: TICKET_INCLUDE,
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'TICKET',
+    entityId: ticket.id,
+    action: 'CREATED',
+    userId,
+    newValue: { ticketNumber, title: data.title, priority: data.priority || 'NORMALE' },
+  }).catch(() => {});
+
+  // Fire-and-forget: notify admins about new ticket
+  prisma.user.findMany({
+    where: { role: 'ADMIN', isActive: true, deletedAt: null },
+    select: { id: true },
+  }).then((admins) => {
+    const recipientIds = admins.map(a => a.id).filter(id => id !== userId);
+    if (recipientIds.length > 0) {
+      notificationService.notifyTicketCreated(ticket.id, ticketNumber, recipientIds).catch(() => {});
+    }
+  }).catch(() => {});
 
   return ticket;
 }
@@ -191,6 +222,26 @@ export async function changeStatus(id: string, newStatus: TicketStatus, userId: 
     include: TICKET_INCLUDE,
   });
 
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'TICKET',
+    entityId: id,
+    action: 'STATUS_CHANGED',
+    userId,
+    oldValue: { status: ticket.status },
+    newValue: { status: newStatus },
+  }).catch(() => {});
+
+  // Fire-and-forget: notify customer and technician of status change
+  const statusRecipients: string[] = [];
+  if (ticket.customerId && ticket.customerId !== userId) statusRecipients.push(ticket.customerId);
+  if (ticket.technicianId && ticket.technicianId !== userId) statusRecipients.push(ticket.technicianId);
+  if (statusRecipients.length > 0) {
+    notificationService.notifyStatusChanged(
+      id, ticket.ticketNumber, newStatus, statusRecipients
+    ).catch(() => {});
+  }
+
   return updated;
 }
 
@@ -210,6 +261,19 @@ export async function assignTechnician(id: string, technicianId: string, adminId
     data: { technicianId },
     include: TICKET_INCLUDE,
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'TICKET',
+    entityId: id,
+    action: 'TECHNICIAN_ASSIGNED',
+    userId: adminId,
+    oldValue: { technicianId: ticket.technicianId },
+    newValue: { technicianId },
+  }).catch(() => {});
+
+  // Fire-and-forget: notify technician they've been assigned
+  notificationService.notifyTechnicianAssigned(id, ticket.ticketNumber, technicianId).catch(() => {});
 
   return updated;
 }
@@ -255,6 +319,20 @@ export async function sendQuote(id: string, price: number, description: string, 
     include: TICKET_INCLUDE,
   });
 
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'TICKET',
+    entityId: id,
+    action: 'QUOTE_SENT',
+    userId,
+    newValue: { price, description, duration },
+  }).catch(() => {});
+
+  // Fire-and-forget: notify customer that a quote was sent
+  if (ticket.customerId) {
+    notificationService.notifyQuoteSent(id, ticket.ticketNumber, ticket.customerId).catch(() => {});
+  }
+
   return updated;
 }
 
@@ -273,6 +351,16 @@ export async function approveQuote(id: string, userId: string, role: UserRole) {
     data: { status: 'APPROUVEE' },
     include: TICKET_INCLUDE,
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'TICKET',
+    entityId: id,
+    action: 'QUOTE_APPROVED',
+    userId,
+    oldValue: { status: 'EN_ATTENTE_APPROBATION' },
+    newValue: { status: 'APPROUVEE' },
+  }).catch(() => {});
 
   return updated;
 }
@@ -297,6 +385,16 @@ export async function declineQuote(id: string, userId: string, role: UserRole) {
     },
     include: TICKET_INCLUDE,
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'TICKET',
+    entityId: id,
+    action: 'QUOTE_DECLINED',
+    userId,
+    oldValue: { status: 'EN_ATTENTE_APPROBATION', quotedPrice: ticket.quotedPrice },
+    newValue: { status: 'EN_ATTENTE_REPONSE_CLIENT' },
+  }).catch(() => {});
 
   return updated;
 }
@@ -330,4 +428,66 @@ export async function removeBlocker(id: string, userId: string) {
   });
 
   return updated;
+}
+
+// ─── Public Service Request (no auth) ───
+export async function createServiceRequest(data: ServiceRequestInput) {
+  // Find or create customer by email
+  let customer = await prisma.user.findFirst({
+    where: { email: data.customerEmail, deletedAt: null },
+  });
+
+  if (!customer) {
+    // Generate a random password hash placeholder (customer can reset later)
+    const randomPassword = crypto.randomBytes(32).toString('hex');
+    customer = await prisma.user.create({
+      data: {
+        email: data.customerEmail,
+        passwordHash: randomPassword, // Not a real hash — user must reset password
+        firstName: data.customerFirstName,
+        lastName: data.customerLastName,
+        phone: data.customerPhone || null,
+        role: 'CUSTOMER',
+        customerType: 'RESIDENTIAL',
+        isActive: true,
+      },
+    });
+  }
+
+  const ticketNumber = await generateTicketNumber();
+
+  const ticket = await prisma.ticket.create({
+    data: {
+      ticketNumber,
+      title: data.title,
+      description: data.description,
+      priority: data.priority || 'NORMALE',
+      serviceMode: data.serviceMode || 'EN_CUBICULE',
+      serviceCategory: data.serviceCategory || 'REPARATION',
+      customerId: customer.id,
+    },
+    include: TICKET_INCLUDE,
+  });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'TICKET',
+    entityId: ticket.id,
+    action: 'CREATED',
+    userId: customer.id,
+    newValue: { ticketNumber, title: data.title, source: 'service-request' },
+  }).catch(() => {});
+
+  // Fire-and-forget: notify admins about new ticket
+  prisma.user.findMany({
+    where: { role: 'ADMIN', isActive: true, deletedAt: null },
+    select: { id: true },
+  }).then((admins) => {
+    const recipientIds = admins.map(a => a.id);
+    if (recipientIds.length > 0) {
+      notificationService.notifyTicketCreated(ticket.id, ticketNumber, recipientIds).catch(() => {});
+    }
+  }).catch(() => {});
+
+  return ticket;
 }

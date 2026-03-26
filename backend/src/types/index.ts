@@ -105,6 +105,7 @@ export const WO_ALLOWED_TRANSITIONS: Record<WorkOrderStatus, Array<{ to: WorkOrd
   VERIFICATION: [
     { to: 'EN_REPARATION', roles: ['ADMIN', 'TECHNICIAN'] }, // Failed QC, back to repair
     { to: 'PRET', roles: ['ADMIN', 'TECHNICIAN'] },
+    { to: 'ANNULE', roles: ['ADMIN'] },
   ],
   PRET: [
     { to: 'REMIS', roles: ['ADMIN', 'TECHNICIAN'] },          // Customer picked up

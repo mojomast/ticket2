@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type Notification } from '../../api/client';
 import { useAuth } from '../../hooks/use-auth';
@@ -8,7 +9,8 @@ import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from './HelpTooltip';
 
 export default function NotificationBell() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -63,9 +65,29 @@ export default function NotificationBell() {
   // Don't render if not authenticated
   if (!isAuthenticated) return null;
 
+  /**
+   * Get the role-based path prefix for navigation.
+   */
+  function getRolePrefix(): string {
+    switch (user?.role) {
+      case 'ADMIN': return '/admin';
+      case 'TECHNICIAN': return '/technicien';
+      case 'CUSTOMER': return '/portail';
+      default: return '/';
+    }
+  }
+
   function handleNotificationClick(notification: Notification) {
+    // Mark as read if unread
     if (!notification.readAt) {
       markReadMutation.mutate(notification.id);
+    }
+
+    // Navigate to the relevant ticket if available
+    if (notification.ticketId) {
+      const prefix = getRolePrefix();
+      setOpen(false);
+      navigate(`${prefix}/billets/${notification.ticketId}`);
     }
   }
 

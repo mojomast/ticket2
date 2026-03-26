@@ -3,6 +3,7 @@ import { AppError } from '../lib/errors.js';
 import { hashPassword, verifyPassword } from '../lib/auth.js';
 import type { CreateUserInput, UpdateUserInput } from '../validations/user.js';
 import { getPagination, buildPaginatedResponse, DEFAULT_TECH_PERMISSIONS } from '../types/index.js';
+import { createAuditLog } from './audit.service.js';
 
 const USER_SELECT = {
   id: true, email: true, firstName: true, lastName: true,
@@ -67,6 +68,15 @@ export async function createUser(data: CreateUserInput) {
     select: USER_SELECT,
   });
 
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'USER',
+    entityId: user.id,
+    action: 'CREATED',
+    userId: user.id,
+    newValue: { email: data.email, role: data.role, firstName: data.firstName, lastName: data.lastName },
+  }).catch(() => {});
+
   return user;
 }
 
@@ -78,21 +88,44 @@ export async function updateUser(id: string, data: UpdateUserInput) {
     if (existing) throw AppError.conflict('Un utilisateur avec cet email existe deja');
   }
 
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id },
     data,
     select: USER_SELECT,
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'USER',
+    entityId: id,
+    action: 'UPDATED',
+    userId: id,
+    oldValue: { email: user.email, firstName: user.firstName, lastName: user.lastName },
+    newValue: data,
+  }).catch(() => {});
+
+  return updated;
 }
 
 export async function deleteUser(id: string) {
   const user = await getUserById(id);
 
-  return prisma.user.update({
+  const deleted = await prisma.user.update({
     where: { id },
     data: { deletedAt: new Date(), isActive: false },
     select: USER_SELECT,
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'USER',
+    entityId: id,
+    action: 'DELETED',
+    userId: id,
+    oldValue: { email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
+  }).catch(() => {});
+
+  return deleted;
 }
 
 export async function updatePermissions(id: string, permissions: any) {
@@ -101,11 +134,23 @@ export async function updatePermissions(id: string, permissions: any) {
     throw AppError.badRequest('Seuls les techniciens ont des permissions');
   }
 
-  return prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id },
     data: { permissions },
     select: USER_SELECT,
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'USER',
+    entityId: id,
+    action: 'PERMISSIONS_UPDATED',
+    userId: id,
+    oldValue: { permissions: user.permissions },
+    newValue: { permissions },
+  }).catch(() => {});
+
+  return updated;
 }
 
 export async function updateProfile(id: string, data: any) {

@@ -57,6 +57,23 @@ export const ticketListQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
+// ─── Public Service Request (no auth required) ───
+export const serviceRequestSchema = z.object({
+  customerFirstName: z.string().min(1, 'Le prenom est requis').max(100),
+  customerLastName: z.string().min(1, 'Le nom est requis').max(100),
+  customerEmail: z.string().email('Courriel invalide').max(255),
+  customerPhone: z.string().max(30).optional(),
+  title: z.string().min(1, 'Le titre est requis').max(200),
+  description: z.string().min(1, 'La description est requise').max(5000),
+  priority: z.enum(['BASSE', 'NORMALE', 'HAUTE', 'URGENTE']).default('NORMALE'),
+  serviceMode: z.enum(['SUR_ROUTE', 'EN_CUBICULE']).optional(),
+  serviceCategory: z.enum([
+    'REPARATION', 'LOGICIEL', 'RESEAU', 'DONNEES',
+    'INSTALLATION', 'MAINTENANCE', 'CONSULTATION', 'FORMATION', 'AUTRE',
+  ]).optional(),
+});
+
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
+export type ServiceRequestInput = z.infer<typeof serviceRequestSchema>;
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;

@@ -27,11 +27,14 @@ import { useToast } from '../../hooks/use-toast';
 const KANBAN_COLUMNS = [
   'NOUVELLE',
   'EN_ATTENTE_APPROBATION',
+  'EN_ATTENTE_REPONSE_CLIENT',
   'APPROUVEE',
   'PLANIFIEE',
   'EN_COURS',
   'BLOCAGE',
   'TERMINEE',
+  'FERMEE',
+  'ANNULEE',
 ] as const;
 
 type KanbanStatus = (typeof KANBAN_COLUMNS)[number];
@@ -40,11 +43,14 @@ type KanbanStatus = (typeof KANBAN_COLUMNS)[number];
 const COLUMN_TOOLTIPS: Record<KanbanStatus, string> = {
   NOUVELLE: 'Billets nouvellement créés, en attente de prise en charge',
   EN_ATTENTE_APPROBATION: 'Devis envoyé au client, en attente de son approbation',
+  EN_ATTENTE_REPONSE_CLIENT: 'En attente d\'une réponse ou action du client',
   APPROUVEE: 'Devis approuvé par le client, prêt à être planifié',
   PLANIFIEE: 'Rendez-vous planifié avec le technicien',
   EN_COURS: 'Travail en cours par le technicien',
   BLOCAGE: 'Travail bloqué — nécessite une action pour débloquer',
   TERMINEE: 'Travail terminé, en attente de fermeture',
+  FERMEE: 'Billet fermé définitivement',
+  ANNULEE: 'Billet annulé',
 };
 
 // ─── Draggable Ticket Card ───

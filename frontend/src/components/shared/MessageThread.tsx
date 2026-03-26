@@ -96,25 +96,37 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
                 <span className="text-xs text-muted-foreground">
                   {formatRelativeTime(msg.createdAt)}
                 </span>
-                {msg.authorId === user?.id && editingId !== msg.id && deletingId !== msg.id && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setEditingId(msg.id);
-                        setEditContent(msg.content);
-                      }}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => setDeletingId(msg.id)}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      Supprimer
-                    </button>
-                  </>
-                )}
+                {editingId !== msg.id && deletingId !== msg.id && (() => {
+                  const isAuthor = msg.authorId === user?.id;
+                  const createdMs = new Date(msg.createdAt).getTime();
+                  const withinFiveMin = Date.now() - createdMs < 5 * 60 * 1000;
+                  const canEdit = isAuthor && withinFiveMin;
+                  const canDelete = user?.role === 'ADMIN';
+                  if (!canEdit && !canDelete) return null;
+                  return (
+                    <>
+                      {canEdit && (
+                        <button
+                          onClick={() => {
+                            setEditingId(msg.id);
+                            setEditContent(msg.content);
+                          }}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Modifier
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => setDeletingId(msg.id)}
+                          className="text-xs text-red-600 hover:underline"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
             {editingId === msg.id ? (

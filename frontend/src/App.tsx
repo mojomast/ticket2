@@ -1,4 +1,4 @@
-import { createBrowserRouter, redirect, Outlet } from 'react-router-dom';
+import { createBrowserRouter, redirect, Outlet, Link } from 'react-router-dom';
 import { api } from './api/client';
 
 // Lazy-loaded pages
@@ -50,6 +50,19 @@ function SuspenseWrapper() {
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
       <Outlet />
     </Suspense>
+  );
+}
+
+/** Simple 404 page */
+function NotFound() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <h1 className="text-4xl font-bold">404</h1>
+      <p className="text-lg text-muted-foreground">Page non trouvée</p>
+      <Link to="/" className="text-primary hover:underline text-sm">
+        Retour à l&apos;accueil
+      </Link>
+    </div>
   );
 }
 
@@ -129,6 +142,9 @@ export const router = createBrowserRouter([
           { path: 'profil', element: <Profile /> },
         ],
       },
+
+      // 404 catch-all
+      { path: '*', element: <NotFound /> },
     ],
   },
 ]);

@@ -50,6 +50,7 @@ const WO_TRANSITIONS: Record<string, Array<{ to: string; roles: string[] }>> = {
   VERIFICATION: [
     { to: 'EN_REPARATION', roles: ['ADMIN', 'TECHNICIAN'] },
     { to: 'PRET', roles: ['ADMIN', 'TECHNICIAN'] },
+    { to: 'ANNULE', roles: ['ADMIN'] },
   ],
   PRET: [
     { to: 'REMIS', roles: ['ADMIN', 'TECHNICIAN'] },

@@ -17,11 +17,13 @@ import HelpTooltip from '../../components/shared/HelpTooltip';
 
 // Technician-allowed status transitions (from → to[])
 const TECH_STATUS_TRANSITIONS: Record<string, string[]> = {
-  NOUVELLE: ['EN_COURS'],
+  NOUVELLE: ['EN_COURS', 'EN_ATTENTE_APPROBATION'],
   APPROUVEE: ['EN_COURS'],
   PLANIFIEE: ['EN_COURS'],
   EN_COURS: ['BLOCAGE', 'TERMINEE'],
   BLOCAGE: ['EN_COURS'],
+  EN_ATTENTE_REPONSE_CLIENT: ['EN_ATTENTE_APPROBATION'],
+  TERMINEE: ['FERMEE'],
 };
 
 const SCHEDULABLE_STATUSES = ['APPROUVEE', 'PLANIFIEE', 'EN_COURS'];
@@ -379,7 +381,14 @@ export default function TechTicketDetail() {
   const t: Ticket = ticket;
 
   // Determine available status transitions for the current status
-  const allowedStatuses = TECH_STATUS_TRANSITIONS[t.status] ?? [];
+  // Filter TERMINEE → FERMEE: only if tech has can_close_tickets permission
+  const rawAllowed = TECH_STATUS_TRANSITIONS[t.status] ?? [];
+  const canCloseTickets = !!user?.permissions?.can_close_tickets;
+  const canAcceptTickets = !!user?.permissions?.can_accept_tickets;
+  const allowedStatuses = rawAllowed.filter((s) => {
+    if (s === 'FERMEE' && !canCloseTickets) return false;
+    return true;
+  });
   const canSendQuotes = !!user?.permissions?.can_send_quotes;
   const isAssignedToMe = !!t.technicianId && t.technicianId === user?.id;
   const isMutating =
@@ -475,8 +484,8 @@ export default function TechTicketDetail() {
         <StatusBadge status={t.status} />
         <StatusBadge status={t.priority} type="priority" />
 
-        {/* Accept button — only when no technician assigned */}
-        {!t.technicianId && (
+        {/* Accept button — only when no technician assigned and tech has can_accept_tickets permission */}
+        {!t.technicianId && canAcceptTickets && (
           <HelpTooltip content="Prendre en charge ce billet et devenir le technicien assigné" side="bottom">
             <button
               onClick={() => acceptMutation.mutate()}

@@ -3,6 +3,7 @@ import { AppError } from '../lib/errors.js';
 import type { UserRole } from '@prisma/client';
 import type { CreateMessageInput, UpdateMessageInput } from '../validations/message.js';
 import { getPagination, buildPaginatedResponse } from '../types/index.js';
+import * as notificationService from './notification.service.js';
 
 const MESSAGE_INCLUDE = {
   author: {
@@ -59,6 +60,19 @@ export async function createMessage(ticketId: string, data: CreateMessageInput, 
     },
     include: MESSAGE_INCLUDE,
   });
+
+  // Fire-and-forget: notify other parties about new message (skip internal notes for customers)
+  if (!isInternal) {
+    const recipientIds: string[] = [];
+    if (ticket.customerId && ticket.customerId !== userId) recipientIds.push(ticket.customerId);
+    if (ticket.technicianId && ticket.technicianId !== userId) recipientIds.push(ticket.technicianId);
+    if (recipientIds.length > 0) {
+      notificationService.notifyNewMessage(ticketId, ticket.ticketNumber, recipientIds).catch(() => {});
+    }
+  } else if (ticket.technicianId && ticket.technicianId !== userId) {
+    // Internal notes: only notify the technician (not the customer)
+    notificationService.notifyNewMessage(ticketId, ticket.ticketNumber, [ticket.technicianId]).catch(() => {});
+  }
 
   return message;
 }

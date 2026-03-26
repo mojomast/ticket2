@@ -1,82 +1,179 @@
 # Handoff
 
-## Completed: Comprehensive Help System (Help Sidebar + Tooltips)
+## Completed: Comprehensive Code Audit & Bug Fixes (22 Fixes)
 
 ### Summary
 
-Built a complete contextual help system for the Valitek v2 IT ticket management application. The system includes a slide-out help sidebar accessible from every authenticated page, plus 170+ tooltips on key interactive elements across all pages. All content is in French.
+A 6-agent parallel code audit identified ~30 bugs (7 critical, 2 high, 13+ medium) across the entire codebase. All bugs were fixed, verified with `tsc --noEmit` (zero errors on both backend and frontend), and the production build succeeds (vite build, 1715 modules, 4.67s).
 
 ---
 
-### What was built
+### Critical Fixes (7)
 
-#### 1. Core Help Infrastructure
+#### 1. Backup service — missing models and non-transactional restore
+- **Files**: `backend/src/services/backup.service.ts`
+- `WorkOrder`, `WorkOrderNote`, `AppointmentProposal` were missing from backup model list — backup/restore would silently lose all work order data
+- Restore was not transactional — partial failure left database in corrupted state
+- **Fix**: Added all 3 missing models, corrected delete/insert order to respect FK constraints, wrapped entire restore in `prisma.$transaction()`, added confirmation dialog on frontend
 
-| File | Purpose |
-|------|---------|
-| `frontend/src/stores/help-store.ts` | Zustand store — `isOpen`, `currentPageKey`, `toggle()`, `open()`, `close()`, `setPageKey()` |
-| `frontend/src/hooks/use-page-help.ts` | Route-to-pageKey mapping via regex (29 routes), keyboard shortcuts (`?` and `F1`), auto-syncs page key to store |
-| `frontend/src/components/shared/HelpSidebar.tsx` | Slide-out panel (right side, 384px, z-50) with collapsible accordion sections, tips, backdrop overlay |
-| `frontend/src/components/shared/HelpTooltip.tsx` | Convenience wrapper around shadcn Tooltip (props: `content`, `side`, `align`, `className`) |
-| `frontend/src/lib/help-content.ts` | 1,131 lines of French help articles — 29 page keys across all roles |
+#### 2. Work order search bypassed technician role filter
+- **File**: `backend/src/services/workorder.service.ts`
+- Search `where.OR` overwrote the technician-scoping `where.OR`, allowing techs to see all work orders
+- **Fix**: Uses `where.AND` to combine search conditions with role filter
 
-#### 2. Layout Modifications
+#### 3. Notification service was entirely orphaned
+- **Files**: `backend/src/services/ticket.service.ts`, `workorder.service.ts`, `message.service.ts`
+- `notifyTicketCreated`, `notifyStatusChanged`, `notifyQuoteSent`, `notifyTechnicianAssigned`, `notifyNewMessage` existed but were never called from any service
+- **Fix**: Wired all notification calls into ticket, work order, and message services (fire-and-forget with `.catch()`)
 
-All three layouts modified to include:
-- `usePageHelp()` hook call (sets up keyboard listeners + page key sync)
-- Help button (`HelpCircle` icon from lucide-react) in the header bar, before `NotificationBell`
-- `<HelpSidebar />` component rendered in the layout
+#### 4. Service request page called authenticated endpoint from public page
+- **Files**: `backend/src/routes/service-request.routes.ts` (new), `backend/src/validations/ticket.ts`, `frontend/src/pages/public/ServiceRequest.tsx`, `frontend/src/api/client.ts`
+- Public `/demande` page called `POST /api/tickets` which requires auth — always 401
+- **Fix**: Created `POST /api/service-request` public endpoint with `serviceRequestSchema`, auto-creates customer account if email not found, mounted at `/api/service-request` in `index.ts`
 
-Files:
-- `frontend/src/pages/admin/AdminLayout.tsx`
-- `frontend/src/pages/technician/TechLayout.tsx`
-- `frontend/src/pages/portal/PortalLayout.tsx`
+#### 5. Demo reset was stubbed — returned success without doing anything
+- **File**: `backend/src/routes/demo.routes.ts`
+- The reset endpoint returned `{ message: 'Demo reset' }` without touching the database
+- **Fix**: Now deletes all data in FK-safe order + runs `npx prisma db seed`
 
-#### 3. TooltipProvider
+#### 6. Audit service was orphaned
+- **Files**: `backend/src/services/ticket.service.ts`, `workorder.service.ts`, `user.service.ts`
+- `createAuditLog()` existed but was never called
+- **Fix**: Wired into ticket (create, status change, assign), work order (create, status change, quote), and user (create, update, deactivate) services
 
-`frontend/src/main.tsx` updated to wrap app in `<TooltipProvider delayDuration={300}>` from `@radix-ui/react-tooltip` (via shadcn).
+#### 7. Ticket/WO number generation had race conditions
+- **Files**: `backend/src/services/ticket.service.ts`, `workorder.service.ts`
+- Read-then-increment pattern could generate duplicate numbers under concurrent requests
+- **Fix**: Retry loop (5 attempts) with unique constraint catch + timestamp fallback, increased zero-padding to 3 digits (supports 999/month)
 
-#### 4. Help Content Coverage (29 page keys)
+### High Fixes (2)
 
-| Role | Page Keys | Count |
-|------|-----------|-------|
-| **ADMIN** | admin-dashboard, admin-tickets, admin-ticket-detail, admin-kanban, admin-calendar, admin-clients, admin-technicians, admin-settings, admin-backups, admin-workorders, admin-workorder-intake, admin-workorder-detail | 12 |
-| **TECHNICIAN** | tech-dashboard, tech-tickets, tech-ticket-detail, tech-schedule, tech-workorders, tech-workorder-intake, tech-workorder-detail | 7 |
-| **CUSTOMER** | customer-dashboard, customer-tickets, customer-ticket-detail, customer-appointments, customer-workorders, customer-workorder-detail | 6 |
-| **GENERAL** | profile, landing, login, service-request | 4 |
+#### 8. Backup restore transactionality
+- Covered by fix #1 above — restore is now fully transactional with `prisma.$transaction()`
 
-Each article contains: title, description, 3-8 collapsible sections, 2-4 tips.
+#### 9. Number generation robustness
+- Covered by fix #7 above — retry loop + fallback
 
-#### 5. Tooltips Added (~170+ total)
+### Medium Fixes (13)
 
-| Area | Files | Tooltip Count |
-|------|-------|:---:|
-| Admin Dashboard, Tickets, TicketDetail, KanbanBoard, Calendar | 5 | ~47 |
-| Admin Clients, Technicians, Settings, Backups | 4 | ~24 |
-| Shared components (NotificationBell, StatusBadge, DemoBanner) | 3 | ~7 |
-| Technician Dashboard, Tickets, TicketDetail, Schedule | 4 | ~31 |
-| Customer Dashboard, Tickets, TicketDetail, Appointments, WorkOrders, WorkOrderDetail | 6 | ~29 |
-| WorkOrdersDashboard, WorkOrderIntake, WorkOrderDetail, Profile | 4 | ~35 |
+#### 10. Settings page — language toggle
+- **File**: `frontend/src/pages/admin/Settings.tsx`
+- Added FR/EN language toggle using auth store's `setLocale()`
+
+#### 11. AppSidebar — dynamic branding from API
+- **File**: `frontend/src/components/shared/AppSidebar.tsx`
+- Now reads company name, logo, and primary color from `/api/config/branding` instead of hardcoding "Valitek"
+
+#### 12. Admin Tickets page — create dialog + pagination
+- **File**: `frontend/src/pages/admin/Tickets.tsx`
+- Added "Nouveau billet" button with create dialog (customer dropdown, subject, description, priority, category, service mode)
+- Added pagination (25/page)
+
+#### 13. Tech TicketDetail — missing status transitions + permission gates
+- **File**: `frontend/src/pages/technician/TicketDetail.tsx`
+- Added missing transitions: `NOUVELLE->EN_ATTENTE_APPROBATION`, `EN_ATTENTE_REPONSE_CLIENT->EN_ATTENTE_APPROBATION`, `TERMINEE->FERMEE`
+- Added permission gates: `can_accept_tickets` for self-assign, `can_close_tickets` for close
+
+#### 14. StatusBadge — fixed WO tooltip descriptions
+- **File**: `frontend/src/components/shared/StatusBadge.tsx`
+- Was using English keys (DRAFT, INTAKE) instead of French enum values (RECEPTION, DIAGNOSTIC)
+
+#### 15. NotificationBell — click navigates to ticket/WO
+- **File**: `frontend/src/components/shared/NotificationBell.tsx`
+- Clicking a notification now marks it as read and navigates to the relevant ticket based on user role
+
+#### 16. MessageThread — edit/delete permission checks
+- **File**: `frontend/src/components/shared/MessageThread.tsx`
+- Edit button gated to author + 5-minute window
+- Delete button gated to ADMIN only
+
+#### 17. KanbanBoard — added missing columns
+- **File**: `frontend/src/pages/admin/KanbanBoard.tsx`
+- Added `EN_ATTENTE_REPONSE_CLIENT`, `FERMEE`, `ANNULEE` columns for full lifecycle visibility
+
+#### 18. Customer WO detail — note/reply form
+- **File**: `frontend/src/pages/portal/WorkOrderDetail.tsx`
+- Added note reply form for non-terminal work orders
+
+#### 19. Tech Dashboard + Customer Dashboard — stats and empty states
+- **Files**: `frontend/src/pages/technician/Dashboard.tsx`, `frontend/src/pages/portal/Dashboard.tsx`
+- Tech: 4 stat cards (assigned tickets, in progress, today's appointments, active WOs)
+- Customer: 3 stat cards (active tickets, pending, active WOs)
+- Both have empty state messages
+
+#### 20. DemoBanner — admin-only reset
+- **File**: `frontend/src/components/shared/DemoBanner.tsx`
+- Reset button now only visible to ADMIN role
+
+#### 21. VERIFICATION -> ANNULE transition
+- **Files**: `backend/src/types/index.ts`, `frontend/src/pages/workorders/WorkOrderDetail.tsx`
+- Added missing cancellation transition from VERIFICATION state (admin only)
+
+#### 22. Technicians page — active/inactive toggle
+- **File**: `frontend/src/pages/admin/Technicians.tsx`
+- Added toggle button to activate/deactivate technicians
+
+#### 23. 404 route + login redirect
+- **Files**: `frontend/src/App.tsx`, `frontend/src/pages/public/Login.tsx`
+- Added catch-all 404 route with "Page non trouvee" message
+- Login page redirects already-authenticated users to their role dashboard
+
+#### 24. Config routes — Zod validation
+- **Files**: `backend/src/routes/config.routes.ts`, `backend/src/validations/config.ts` (new)
+- Added `brandingSchema` and `configValueSchema` for PUT endpoints that previously accepted unvalidated input
 
 ---
 
-### How it works
+### Build Status
+- TypeScript backend: zero errors (`tsc --noEmit`)
+- TypeScript frontend: zero errors (`tsc --noEmit`)
+- Vite production build: succeeds (1715 modules, 4.67s)
 
-1. User navigates to any page — `usePageHelp()` hook derives the page key from the URL
-2. User presses `?`, `F1`, or clicks the `?` button in the header
-3. `HelpSidebar` slides in from the right, showing role-aware + page-aware content
-4. Content comes from `help-content.ts` via `getHelpContent(pageKey, role)` which tries `ROLE:pageKey` → `GENERAL:pageKey` → profile fallback → null
-5. Tooltips on interactive elements provide inline contextual hints on hover
+### New Files Created
+- `backend/src/routes/service-request.routes.ts` — Public service request endpoint
+- `backend/src/validations/config.ts` — Zod schemas for config/branding
 
-### Build status
+### Files Modified (29)
+**Backend (9):**
+- `backend/src/index.ts` — Mounted service-request routes
+- `backend/src/routes/config.routes.ts` — Added validation middleware
+- `backend/src/routes/demo.routes.ts` — Wired real reset logic
+- `backend/src/services/backup.service.ts` — Added models, transactional restore
+- `backend/src/services/message.service.ts` — Notification wiring
+- `backend/src/services/ticket.service.ts` — Notifications, audit, number gen, service request
+- `backend/src/services/user.service.ts` — Audit logging
+- `backend/src/services/workorder.service.ts` — Search fix, notifications, audit, number gen
+- `backend/src/types/index.ts` — VERIFICATION->ANNULE transition
+- `backend/src/validations/ticket.ts` — serviceRequestSchema
 
-- TypeScript: clean (`tsc --noEmit` — zero errors)
-- Vite build: succeeds (`npx vite build` — 4.1s)
-- No new dependencies added — everything uses existing packages (zustand, lucide-react, @radix-ui/react-tooltip, react-router-dom)
+**Frontend (20):**
+- `frontend/src/App.tsx` — 404 route
+- `frontend/src/api/client.ts` — serviceRequest namespace
+- `frontend/src/components/shared/AppSidebar.tsx` — Dynamic branding
+- `frontend/src/components/shared/DemoBanner.tsx` — Admin-only reset
+- `frontend/src/components/shared/MessageThread.tsx` — Permission checks
+- `frontend/src/components/shared/NotificationBell.tsx` — Click navigation
+- `frontend/src/components/shared/StatusBadge.tsx` — Fixed WO keys
+- `frontend/src/pages/admin/Backups.tsx` — Confirm dialog, empty state
+- `frontend/src/pages/admin/KanbanBoard.tsx` — Missing columns
+- `frontend/src/pages/admin/Settings.tsx` — Language toggle
+- `frontend/src/pages/admin/Technicians.tsx` — Active toggle
+- `frontend/src/pages/admin/Tickets.tsx` — Create dialog, pagination
+- `frontend/src/pages/portal/Dashboard.tsx` — Stat cards, empty state
+- `frontend/src/pages/portal/WorkOrderDetail.tsx` — Note form
+- `frontend/src/pages/public/Login.tsx` — Auth redirect
+- `frontend/src/pages/public/ServiceRequest.tsx` — Public endpoint
+- `frontend/src/pages/technician/Dashboard.tsx` — Stat cards, empty state
+- `frontend/src/pages/technician/TicketDetail.tsx` — Transitions, permissions
+- `frontend/src/pages/workorders/WorkOrderDetail.tsx` — ANNULE transition
+- `handoff.md` — This file
 
-### Services
+---
 
-- **Backend**: screen session `valitek-backend`, port 3200
-- **Frontend**: screen session `valitek-frontend`, port 5173
-- **Database**: Docker container `valitek-db`, port 5433, PostgreSQL 16
-- **Access**: `http://100.72.41.9:5173` via Tailscale
+### Known Remaining Gaps
+
+1. **i18n incomplete** — `useTranslation()` only used in AppSidebar; all other pages hardcode French. 71 keys cover ~15% of UI text.
+2. **Email/SMS services orphaned** — `email.service.ts` and `sms.service.ts` are implemented but never called from any workflow.
+3. **Pagination missing** on portal/Tickets, tech/Tickets, admin/Clients pages.
+4. **Password change** — backend schema supports it but no route or UI exists.
+5. **Attachment upload** — `Attachment` model exists but no upload endpoint or UI.

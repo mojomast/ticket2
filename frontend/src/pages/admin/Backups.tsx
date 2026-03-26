@@ -71,6 +71,11 @@ export default function AdminBackups() {
 
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+      ) : !backups || (backups as Backup[]).length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground bg-card border rounded-lg">
+          <p className="text-lg font-medium">Aucune sauvegarde trouvée</p>
+          <p className="text-sm mt-1">Créez votre première sauvegarde en cliquant sur le bouton ci-dessus.</p>
+        </div>
       ) : (
         <div className="bg-card border rounded-lg overflow-hidden">
           <table className="w-full">
@@ -117,10 +122,18 @@ export default function AdminBackups() {
                         </HelpTooltip>
                         <HelpTooltip content="Attention : la restauration écrasera toutes les données actuelles" side="top">
                           <button
-                            onClick={() => restoreMutation.mutate(backup.id)}
-                            className="text-xs text-orange-600 hover:underline"
+                            onClick={() => {
+                              const confirmed = window.confirm(
+                                'ATTENTION: La restauration va SUPPRIMER toutes les données actuelles et les remplacer par les données de cette sauvegarde. Cette action est IRRÉVERSIBLE. Voulez-vous continuer?'
+                              );
+                              if (confirmed) {
+                                restoreMutation.mutate(backup.id);
+                              }
+                            }}
+                            disabled={restoreMutation.isPending}
+                            className="text-xs text-orange-600 hover:underline disabled:opacity-50"
                           >
-                            Restaurer
+                            {restoreMutation.isPending ? 'Restauration...' : 'Restaurer'}
                           </button>
                         </HelpTooltip>
                       </>

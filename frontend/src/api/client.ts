@@ -411,6 +411,10 @@ export const api = {
     reset: () => request<{ message: string }>('/api/demo/reset', { method: 'POST' }),
   },
 
+  serviceRequest: {
+    create: (data: any) => request<Ticket>('/api/service-request', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
   config: {
     branding: () => request<Record<string, unknown>>('/api/config/branding'),
   },
