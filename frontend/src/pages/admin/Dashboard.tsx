@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api, type Ticket, type Appointment } from '../../api/client';
 import { useAuth } from '../../hooks/use-auth';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import { formatRelativeTime, formatDateTime } from '../../lib/utils';
 
 // ─── Status groupings for stat cards ───
@@ -20,6 +21,7 @@ interface StatCard {
   count: number;
   color: string;
   icon: string;
+  tooltip: string;
 }
 
 function getTodayRange(): { start: string; end: string } {
@@ -67,24 +69,28 @@ export default function AdminDashboard() {
         count: countByGroup(STATUS_GROUPS.nouveaux),
         color: 'text-blue-600',
         icon: '🆕',
+        tooltip: 'Billets nouvellement créés en attente de traitement',
       },
       {
         label: 'En cours',
         count: countByGroup(STATUS_GROUPS.enCours),
         color: 'text-purple-600',
         icon: '⚙️',
+        tooltip: 'Billets actuellement pris en charge par un technicien',
       },
       {
         label: 'En attente',
         count: countByGroup(STATUS_GROUPS.enAttente),
         color: 'text-yellow-600',
         icon: '⏳',
+        tooltip: 'Billets en attente d\'approbation de devis ou de réponse du client',
       },
       {
         label: 'Termines',
         count: countByGroup(STATUS_GROUPS.termines),
         color: 'text-teal-600',
         icon: '✅',
+        tooltip: 'Billets terminés ou fermés définitivement',
       },
     ];
   }, [tickets]);
@@ -99,20 +105,21 @@ export default function AdminDashboard() {
       {/* ─── Stat Cards ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-card border rounded-lg p-4 flex items-center gap-3"
-          >
-            <span className="text-2xl" role="img" aria-label={stat.label}>
-              {stat.icon}
-            </span>
-            <div>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className={`text-2xl font-bold ${stat.color}`}>
-                {stat.count}
-              </p>
+          <HelpTooltip key={stat.label} content={stat.tooltip} side="bottom">
+            <div
+              className="bg-card border rounded-lg p-4 flex items-center gap-3"
+            >
+              <span className="text-2xl" role="img" aria-label={stat.label}>
+                {stat.icon}
+              </span>
+              <div>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className={`text-2xl font-bold ${stat.color}`}>
+                  {stat.count}
+                </p>
+              </div>
             </div>
-          </div>
+          </HelpTooltip>
         ))}
       </div>
 
@@ -120,12 +127,14 @@ export default function AdminDashboard() {
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex items-center justify-between">
           <h2 className="font-semibold">Billets recents</h2>
-          <Link
-            to="/admin/billets"
-            className="text-sm text-primary hover:underline"
-          >
-            Voir tous
-          </Link>
+          <HelpTooltip content="Afficher la liste complète de tous les billets" side="left">
+            <Link
+              to="/admin/billets"
+              className="text-sm text-primary hover:underline"
+            >
+              Voir tous
+            </Link>
+          </HelpTooltip>
         </div>
         <div className="divide-y">
           {recentTickets.length === 0 && (
@@ -165,12 +174,14 @@ export default function AdminDashboard() {
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex items-center justify-between">
           <h2 className="font-semibold">Rendez-vous aujourd&apos;hui</h2>
-          <Link
-            to="/admin/calendrier"
-            className="text-sm text-primary hover:underline"
-          >
-            Voir tous
-          </Link>
+          <HelpTooltip content="Ouvrir le calendrier complet des rendez-vous" side="left">
+            <Link
+              to="/admin/calendrier"
+              className="text-sm text-primary hover:underline"
+            >
+              Voir tous
+            </Link>
+          </HelpTooltip>
         </div>
         <div className="divide-y">
           {appointments.length === 0 && (

@@ -17,6 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Link } from 'react-router-dom';
 import { api, type Ticket } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import { STATUS_LABELS, STATUS_COLORS } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
@@ -34,6 +35,17 @@ const KANBAN_COLUMNS = [
 ] as const;
 
 type KanbanStatus = (typeof KANBAN_COLUMNS)[number];
+
+/** French tooltip descriptions for each kanban column status */
+const COLUMN_TOOLTIPS: Record<KanbanStatus, string> = {
+  NOUVELLE: 'Billets nouvellement créés, en attente de prise en charge',
+  EN_ATTENTE_APPROBATION: 'Devis envoyé au client, en attente de son approbation',
+  APPROUVEE: 'Devis approuvé par le client, prêt à être planifié',
+  PLANIFIEE: 'Rendez-vous planifié avec le technicien',
+  EN_COURS: 'Travail en cours par le technicien',
+  BLOCAGE: 'Travail bloqué — nécessite une action pour débloquer',
+  TERMINEE: 'Travail terminé, en attente de fermeture',
+};
 
 // ─── Draggable Ticket Card ───
 
@@ -99,24 +111,26 @@ function TicketCard({ ticket, isDragOverlay = false }: TicketCardProps) {
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="block bg-card border rounded-md p-3 hover:shadow-sm transition-shadow cursor-grab active:cursor-grabbing"
-    >
-      <Link
-        to={`/admin/billets/${ticket.id}`}
-        className="block"
-        // Prevent navigation when starting a drag
-        onClick={(e) => {
-          if (isDragging) e.preventDefault();
-        }}
+    <HelpTooltip content="Cliquez pour voir les détails ou glissez pour changer le statut" side="right">
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className="block bg-card border rounded-md p-3 hover:shadow-sm transition-shadow cursor-grab active:cursor-grabbing"
       >
-        {cardContent}
-      </Link>
-    </div>
+        <Link
+          to={`/admin/billets/${ticket.id}`}
+          className="block"
+          // Prevent navigation when starting a drag
+          onClick={(e) => {
+            if (isDragging) e.preventDefault();
+          }}
+        >
+          {cardContent}
+        </Link>
+      </div>
+    </HelpTooltip>
   );
 }
 
@@ -146,12 +160,14 @@ function KanbanColumn({ status, tickets, isOver }: KanbanColumnProps) {
     >
       {/* Column header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {colors && (
-            <div className={cn('w-2 h-2 rounded-full', colors.bg)} />
-          )}
-          <h3 className="font-medium text-sm truncate">{STATUS_LABELS[status] || status}</h3>
-        </div>
+        <HelpTooltip content={COLUMN_TOOLTIPS[status]} side="bottom" align="start">
+          <div className="flex items-center gap-2">
+            {colors && (
+              <div className={cn('w-2 h-2 rounded-full', colors.bg)} />
+            )}
+            <h3 className="font-medium text-sm truncate">{STATUS_LABELS[status] || status}</h3>
+          </div>
+        </HelpTooltip>
         <span className="text-xs text-muted-foreground bg-background rounded-full px-2 py-0.5 flex-shrink-0">
           {tickets.length}
         </span>

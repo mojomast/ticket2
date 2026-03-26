@@ -5,6 +5,7 @@ import { api, type Appointment } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 /** Appointment statuses that allow cancellation */
 const CANCELLABLE_STATUSES = ['PLANIFIE', 'CONFIRME'];
@@ -84,9 +85,15 @@ export default function PortalAppointments() {
 
         {/* Filter toggle */}
         <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-          {filterButton('upcoming', 'À venir')}
-          {filterButton('past', 'Passés')}
-          {filterButton('all', 'Tous')}
+          <HelpTooltip content="Afficher les rendez-vous à venir" side="bottom">
+            <span>{filterButton('upcoming', 'À venir')}</span>
+          </HelpTooltip>
+          <HelpTooltip content="Afficher les rendez-vous passés" side="bottom">
+            <span>{filterButton('past', 'Passés')}</span>
+          </HelpTooltip>
+          <HelpTooltip content="Afficher tous les rendez-vous" side="bottom">
+            <span>{filterButton('all', 'Tous')}</span>
+          </HelpTooltip>
         </div>
       </div>
 
@@ -144,17 +151,21 @@ export default function PortalAppointments() {
 
                   {/* Right: status + actions */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <StatusBadge status={apt.status} type="appointment" />
+                    <HelpTooltip content="Statut actuel du rendez-vous" side="left">
+                      <span><StatusBadge status={apt.status} type="appointment" /></span>
+                    </HelpTooltip>
 
                     {isCancellable(apt.status) && (
-                      <button
-                        type="button"
-                        onClick={() => cancelMutation.mutate(apt.id)}
-                        disabled={cancelMutation.isPending}
-                        className="px-3 py-1.5 text-xs font-medium rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {cancelMutation.isPending ? 'Annulation…' : 'Annuler'}
-                      </button>
+                      <HelpTooltip content="Annuler ce rendez-vous — possible seulement avant le début" side="left">
+                        <button
+                          type="button"
+                          onClick={() => cancelMutation.mutate(apt.id)}
+                          disabled={cancelMutation.isPending}
+                          className="px-3 py-1.5 text-xs font-medium rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {cancelMutation.isPending ? 'Annulation…' : 'Annuler'}
+                        </button>
+                      </HelpTooltip>
                     )}
                   </div>
                 </div>

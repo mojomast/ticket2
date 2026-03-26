@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type WorkOrder, type WorkOrderNote, type User } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useAuth } from '../../hooks/use-auth';
 import { useToast } from '../../hooks/use-toast';
 import { formatDateTime, formatCurrency, cn } from '../../lib/utils';
@@ -295,7 +296,9 @@ export default function WorkOrderDetail() {
 
           {/* Device Info */}
           <div className="bg-card border rounded-lg p-6">
-            <h3 className="font-semibold mb-3">Appareil</h3>
+            <HelpTooltip content="Informations sur l'appareil enregistré lors de la réception en atelier" side="right">
+              <h3 className="font-semibold mb-3">Appareil</h3>
+            </HelpTooltip>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <InfoField label="Type" value={DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType} />
               <InfoField label="Marque" value={wo.deviceBrand} />
@@ -378,18 +381,22 @@ export default function WorkOrderDetail() {
           {!isTerminal && (
             <div className="bg-card border rounded-lg p-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold">Notes techniques</h3>
+                <HelpTooltip content="Notes de diagnostic et de réparation rédigées par le technicien. Visibles dans le devis client." side="right">
+                  <h3 className="font-semibold">Notes techniques</h3>
+                </HelpTooltip>
                 {editSection !== 'notes' && (
-                  <button
-                    onClick={() => {
-                      setEditSection('notes');
-                      setEditDiagNotes(wo.diagnosticNotes || '');
-                      setEditRepairNotes(wo.repairNotes || '');
-                    }}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Modifier
-                  </button>
+                  <HelpTooltip content="Modifier les notes de diagnostic et de réparation" side="left">
+                    <button
+                      onClick={() => {
+                        setEditSection('notes');
+                        setEditDiagNotes(wo.diagnosticNotes || '');
+                        setEditRepairNotes(wo.repairNotes || '');
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Modifier
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
 
@@ -456,14 +463,18 @@ export default function WorkOrderDetail() {
           {/* Parts Used */}
           <div className="bg-card border rounded-lg p-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">Pieces utilisees</h3>
+              <HelpTooltip content="Liste des pièces de rechange utilisées pour la réparation. Le coût total est calculé automatiquement." side="right">
+                <h3 className="font-semibold">Pieces utilisees</h3>
+              </HelpTooltip>
               {!isTerminal && !showPartForm && (
-                <button
-                  onClick={() => setShowPartForm(true)}
-                  className="text-xs text-primary hover:underline"
-                >
-                  + Ajouter
-                </button>
+                <HelpTooltip content="Ajouter une pièce de rechange avec son coût et type (OEM, après-marché, reconditionné)" side="left">
+                  <button
+                    onClick={() => setShowPartForm(true)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    + Ajouter
+                  </button>
+                </HelpTooltip>
               )}
             </div>
 
@@ -480,12 +491,14 @@ export default function WorkOrderDetail() {
                     <div className="flex items-center gap-3">
                       <span>{formatCurrency(part.cost)}</span>
                       {!isTerminal && (
-                        <button
-                          onClick={() => handleRemovePart(i)}
-                          className="text-xs text-red-600 hover:underline"
-                        >
-                          Retirer
-                        </button>
+                        <HelpTooltip content="Retirer cette pièce de la liste" side="left">
+                          <button
+                            onClick={() => handleRemovePart(i)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            Retirer
+                          </button>
+                        </HelpTooltip>
                       )}
                     </div>
                   </div>
@@ -601,22 +614,26 @@ export default function WorkOrderDetail() {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
                 />
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={noteIsInternal}
-                      onChange={(e) => setNoteIsInternal(e.target.checked)}
-                      className="rounded border-input"
-                    />
-                    Note interne (non visible par le client)
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={addNoteMutation.isPending || !noteContent.trim()}
-                    className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {addNoteMutation.isPending ? 'Envoi...' : 'Ajouter'}
-                  </button>
+                  <HelpTooltip content="Cochez pour rendre cette note visible uniquement par les techniciens et administrateurs. Non cochée, la note sera aussi visible par le client." side="right">
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={noteIsInternal}
+                        onChange={(e) => setNoteIsInternal(e.target.checked)}
+                        className="rounded border-input"
+                      />
+                      Note interne (non visible par le client)
+                    </label>
+                  </HelpTooltip>
+                  <HelpTooltip content="Publier la note dans le fil de discussion de ce bon de travail" side="left">
+                    <button
+                      type="submit"
+                      disabled={addNoteMutation.isPending || !noteContent.trim()}
+                      className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {addNoteMutation.isPending ? 'Envoi...' : 'Ajouter'}
+                    </button>
+                  </HelpTooltip>
                 </div>
               </form>
             )}
@@ -628,7 +645,9 @@ export default function WorkOrderDetail() {
 
           {/* Customer card */}
           <div className="bg-card border rounded-lg p-4 space-y-2">
-            <h3 className="font-semibold text-sm">Client</h3>
+            <HelpTooltip content="Coordonnées du client associé à ce bon de travail" side="left">
+              <h3 className="font-semibold text-sm">Client</h3>
+            </HelpTooltip>
             <p className="text-sm font-medium">{wo.customerName}</p>
             <p className="text-xs text-muted-foreground">{wo.customerPhone}</p>
             {wo.customerEmail && (
@@ -708,32 +727,36 @@ export default function WorkOrderDetail() {
               <p className="text-sm text-muted-foreground italic">Non assigne</p>
             )}
             {!isTerminal && (
-              <select
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) {
-                    updateMutation.mutate({ technicianId: e.target.value });
-                  }
-                }}
-                disabled={updateMutation.isPending}
-                className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
-              >
-                <option value="">
-                  {wo.technician ? 'Reassigner...' : 'Assigner...'}
-                </option>
-                {(technicians as User[] | undefined)?.map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.firstName} {tech.lastName}
+              <HelpTooltip content="Assigner ou réassigner un technicien à ce bon de travail" side="left">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      updateMutation.mutate({ technicianId: e.target.value });
+                    }
+                  }}
+                  disabled={updateMutation.isPending}
+                  className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
+                >
+                  <option value="">
+                    {wo.technician ? 'Reassigner...' : 'Assigner...'}
                   </option>
-                ))}
-              </select>
+                  {(technicians as User[] | undefined)?.map((tech) => (
+                    <option key={tech.id} value={tech.id}>
+                      {tech.firstName} {tech.lastName}
+                    </option>
+                  ))}
+                </select>
+              </HelpTooltip>
             )}
           </div>
 
           {/* Status Change */}
           {transitions.length > 0 && (
             <div className="bg-card border rounded-lg p-4 space-y-3">
-              <h3 className="font-semibold text-sm">Changer le statut</h3>
+              <HelpTooltip content="Faire avancer le bon de travail dans le flux de réparation. Chaque statut représente une étape du processus." side="left">
+                <h3 className="font-semibold text-sm">Changer le statut</h3>
+              </HelpTooltip>
 
               {showStatusReason ? (
                 <form onSubmit={handleStatusWithReason} className="space-y-2">
@@ -769,20 +792,34 @@ export default function WorkOrderDetail() {
                   {transitions.map((status) => {
                     const colors = WO_STATUS_COLORS[status];
                     const isDestructive = ['ANNULE', 'ABANDONNE', 'REFUSE'].includes(status);
+                    const transitionTooltips: Record<string, string> = {
+                      DIAGNOSTIC: 'Démarrer le diagnostic technique de l\'appareil',
+                      ATTENTE_APPROBATION: 'Envoyer le devis au client et attendre son approbation',
+                      APPROUVE: 'Le client a approuvé le devis, prêt pour la réparation',
+                      ATTENTE_PIECES: 'Mettre en attente de pièces de rechange nécessaires',
+                      EN_REPARATION: 'Démarrer ou reprendre la réparation de l\'appareil',
+                      VERIFICATION: 'Réparation terminée, passer en vérification qualité',
+                      PRET: 'Appareil réparé et vérifié, prêt pour le ramassage client',
+                      REMIS: 'Confirmer la remise de l\'appareil au client (action définitive)',
+                      ANNULE: 'Annuler ce bon de travail (une raison sera demandée)',
+                      ABANDONNE: 'Marquer comme abandonné par le client (une raison sera demandée)',
+                      REFUSE: 'Le client refuse le devis proposé',
+                    };
                     return (
-                      <button
-                        key={status}
-                        onClick={() => handleStatusChange(status)}
-                        disabled={statusMutation.isPending}
-                        className={cn(
-                          'w-full rounded-md px-3 py-1.5 text-xs font-medium text-left disabled:opacity-50 transition-colors',
-                          isDestructive
-                            ? 'border border-red-300 bg-background text-red-700 hover:bg-red-50'
-                            : `${colors?.bg || 'bg-muted'} ${colors?.text || 'text-foreground'} hover:opacity-80`
-                        )}
-                      >
-                        &rarr; {WO_STATUS_LABELS[status] || status}
-                      </button>
+                      <HelpTooltip key={status} content={transitionTooltips[status] || `Passer au statut ${WO_STATUS_LABELS[status]}`} side="left">
+                        <button
+                          onClick={() => handleStatusChange(status)}
+                          disabled={statusMutation.isPending}
+                          className={cn(
+                            'w-full rounded-md px-3 py-1.5 text-xs font-medium text-left disabled:opacity-50 transition-colors',
+                            isDestructive
+                              ? 'border border-red-300 bg-background text-red-700 hover:bg-red-50'
+                              : `${colors?.bg || 'bg-muted'} ${colors?.text || 'text-foreground'} hover:opacity-80`
+                          )}
+                        >
+                          &rarr; {WO_STATUS_LABELS[status] || status}
+                        </button>
+                      </HelpTooltip>
                     );
                   })}
                 </div>
@@ -794,14 +831,18 @@ export default function WorkOrderDetail() {
           {canSendQuote && (
             <div className="bg-card border rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">Envoyer un devis</h3>
+                <HelpTooltip content="Créez et envoyez un devis au client avec le coût estimé et les résultats du diagnostic" side="left">
+                  <h3 className="font-semibold text-sm">Envoyer un devis</h3>
+                </HelpTooltip>
                 {!showQuoteForm && (
-                  <button
-                    onClick={() => setShowQuoteForm(true)}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Creer
-                  </button>
+                  <HelpTooltip content="Ouvrir le formulaire pour rédiger et envoyer un devis au client" side="left">
+                    <button
+                      onClick={() => setShowQuoteForm(true)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Creer
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
 
@@ -841,13 +882,15 @@ export default function WorkOrderDetail() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={quoteMutation.isPending}
-                      className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                    >
-                      {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
-                    </button>
+                    <HelpTooltip content="Envoyer le devis au client. Le bon passera en attente d'approbation." side="top">
+                      <button
+                        type="submit"
+                        disabled={quoteMutation.isPending}
+                        className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
+                      </button>
+                    </HelpTooltip>
                     <button
                       type="button"
                       onClick={() => { setShowQuoteForm(false); setQuoteEstimatedCost(''); setQuoteDiagnosticNotes(''); setQuotePickupDate(''); }}
@@ -880,15 +923,17 @@ export default function WorkOrderDetail() {
 
             {/* Editable final cost (only visible for non-terminal + admin/tech) */}
             {!isTerminal && editSection !== 'finance' && (
-              <button
-                onClick={() => {
-                  setEditSection('finance');
-                  setEditFinalCost(wo.finalCost != null ? String(wo.finalCost) : '');
-                }}
-                className="text-xs text-primary hover:underline mt-2"
-              >
-                Modifier les coûts
-              </button>
+              <HelpTooltip content="Ajuster le coût final de la réparation avant la remise au client" side="left">
+                <button
+                  onClick={() => {
+                    setEditSection('finance');
+                    setEditFinalCost(wo.finalCost != null ? String(wo.finalCost) : '');
+                  }}
+                  className="text-xs text-primary hover:underline mt-2"
+                >
+                  Modifier les coûts
+                </button>
+              </HelpTooltip>
             )}
             {editSection === 'finance' && (
               <div className="space-y-2 mt-2 border-t pt-2">
@@ -927,17 +972,19 @@ export default function WorkOrderDetail() {
           {/* Delete (admin only, terminal statuses only) */}
           {isAdmin && isTerminal && (
             <div className="bg-card border rounded-lg p-4">
-              <button
-                onClick={() => {
-                  if (confirm('Supprimer définitivement ce bon de travail?')) {
-                    deleteMutation.mutate();
-                  }
-                }}
-                disabled={deleteMutation.isPending}
-                className="w-full rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-              >
-                {deleteMutation.isPending ? 'Suppression...' : 'Supprimer le bon de travail'}
-              </button>
+              <HelpTooltip content="Supprimer définitivement ce bon de travail et toutes ses données associées. Cette action est irréversible." side="left">
+                <button
+                  onClick={() => {
+                    if (confirm('Supprimer définitivement ce bon de travail?')) {
+                      deleteMutation.mutate();
+                    }
+                  }}
+                  disabled={deleteMutation.isPending}
+                  className="w-full rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {deleteMutation.isPending ? 'Suppression...' : 'Supprimer le bon de travail'}
+                </button>
+              </HelpTooltip>
             </div>
           )}
         </div>

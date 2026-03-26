@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type Ticket, type User, type AppointmentProposal } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import MessageThread from '../../components/shared/MessageThread';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useToast } from '../../hooks/use-toast';
 import { formatDateTime, formatCurrency } from '../../lib/utils';
 import {
@@ -420,13 +421,15 @@ function ProposalsSection({
               {proposal.status === 'PROPOSEE' && (
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {/* Accept button */}
-                  <button
-                    onClick={() => acceptMutation.mutate({ id: proposal.id })}
-                    disabled={acceptMutation.isPending}
-                    className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {acceptMutation.isPending ? 'Acceptation...' : 'Accepter'}
-                  </button>
+                  <HelpTooltip content="Accepter cette proposition — un rendez-vous sera créé automatiquement" side="top">
+                    <button
+                      onClick={() => acceptMutation.mutate({ id: proposal.id })}
+                      disabled={acceptMutation.isPending}
+                      className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {acceptMutation.isPending ? 'Acceptation...' : 'Accepter'}
+                    </button>
+                  </HelpTooltip>
 
                   {/* Reject button / form toggle */}
                   {rejectFor === proposal.id ? (
@@ -460,15 +463,17 @@ function ProposalsSection({
                       </button>
                     </form>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setRejectFor(proposal.id);
-                        setCounterProposeFor(null);
-                      }}
-                      className="rounded-md border border-red-300 bg-background px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                    >
-                      Refuser
-                    </button>
+                    <HelpTooltip content="Refuser cette proposition de rendez-vous" side="top">
+                      <button
+                        onClick={() => {
+                          setRejectFor(proposal.id);
+                          setCounterProposeFor(null);
+                        }}
+                        className="rounded-md border border-red-300 bg-background px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        Refuser
+                      </button>
+                    </HelpTooltip>
                   )}
 
                   {/* Counter-propose button / form toggle */}
@@ -528,13 +533,15 @@ function ProposalsSection({
                       )}
 
                       <div className="flex gap-2">
-                        <button
-                          type="submit"
-                          disabled={counterProposeMutation.isPending}
-                          className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                        >
-                          {counterProposeMutation.isPending ? 'Envoi...' : 'Envoyer la contre-proposition'}
-                        </button>
+                        <HelpTooltip content="Envoyer cette contre-proposition au client" side="top">
+                          <button
+                            type="submit"
+                            disabled={counterProposeMutation.isPending}
+                            className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                          >
+                            {counterProposeMutation.isPending ? 'Envoi...' : 'Envoyer la contre-proposition'}
+                          </button>
+                        </HelpTooltip>
                         <button
                           type="button"
                           onClick={() => {
@@ -551,15 +558,17 @@ function ProposalsSection({
                       </div>
                     </form>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setCounterProposeFor(proposal.id);
-                        setRejectFor(null);
-                      }}
-                      className="rounded-md border border-primary/50 bg-background px-3 py-1 text-xs font-medium text-primary hover:bg-accent"
-                    >
-                      Contre-proposer
-                    </button>
+                    <HelpTooltip content="Proposer un autre créneau horaire en réponse" side="top">
+                      <button
+                        onClick={() => {
+                          setCounterProposeFor(proposal.id);
+                          setRejectFor(null);
+                        }}
+                        className="rounded-md border border-primary/50 bg-background px-3 py-1 text-xs font-medium text-primary hover:bg-accent"
+                      >
+                        Contre-proposer
+                      </button>
+                    </HelpTooltip>
                   )}
                 </div>
               )}
@@ -807,15 +816,21 @@ export default function AdminTicketDetail() {
     <div className="space-y-6">
       {/* ─── Header ─── */}
       <div className="flex items-center gap-4">
-        <Link
-          to="/admin/billets"
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          &larr; Retour
-        </Link>
+        <HelpTooltip content="Retourner à la liste des billets" side="bottom">
+          <Link
+            to="/admin/billets"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            &larr; Retour
+          </Link>
+        </HelpTooltip>
         <h1 className="text-2xl font-bold">{t.ticketNumber}</h1>
-        <StatusBadge status={t.status} />
-        <StatusBadge status={t.priority} type="priority" />
+        <HelpTooltip content="Statut actuel du billet dans son cycle de vie" side="bottom">
+          <span><StatusBadge status={t.status} /></span>
+        </HelpTooltip>
+        <HelpTooltip content="Niveau de priorité attribué à ce billet" side="bottom">
+          <span><StatusBadge status={t.priority} type="priority" /></span>
+        </HelpTooltip>
       </div>
 
       {/* ─── 3-Column Grid ─── */}
@@ -868,12 +883,14 @@ export default function AdminTicketDetail() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Rendez-vous</h3>
                 {!showAppointmentForm && (
-                  <button
-                    onClick={() => setShowAppointmentForm(true)}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    Planifier un rendez-vous
-                  </button>
+                  <HelpTooltip content="Planifier un nouveau rendez-vous pour ce billet avec un technicien" side="left">
+                    <button
+                      onClick={() => setShowAppointmentForm(true)}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                      Planifier un rendez-vous
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
 
@@ -910,37 +927,41 @@ export default function AdminTicketDetail() {
                       {/* Actions: status change + cancel */}
                       {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
                         <div className="flex items-center gap-2 pt-1">
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                changeAppointmentStatusMutation.mutate({
-                                  appointmentId: apt.id,
-                                  status: e.target.value,
-                                });
-                              }
-                            }}
-                            disabled={changeAppointmentStatusMutation.isPending}
-                            className="rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
-                          >
-                            <option value="">Changer le statut...</option>
-                            {apt.status === 'PLANIFIE' && (
-                              <option value="CONFIRME">Confirmer</option>
-                            )}
-                            {(apt.status === 'PLANIFIE' || apt.status === 'CONFIRME') && (
-                              <option value="EN_COURS">Démarrer</option>
-                            )}
-                            {apt.status === 'EN_COURS' && (
-                              <option value="TERMINE">Terminer</option>
-                            )}
-                          </select>
-                          <button
-                            onClick={() => cancelAppointmentMutation.mutate(apt.id)}
-                            disabled={cancelAppointmentMutation.isPending}
-                            className="rounded-md border border-red-300 bg-background px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                          >
-                            {cancelAppointmentMutation.isPending ? 'Annulation...' : 'Annuler'}
-                          </button>
+                          <HelpTooltip content="Changer le statut de ce rendez-vous" side="top">
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  changeAppointmentStatusMutation.mutate({
+                                    appointmentId: apt.id,
+                                    status: e.target.value,
+                                  });
+                                }
+                              }}
+                              disabled={changeAppointmentStatusMutation.isPending}
+                              className="rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
+                            >
+                              <option value="">Changer le statut...</option>
+                              {apt.status === 'PLANIFIE' && (
+                                <option value="CONFIRME">Confirmer</option>
+                              )}
+                              {(apt.status === 'PLANIFIE' || apt.status === 'CONFIRME') && (
+                                <option value="EN_COURS">Démarrer</option>
+                              )}
+                              {apt.status === 'EN_COURS' && (
+                                <option value="TERMINE">Terminer</option>
+                              )}
+                            </select>
+                          </HelpTooltip>
+                          <HelpTooltip content="Annuler ce rendez-vous" side="top">
+                            <button
+                              onClick={() => cancelAppointmentMutation.mutate(apt.id)}
+                              disabled={cancelAppointmentMutation.isPending}
+                              className="rounded-md border border-red-300 bg-background px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                            >
+                              {cancelAppointmentMutation.isPending ? 'Annulation...' : 'Annuler'}
+                            </button>
+                          </HelpTooltip>
                         </div>
                       )}
                     </div>
@@ -1056,15 +1077,17 @@ export default function AdminTicketDetail() {
 
                   {/* Submit / Cancel buttons */}
                   <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={createAppointmentMutation.isPending || !selectedSlot}
-                      className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                    >
-                      {createAppointmentMutation.isPending
-                        ? 'Planification...'
-                        : 'Confirmer le rendez-vous'}
-                    </button>
+                    <HelpTooltip content="Valider et créer le rendez-vous au créneau sélectionné" side="top">
+                      <button
+                        type="submit"
+                        disabled={createAppointmentMutation.isPending || !selectedSlot}
+                        className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        {createAppointmentMutation.isPending
+                          ? 'Planification...'
+                          : 'Confirmer le rendez-vous'}
+                      </button>
+                    </HelpTooltip>
                     <button
                       type="button"
                       onClick={() => {
@@ -1097,14 +1120,18 @@ export default function AdminTicketDetail() {
           <div className="bg-card border rounded-lg p-4 space-y-3">
             <h3 className="font-semibold text-sm">Détails</h3>
             <div className="text-sm space-y-2">
-              <div>
-                <span className="text-muted-foreground">Catégorie:</span>{' '}
-                {SERVICE_CATEGORY_LABELS[t.serviceCategory] || t.serviceCategory}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Mode:</span>{' '}
-                {SERVICE_MODE_LABELS[t.serviceMode] || t.serviceMode}
-              </div>
+              <HelpTooltip content="Type de service demandé par le client" side="left">
+                <div>
+                  <span className="text-muted-foreground">Catégorie:</span>{' '}
+                  {SERVICE_CATEGORY_LABELS[t.serviceCategory] || t.serviceCategory}
+                </div>
+              </HelpTooltip>
+              <HelpTooltip content="Mode d'intervention : sur site, à distance ou dépôt en atelier" side="left">
+                <div>
+                  <span className="text-muted-foreground">Mode:</span>{' '}
+                  {SERVICE_MODE_LABELS[t.serviceMode] || t.serviceMode}
+                </div>
+              </HelpTooltip>
               <div>
                 <span className="text-muted-foreground">Créé:</span>{' '}
                 {formatDateTime(t.createdAt)}
@@ -1133,40 +1160,44 @@ export default function AdminTicketDetail() {
                 {t.technician.firstName} {t.technician.lastName}
               </p>
             )}
-            <select
-              value=""
-              onChange={(e) => e.target.value && assignMutation.mutate(e.target.value)}
-              disabled={assignMutation.isPending}
-              className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
-            >
-              <option value="">
-                {t.technician ? 'Réassigner...' : 'Assigner...'}
-              </option>
-              {(technicians as User[] | undefined)?.map((tech) => (
-                <option key={tech.id} value={tech.id}>
-                  {tech.firstName} {tech.lastName}
+            <HelpTooltip content="Assigner ou réassigner un technicien à ce billet" side="left">
+              <select
+                value=""
+                onChange={(e) => e.target.value && assignMutation.mutate(e.target.value)}
+                disabled={assignMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
+              >
+                <option value="">
+                  {t.technician ? 'Réassigner...' : 'Assigner...'}
                 </option>
-              ))}
-            </select>
+                {(technicians as User[] | undefined)?.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.firstName} {tech.lastName}
+                  </option>
+                ))}
+              </select>
+            </HelpTooltip>
           </div>
 
           {/* ─── Status Change ─── */}
           {allowedNextStatuses.length > 0 && (
             <div className="bg-card border rounded-lg p-4 space-y-3">
               <h3 className="font-semibold text-sm">Changer le statut</h3>
-              <select
-                value=""
-                onChange={(e) => handleStatusChange(e.target.value)}
-                disabled={statusMutation.isPending}
-                className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
-              >
-                <option value="">Sélectionner un statut...</option>
-                {allowedNextStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status] || status}
-                  </option>
-                ))}
-              </select>
+              <HelpTooltip content="Faire avancer le billet vers l'étape suivante de son cycle de vie" side="left">
+                <select
+                  value=""
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  disabled={statusMutation.isPending}
+                  className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
+                >
+                  <option value="">Sélectionner un statut...</option>
+                  {allowedNextStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {STATUS_LABELS[status] || status}
+                    </option>
+                  ))}
+                </select>
+              </HelpTooltip>
               {statusMutation.isPending && (
                 <p className="text-xs text-muted-foreground">Mise à jour...</p>
               )}
@@ -1179,12 +1210,14 @@ export default function AdminTicketDetail() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Envoyer un devis</h3>
                 {!showQuoteForm && (
-                  <button
-                    onClick={() => setShowQuoteForm(true)}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    {t.quotedPrice ? 'Modifier' : 'Créer'}
-                  </button>
+                  <HelpTooltip content="Créer ou modifier le devis à envoyer au client pour approbation" side="left">
+                    <button
+                      onClick={() => setShowQuoteForm(true)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {t.quotedPrice ? 'Modifier' : 'Créer'}
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
 
@@ -1232,13 +1265,15 @@ export default function AdminTicketDetail() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={quoteMutation.isPending}
-                      className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                    >
-                      {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
-                    </button>
+                    <HelpTooltip content="Envoyer ce devis au client — il recevra une notification pour l'approuver" side="top">
+                      <button
+                        type="submit"
+                        disabled={quoteMutation.isPending}
+                        className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
+                      </button>
+                    </HelpTooltip>
                     <button
                       type="button"
                       onClick={() => {
@@ -1267,25 +1302,29 @@ export default function AdminTicketDetail() {
                 <div className="rounded-md bg-red-50 border border-red-200 p-2">
                   <p className="text-xs text-red-700">{t.blockerReason}</p>
                 </div>
-                <button
-                  onClick={() => removeBlockerMutation.mutate()}
-                  disabled={removeBlockerMutation.isPending || anyMutationPending}
-                  className="w-full rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  {removeBlockerMutation.isPending
-                    ? 'Retrait...'
-                    : 'Retirer le blocage'}
-                </button>
+                <HelpTooltip content="Retirer le blocage et permettre la reprise du travail sur ce billet" side="left">
+                  <button
+                    onClick={() => removeBlockerMutation.mutate()}
+                    disabled={removeBlockerMutation.isPending || anyMutationPending}
+                    className="w-full rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {removeBlockerMutation.isPending
+                      ? 'Retrait...'
+                      : 'Retirer le blocage'}
+                  </button>
+                </HelpTooltip>
               </div>
             ) : (
               <div className="space-y-2">
                 {!showBlockerForm ? (
-                  <button
-                    onClick={() => setShowBlockerForm(true)}
-                    className="w-full rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
-                  >
-                    Ajouter un blocage
-                  </button>
+                  <HelpTooltip content="Signaler un blocage qui empêche l'avancement du billet" side="left">
+                    <button
+                      onClick={() => setShowBlockerForm(true)}
+                      className="w-full rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                    >
+                      Ajouter un blocage
+                    </button>
+                  </HelpTooltip>
                 ) : (
                   <form onSubmit={handleAddBlocker} className="space-y-2">
                     <textarea
@@ -1297,15 +1336,17 @@ export default function AdminTicketDetail() {
                       className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm resize-none"
                     />
                     <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        disabled={addBlockerMutation.isPending}
-                        className="flex-1 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                      >
-                        {addBlockerMutation.isPending
-                          ? 'Ajout...'
-                          : 'Confirmer le blocage'}
-                      </button>
+                      <HelpTooltip content="Confirmer le blocage — le billet passera en statut Blocage" side="top">
+                        <button
+                          type="submit"
+                          disabled={addBlockerMutation.isPending}
+                          className="flex-1 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {addBlockerMutation.isPending
+                            ? 'Ajout...'
+                            : 'Confirmer le blocage'}
+                        </button>
+                      </HelpTooltip>
                       <button
                         type="button"
                         onClick={() => {

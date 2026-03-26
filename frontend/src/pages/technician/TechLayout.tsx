@@ -1,9 +1,16 @@
 import { Outlet } from 'react-router-dom';
+import { HelpCircle } from 'lucide-react';
 import AppSidebar from '../../components/shared/AppSidebar';
 import DemoBanner from '../../components/shared/DemoBanner';
 import NotificationBell from '../../components/shared/NotificationBell';
+import HelpSidebar from '../../components/shared/HelpSidebar';
+import { useHelpStore } from '../../stores/help-store';
+import { usePageHelp } from '../../hooks/use-page-help';
 
 export default function TechLayout() {
+  usePageHelp();
+  const toggle = useHelpStore((s) => s.toggle);
+
   return (
     <div className="min-h-screen">
       <DemoBanner />
@@ -11,6 +18,14 @@ export default function TechLayout() {
         <AppSidebar />
         <div className="flex-1">
           <header className="h-12 border-b bg-card flex items-center justify-end px-6 gap-4">
+            <button
+              onClick={toggle}
+              className="rounded-md p-1.5 hover:bg-muted transition-colors"
+              aria-label="Ouvrir l'aide"
+              title="Aide (? ou F1)"
+            >
+              <HelpCircle className="h-5 w-5 text-muted-foreground" />
+            </button>
             <NotificationBell />
           </header>
           <main className="p-6">
@@ -18,6 +33,7 @@ export default function TechLayout() {
           </main>
         </div>
       </div>
+      <HelpSidebar />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { api } from '../../api/client';
 import { useAuth } from '../../hooks/use-auth';
 import { Link } from 'react-router-dom';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function TechDashboard() {
   const { user } = useAuth();
@@ -21,8 +22,12 @@ export default function TechDashboard() {
                 <span className="text-sm">{t.title}</span>
               </div>
               <div className="flex gap-2">
-                <StatusBadge status={t.status} />
-                <StatusBadge status={t.priority} type="priority" />
+                <HelpTooltip content="Statut actuel du billet" side="left">
+                  <span><StatusBadge status={t.status} /></span>
+                </HelpTooltip>
+                <HelpTooltip content="Niveau de priorité du billet" side="left">
+                  <span><StatusBadge status={t.priority} type="priority" /></span>
+                </HelpTooltip>
               </div>
             </Link>
           ))}

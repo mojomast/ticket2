@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import { formatDate } from '../../lib/utils';
 import { STATUS_LABELS, PRIORITY_LABELS } from '../../lib/constants';
 
@@ -24,31 +25,37 @@ export default function AdminTickets() {
       </div>
 
       <div className="flex gap-4">
-        <input
-          type="text"
-          placeholder="Rechercher..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
-        />
-        <select
-          onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-        >
-          <option value="">Tous les statuts</option>
-          {Object.entries(STATUS_LABELS).map(([val, label]) => (
-            <option key={val} value={val}>{label}</option>
-          ))}
-        </select>
-        <select
-          onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-        >
-          <option value="">Toutes les priorites</option>
-          {Object.entries(PRIORITY_LABELS).map(([val, label]) => (
-            <option key={val} value={val}>{label}</option>
-          ))}
-        </select>
+        <HelpTooltip content="Rechercher par numéro de billet, titre ou nom du client" side="bottom">
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+        </HelpTooltip>
+        <HelpTooltip content="Filtrer les billets par leur statut actuel" side="bottom">
+          <select
+            onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">Tous les statuts</option>
+            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+        </HelpTooltip>
+        <HelpTooltip content="Filtrer les billets par niveau de priorité" side="bottom">
+          <select
+            onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="">Toutes les priorites</option>
+            {Object.entries(PRIORITY_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+        </HelpTooltip>
       </div>
 
       {isLoading ? (
@@ -61,9 +68,15 @@ export default function AdminTickets() {
                 <th className="text-left p-3 text-sm font-medium">#</th>
                 <th className="text-left p-3 text-sm font-medium">Titre</th>
                 <th className="text-left p-3 text-sm font-medium">Client</th>
-                <th className="text-left p-3 text-sm font-medium">Technicien</th>
-                <th className="text-left p-3 text-sm font-medium">Statut</th>
-                <th className="text-left p-3 text-sm font-medium">Priorite</th>
+                <HelpTooltip content="Technicien assigné au billet" side="bottom">
+                  <th className="text-left p-3 text-sm font-medium">Technicien</th>
+                </HelpTooltip>
+                <HelpTooltip content="Statut actuel dans le cycle de vie du billet" side="bottom">
+                  <th className="text-left p-3 text-sm font-medium">Statut</th>
+                </HelpTooltip>
+                <HelpTooltip content="Niveau d'urgence du billet" side="bottom">
+                  <th className="text-left p-3 text-sm font-medium">Priorite</th>
+                </HelpTooltip>
                 <th className="text-left p-3 text-sm font-medium">Date</th>
               </tr>
             </thead>

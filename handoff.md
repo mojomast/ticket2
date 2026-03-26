@@ -1,76 +1,82 @@
 # Handoff
 
-## Latest Session Changes
+## Completed: Comprehensive Help System (Help Sidebar + Tooltips)
 
-Three features implemented in parallel:
+### Summary
 
-### 1. Expanded Seed Data (`backend/prisma/seed.ts`)
+Built a complete contextual help system for the Valitek v2 IT ticket management application. The system includes a slide-out help sidebar accessible from every authenticated page, plus 170+ tooltips on key interactive elements across all pages. All content is in French.
 
-| Entity | Before | After |
-|--------|--------|-------|
-| Users | 6 (1 admin, 2 techs, 3 customers) | 13 (1 admin, 2 techs, 10 customers) |
-| Tickets | 7 | 14 |
-| Appointments | 2 | 6 |
-| Messages | 5 | 13 |
-| Notifications | 4 | 9 |
-| Work Orders | 8 | 16 |
-| Work Order Notes | 7 | 12 |
+---
 
-- 7 new CUSTOMER users (client4-client10) with French-Canadian names and Montreal addresses
-- Mix of RESIDENTIAL and COMMERCIAL customers (some with companyName)
-- 7 new tickets (TKT-260108 through TKT-260114) in various statuses
-- 4 new appointments (TERMINE past, EN_COURS today, ANNULE, PLANIFIE future)
-- 8 new work orders (BDT-260309 through BDT-260316) with spread intake dates for age indicator:
-  - 0 days (RECEPTION), 1 day (DIAGNOSTIC), 4 days (EN_REPARATION), 8 days (VERIFICATION + PRET), 10 days (APPROUVE), 12 days (ATTENTE_PIECES), 15 days (ABANDONNE)
-  - Device types: TELEPHONE, IMPRIMANTE, TOUT_EN_UN, RESEAU_EQUIP, DESKTOP, TABLETTE, LAPTOP
-- 8 new messages on various tickets
-- 5 new notifications (TICKET_CREATED, QUOTE_SENT, APPOINTMENT_BOOKED, STATUS_CHANGED, NEW_MESSAGE)
-- 5 new work order notes
+### What was built
 
-Date variables added: fourDaysAgo, eightDaysAgo, tenDaysAgo, twelveDaysAgo, fifteenDaysAgo, twoWeeksFromNow
+#### 1. Core Help Infrastructure
 
-### 2. DemoBanner Customer Dropdown (`frontend/src/components/shared/DemoBanner.tsx`)
+| File | Purpose |
+|------|---------|
+| `frontend/src/stores/help-store.ts` | Zustand store — `isOpen`, `currentPageKey`, `toggle()`, `open()`, `close()`, `setPageKey()` |
+| `frontend/src/hooks/use-page-help.ts` | Route-to-pageKey mapping via regex (29 routes), keyboard shortcuts (`?` and `F1`), auto-syncs page key to store |
+| `frontend/src/components/shared/HelpSidebar.tsx` | Slide-out panel (right side, 384px, z-50) with collapsible accordion sections, tips, backdrop overlay |
+| `frontend/src/components/shared/HelpTooltip.tsx` | Convenience wrapper around shadcn Tooltip (props: `content`, `side`, `align`, `className`) |
+| `frontend/src/lib/help-content.ts` | 1,131 lines of French help articles — 29 page keys across all roles |
 
-- Personas grouped by role: ADMIN, TECHNICIAN, CUSTOMER
-- Admin and Technician personas remain as pill buttons
-- Customer personas rendered in a `<select>` dropdown (shows "Clients (N)" as placeholder)
-- Dropdown highlights with amber active styling when current user is a customer
-- Handles 10+ customer personas without overflowing the toolbar
+#### 2. Layout Modifications
 
-### 3. Work Order Age Indicator (`frontend/src/pages/workorders/WorkOrdersDashboard.tsx`)
+All three layouts modified to include:
+- `usePageHelp()` hook call (sets up keyboard listeners + page key sync)
+- Help button (`HelpCircle` icon from lucide-react) in the header bar, before `NotificationBell`
+- `<HelpSidebar />` component rendered in the layout
 
-- New `AgeBadge` component calculates days since `wo.intakeDate`
-- Color-coded: green (0-2 days), yellow (3-5 days), orange (6-9 days), red (10+ days)
-- Rendered as small rounded pill badge (text-xs, rounded-full)
-- Integrated into both KanbanCard and ListView table (new "Age" column)
-- Returns null for terminal statuses (REMIS, REFUSE, ABANDONNE, ANNULE)
+Files:
+- `frontend/src/pages/admin/AdminLayout.tsx`
+- `frontend/src/pages/technician/TechLayout.tsx`
+- `frontend/src/pages/portal/PortalLayout.tsx`
 
-## Files Modified
-- `backend/prisma/seed.ts` -- Expanded from 713 to ~1452 lines
-- `frontend/src/components/shared/DemoBanner.tsx` -- Refactored persona rendering
-- `frontend/src/pages/workorders/WorkOrdersDashboard.tsx` -- Added AgeBadge component
-- `README.md` -- Updated demo accounts, seed data counts, feature descriptions
-- `handoff.md` -- This file
+#### 3. TooltipProvider
 
-## Verification
-- Backend TypeScript: Clean (tsc --noEmit)
-- Frontend TypeScript: Clean (tsc --noEmit)
-- Vite production build: Clean (41 chunks)
-- Backend tests: 83/83 passing
-- Database seed: Successful
+`frontend/src/main.tsx` updated to wrap app in `<TooltipProvider delayDuration={300}>` from `@radix-ui/react-tooltip` (via shadcn).
 
-## Previous State
-All core functionality was already implemented:
-- 3 role-based portals: Admin, Technician, Customer
-- 10-state ticket lifecycle with role-gated state machine
-- Work Order system with 12-state lifecycle, Kanban dashboard, detail/edit page, intake form
-- Appointment proposals with accept/reject/counter-propose
-- French/English internationalization
+#### 4. Help Content Coverage (29 page keys)
 
-## Key Technical Notes
-- Demo password hash is pre-computed (no hash-wasm import in seed): `$argon2id$v=19$m=19456,t=2,p=1$c2VlZHNhbHQxMjM0NTY3OA$YnJpZ2h0aGFzaGVkdmFsdWVoZXJl`
-- TanStack Query v5 removed `onSuccess` from `useQuery` -- use `useEffect` instead
-- CSRF validates Origin header against `FRONTEND_URL` env var
-- `workOrderListQuerySchema` has `.max(100)` on limit
-- Backend port 3200, frontend port 5173
-- Prisma requires `Prisma.JsonNull` instead of raw `null` for nullable JSON fields
+| Role | Page Keys | Count |
+|------|-----------|-------|
+| **ADMIN** | admin-dashboard, admin-tickets, admin-ticket-detail, admin-kanban, admin-calendar, admin-clients, admin-technicians, admin-settings, admin-backups, admin-workorders, admin-workorder-intake, admin-workorder-detail | 12 |
+| **TECHNICIAN** | tech-dashboard, tech-tickets, tech-ticket-detail, tech-schedule, tech-workorders, tech-workorder-intake, tech-workorder-detail | 7 |
+| **CUSTOMER** | customer-dashboard, customer-tickets, customer-ticket-detail, customer-appointments, customer-workorders, customer-workorder-detail | 6 |
+| **GENERAL** | profile, landing, login, service-request | 4 |
+
+Each article contains: title, description, 3-8 collapsible sections, 2-4 tips.
+
+#### 5. Tooltips Added (~170+ total)
+
+| Area | Files | Tooltip Count |
+|------|-------|:---:|
+| Admin Dashboard, Tickets, TicketDetail, KanbanBoard, Calendar | 5 | ~47 |
+| Admin Clients, Technicians, Settings, Backups | 4 | ~24 |
+| Shared components (NotificationBell, StatusBadge, DemoBanner) | 3 | ~7 |
+| Technician Dashboard, Tickets, TicketDetail, Schedule | 4 | ~31 |
+| Customer Dashboard, Tickets, TicketDetail, Appointments, WorkOrders, WorkOrderDetail | 6 | ~29 |
+| WorkOrdersDashboard, WorkOrderIntake, WorkOrderDetail, Profile | 4 | ~35 |
+
+---
+
+### How it works
+
+1. User navigates to any page — `usePageHelp()` hook derives the page key from the URL
+2. User presses `?`, `F1`, or clicks the `?` button in the header
+3. `HelpSidebar` slides in from the right, showing role-aware + page-aware content
+4. Content comes from `help-content.ts` via `getHelpContent(pageKey, role)` which tries `ROLE:pageKey` → `GENERAL:pageKey` → profile fallback → null
+5. Tooltips on interactive elements provide inline contextual hints on hover
+
+### Build status
+
+- TypeScript: clean (`tsc --noEmit` — zero errors)
+- Vite build: succeeds (`npx vite build` — 4.1s)
+- No new dependencies added — everything uses existing packages (zustand, lucide-react, @radix-ui/react-tooltip, react-router-dom)
+
+### Services
+
+- **Backend**: screen session `valitek-backend`, port 3200
+- **Frontend**: screen session `valitek-frontend`, port 5173
+- **Database**: Docker container `valitek-db`, port 5433, PostgreSQL 16
+- **Access**: `http://100.72.41.9:5173` via Tailscale

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function AdminSettings() {
   const toast = useToast();
@@ -83,45 +84,51 @@ export default function AdminSettings() {
           {/* Company name */}
           <div>
             <label className="block text-sm font-medium mb-1">Nom de l&apos;entreprise</label>
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Valitek"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
+            <HelpTooltip content="Ce nom apparaîtra dans les courriels, factures et l'interface client" side="right">
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Valitek"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </HelpTooltip>
           </div>
 
           {/* Primary colour */}
           <div>
             <label className="block text-sm font-medium mb-1">Couleur principale</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                className="h-9 w-12 cursor-pointer rounded border border-input p-0.5"
-              />
-              <input
-                type="text"
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                maxLength={7}
-                className="w-28 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-              />
-            </div>
+            <HelpTooltip content="Couleur utilisée pour les boutons, liens et accents dans toute l'application" side="right">
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="h-9 w-12 cursor-pointer rounded border border-input p-0.5"
+                />
+                <input
+                  type="text"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  maxLength={7}
+                  className="w-28 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                />
+              </div>
+            </HelpTooltip>
           </div>
 
           {/* Logo URL */}
           <div>
             <label className="block text-sm font-medium mb-1">URL du logo</label>
-            <input
-              type="url"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://example.com/logo.png"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
+            <HelpTooltip content="Lien vers l'image du logo (format PNG ou SVG recommandé)" side="right">
+              <input
+                type="url"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://example.com/logo.png"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </HelpTooltip>
           </div>
 
           {/* Phone */}
@@ -161,13 +168,15 @@ export default function AdminSettings() {
           </div>
 
           {/* Save button */}
-          <button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-          >
-            {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          <HelpTooltip content="Enregistrer tous les paramètres d'image de marque" side="right">
+            <button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </HelpTooltip>
         </div>
       </div>
     </div>

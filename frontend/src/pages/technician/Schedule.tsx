@@ -6,6 +6,7 @@ import StatusBadge from '../../components/shared/StatusBadge';
 import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 /** Format a Date to YYYY-MM-DD for API queries */
 function toDateString(d: Date): string {
@@ -108,35 +109,43 @@ export default function TechSchedule() {
 
       {/* Date navigation bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={goToPreviousDay}
-          className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-          aria-label="Jour précédent"
-        >
-          ← Préc.
-        </button>
+        <HelpTooltip content="Voir les rendez-vous du jour précédent" side="bottom">
+          <button
+            onClick={goToPreviousDay}
+            className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+            aria-label="Jour précédent"
+          >
+            ← Préc.
+          </button>
+        </HelpTooltip>
 
-        <button
-          onClick={goToToday}
-          className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-        >
-          Aujourd&apos;hui
-        </button>
+        <HelpTooltip content="Revenir à la date d'aujourd'hui" side="bottom">
+          <button
+            onClick={goToToday}
+            className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+          >
+            Aujourd&apos;hui
+          </button>
+        </HelpTooltip>
 
-        <button
-          onClick={goToNextDay}
-          className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-          aria-label="Jour suivant"
-        >
-          Suiv. →
-        </button>
+        <HelpTooltip content="Voir les rendez-vous du jour suivant" side="bottom">
+          <button
+            onClick={goToNextDay}
+            className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+            aria-label="Jour suivant"
+          >
+            Suiv. →
+          </button>
+        </HelpTooltip>
 
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={handleDatePick}
-          className="rounded-md border px-2 py-1.5 text-sm bg-background"
-        />
+        <HelpTooltip content="Sélectionner une date spécifique" side="bottom">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={handleDatePick}
+            className="rounded-md border px-2 py-1.5 text-sm bg-background"
+          />
+        </HelpTooltip>
 
         <span className="ml-2 text-sm font-medium capitalize">
           {formatDateLabel(selectedDate)}
@@ -183,56 +192,64 @@ export default function TechSchedule() {
               </div>
 
               {/* Status badge */}
-              <StatusBadge status={apt.status} type="appointment" />
+              <HelpTooltip content="Statut actuel du rendez-vous" side="left">
+                <span><StatusBadge status={apt.status} type="appointment" /></span>
+              </HelpTooltip>
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 {/* Start */}
                 {canStart(apt.status) && (
-                  <button
-                    disabled={statusMutation.isPending}
-                    onClick={() =>
-                      statusMutation.mutate({
-                        id: apt.id,
-                        status: 'EN_COURS',
-                      })
-                    }
-                    className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Démarrer
-                  </button>
+                  <HelpTooltip content="Marquer ce rendez-vous comme démarré" side="top">
+                    <button
+                      disabled={statusMutation.isPending}
+                      onClick={() =>
+                        statusMutation.mutate({
+                          id: apt.id,
+                          status: 'EN_COURS',
+                        })
+                      }
+                      className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Démarrer
+                    </button>
+                  </HelpTooltip>
                 )}
 
                 {/* Complete */}
                 {canComplete(apt.status) && (
-                  <button
-                    disabled={statusMutation.isPending}
-                    onClick={() =>
-                      statusMutation.mutate({
-                        id: apt.id,
-                        status: 'TERMINE',
-                      })
-                    }
-                    className="inline-flex items-center rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Terminer
-                  </button>
+                  <HelpTooltip content="Marquer ce rendez-vous comme terminé" side="top">
+                    <button
+                      disabled={statusMutation.isPending}
+                      onClick={() =>
+                        statusMutation.mutate({
+                          id: apt.id,
+                          status: 'TERMINE',
+                        })
+                      }
+                      className="inline-flex items-center rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Terminer
+                    </button>
+                  </HelpTooltip>
                 )}
 
                 {/* Cancel (permission-gated) */}
                 {canCancelAppointment(apt.status) && (
-                  <button
-                    disabled={statusMutation.isPending}
-                    onClick={() =>
-                      statusMutation.mutate({
-                        id: apt.id,
-                        status: 'ANNULE',
-                      })
-                    }
-                    className="inline-flex items-center rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Annuler
-                  </button>
+                  <HelpTooltip content="Annuler ce rendez-vous (nécessite la permission)" side="top">
+                    <button
+                      disabled={statusMutation.isPending}
+                      onClick={() =>
+                        statusMutation.mutate({
+                          id: apt.id,
+                          status: 'ANNULE',
+                        })
+                      }
+                      className="inline-flex items-center rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Annuler
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
             </div>

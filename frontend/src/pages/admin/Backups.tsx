@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import { formatDateTime } from '../../lib/utils';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 interface Backup {
   id: string;
@@ -57,13 +58,15 @@ export default function AdminBackups() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Sauvegardes</h1>
-        <button
-          onClick={() => createMutation.mutate()}
-          disabled={createMutation.isPending}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-        >
-          {createMutation.isPending ? 'Creation...' : 'Nouvelle sauvegarde'}
-        </button>
+        <HelpTooltip content="Créer une sauvegarde complète de la base de données" side="bottom">
+          <button
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+          >
+            {createMutation.isPending ? 'Creation...' : 'Nouvelle sauvegarde'}
+          </button>
+        </HelpTooltip>
       </div>
 
       {isLoading ? (
@@ -86,30 +89,40 @@ export default function AdminBackups() {
                   <td className="p-3 text-sm font-mono">{backup.fileName}</td>
                   <td className="p-3 text-sm">{backup.type}</td>
                   <td className="p-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      backup.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                      backup.status === 'FAILED' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {backup.status}
-                    </span>
+                    <HelpTooltip content={
+                      backup.status === 'COMPLETED' ? 'Sauvegarde terminée avec succès' :
+                      backup.status === 'FAILED' ? 'La sauvegarde a échoué' :
+                      'Sauvegarde en cours de traitement'
+                    } side="top">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        backup.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                        backup.status === 'FAILED' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {backup.status}
+                      </span>
+                    </HelpTooltip>
                   </td>
                   <td className="p-3 text-sm text-muted-foreground">{formatDateTime(backup.createdAt)}</td>
                   <td className="p-3 flex gap-2">
                     {backup.status === 'COMPLETED' && (
                       <>
-                        <a
-                          href={api.admin.backups.download(backup.id)}
-                          className="text-xs text-primary hover:underline"
-                        >
-                          Telecharger
-                        </a>
-                        <button
-                          onClick={() => restoreMutation.mutate(backup.id)}
-                          className="text-xs text-orange-600 hover:underline"
-                        >
-                          Restaurer
-                        </button>
+                        <HelpTooltip content="Télécharger le fichier de sauvegarde sur votre ordinateur" side="top">
+                          <a
+                            href={api.admin.backups.download(backup.id)}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            Telecharger
+                          </a>
+                        </HelpTooltip>
+                        <HelpTooltip content="Attention : la restauration écrasera toutes les données actuelles" side="top">
+                          <button
+                            onClick={() => restoreMutation.mutate(backup.id)}
+                            className="text-xs text-orange-600 hover:underline"
+                          >
+                            Restaurer
+                          </button>
+                        </HelpTooltip>
                       </>
                     )}
                     {confirmDeleteId === backup.id ? (
@@ -129,12 +142,14 @@ export default function AdminBackups() {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => setConfirmDeleteId(backup.id)}
-                        className="text-xs text-red-600 hover:underline"
-                      >
-                        Supprimer
-                      </button>
+                      <HelpTooltip content="Supprimer cette sauvegarde du serveur" side="top">
+                        <button
+                          onClick={() => setConfirmDeleteId(backup.id)}
+                          className="text-xs text-red-600 hover:underline"
+                        >
+                          Supprimer
+                        </button>
+                      </HelpTooltip>
                     )}
                   </td>
                 </tr>

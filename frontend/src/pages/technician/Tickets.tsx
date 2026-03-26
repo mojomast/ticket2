@@ -5,6 +5,7 @@ import { api } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import { formatDate } from '../../lib/utils';
 import { STATUS_LABELS } from '../../lib/constants';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function TechTickets() {
   const [status, setStatus] = useState('');
@@ -14,10 +15,12 @@ export default function TechTickets() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Billets</h1>
-      <select onChange={(e) => setStatus(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
-        <option value="">Tous les statuts</option>
-        {Object.entries(STATUS_LABELS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-      </select>
+      <HelpTooltip content="Filtrer les billets par statut pour affiner la liste" side="bottom">
+        <select onChange={(e) => setStatus(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+          <option value="">Tous les statuts</option>
+          {Object.entries(STATUS_LABELS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+        </select>
+      </HelpTooltip>
       {isLoading ? <div className="text-center py-8 text-muted-foreground">Chargement...</div> : (
         <div className="bg-card border rounded-lg divide-y">
           {tickets.map((t: any) => (
@@ -28,8 +31,12 @@ export default function TechTickets() {
                 <p className="text-xs text-muted-foreground mt-1">{t.customer?.firstName} {t.customer?.lastName} - {formatDate(t.createdAt)}</p>
               </div>
               <div className="flex gap-2">
-                <StatusBadge status={t.status} />
-                <StatusBadge status={t.priority} type="priority" />
+                <HelpTooltip content="Statut actuel du billet" side="left">
+                  <span><StatusBadge status={t.status} /></span>
+                </HelpTooltip>
+                <HelpTooltip content="Niveau de priorité" side="left">
+                  <span><StatusBadge status={t.priority} type="priority" /></span>
+                </HelpTooltip>
               </div>
             </Link>
           ))}

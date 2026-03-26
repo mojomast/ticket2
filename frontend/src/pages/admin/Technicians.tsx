@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 const PERMISSION_LABELS: Record<string, string> = {
   can_accept_tickets: 'Accepter les billets',
@@ -9,6 +10,14 @@ const PERMISSION_LABELS: Record<string, string> = {
   can_send_quotes: 'Envoyer des devis',
   can_cancel_appointments: 'Annuler les rendez-vous',
   can_view_all_tickets: 'Voir tous les billets',
+};
+
+const PERMISSION_DESCRIPTIONS: Record<string, string> = {
+  can_accept_tickets: 'Permet au technicien de prendre en charge de nouveaux billets',
+  can_close_tickets: 'Permet de marquer un billet comme résolu et de le fermer',
+  can_send_quotes: 'Autorise l\'envoi de devis et estimations aux clients',
+  can_cancel_appointments: 'Permet d\'annuler ou reporter les rendez-vous planifiés',
+  can_view_all_tickets: 'Donne accès à tous les billets, pas seulement ceux assignés',
 };
 
 const PERMISSION_KEYS = Object.keys(PERMISSION_LABELS);
@@ -239,17 +248,19 @@ export default function AdminTechnicians() {
       </div>
 
       <div className="flex gap-2 pt-2">
-        <button
-          type="submit"
-          disabled={isFormPending}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-        >
-          {isFormPending
-            ? 'Enregistrement...'
-            : mode === 'create'
-              ? 'Créer le technicien'
-              : 'Enregistrer les modifications'}
-        </button>
+        <HelpTooltip content={mode === 'create' ? 'Créer le compte technicien' : 'Sauvegarder les modifications'} side="top">
+          <button
+            type="submit"
+            disabled={isFormPending}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+          >
+            {isFormPending
+              ? 'Enregistrement...'
+              : mode === 'create'
+                ? 'Créer le technicien'
+                : 'Enregistrer les modifications'}
+          </button>
+        </HelpTooltip>
         <button
           type="button"
           onClick={handleCancelForm}
@@ -269,12 +280,14 @@ export default function AdminTechnicians() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Techniciens</h1>
         {!showCreateForm && !editingTech && (
-          <button
-            onClick={handleOpenCreate}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
-          >
-            Nouveau technicien
-          </button>
+          <HelpTooltip content="Ajouter un nouveau technicien à l'équipe" side="bottom">
+            <button
+              onClick={handleOpenCreate}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
+            >
+              Nouveau technicien
+            </button>
+          </HelpTooltip>
         )}
       </div>
 
@@ -314,15 +327,17 @@ export default function AdminTechnicians() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 ml-2">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        tech.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {tech.isActive ? 'Actif' : 'Inactif'}
-                    </span>
+                    <HelpTooltip content={tech.isActive ? 'Ce technicien est actif et peut recevoir des billets' : 'Ce technicien est désactivé et ne reçoit plus de billets'} side="left">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          tech.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {tech.isActive ? 'Actif' : 'Inactif'}
+                      </span>
+                    </HelpTooltip>
                   </div>
                 </div>
 
@@ -337,21 +352,22 @@ export default function AdminTechnicians() {
                       permissionsMutation.isPending &&
                       permissionsMutation.variables?.id === tech.id;
                     return (
-                      <label
-                        key={permKey}
-                        className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 rounded px-1 py-0.5"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          disabled={isPending}
-                          onChange={() => handlePermissionToggle(tech, permKey)}
-                          className="rounded border-input disabled:opacity-50"
-                        />
-                        <span className={isPending ? 'opacity-50' : ''}>
-                          {PERMISSION_LABELS[permKey]}
-                        </span>
-                      </label>
+                      <HelpTooltip key={permKey} content={PERMISSION_DESCRIPTIONS[permKey] ?? PERMISSION_LABELS[permKey] ?? permKey} side="right">
+                        <label
+                          className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 rounded px-1 py-0.5"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            disabled={isPending}
+                            onChange={() => handlePermissionToggle(tech, permKey)}
+                            className="rounded border-input disabled:opacity-50"
+                          />
+                          <span className={isPending ? 'opacity-50' : ''}>
+                            {PERMISSION_LABELS[permKey]}
+                          </span>
+                        </label>
+                      </HelpTooltip>
                     );
                   })}
                 </div>
@@ -377,12 +393,14 @@ export default function AdminTechnicians() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setDeletingTechId(tech.id)}
-                      className="text-xs text-destructive hover:text-destructive/80 hover:underline"
-                    >
-                      Supprimer
-                    </button>
+                    <HelpTooltip content="Supprimer définitivement ce technicien" side="left">
+                      <button
+                        onClick={() => setDeletingTechId(tech.id)}
+                        className="text-xs text-destructive hover:text-destructive/80 hover:underline"
+                      >
+                        Supprimer
+                      </button>
+                    </HelpTooltip>
                   )}
                 </div>
               </div>

@@ -13,6 +13,7 @@ import {
   SERVICE_MODE_LABELS,
   APPOINTMENT_STATUS_LABELS,
 } from '../../lib/constants';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 // Technician-allowed status transitions (from → to[])
 const TECH_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -476,13 +477,15 @@ export default function TechTicketDetail() {
 
         {/* Accept button — only when no technician assigned */}
         {!t.technicianId && (
-          <button
-            onClick={() => acceptMutation.mutate()}
-            disabled={isMutating}
-            className="ml-auto px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
-          >
-            {acceptMutation.isPending ? 'Acceptation...' : 'Accepter'}
-          </button>
+          <HelpTooltip content="Prendre en charge ce billet et devenir le technicien assigné" side="bottom">
+            <button
+              onClick={() => acceptMutation.mutate()}
+              disabled={isMutating}
+              className="ml-auto px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+            >
+              {acceptMutation.isPending ? 'Acceptation...' : 'Accepter'}
+            </button>
+          </HelpTooltip>
         )}
       </div>
 
@@ -522,13 +525,15 @@ export default function TechTicketDetail() {
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-semibold text-red-800">Blocage</h3>
                 {isAssignedToMe && (
-                  <button
-                    onClick={() => removeBlockerMutation.mutate()}
-                    disabled={isMutating}
-                    className="text-xs px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50"
-                  >
-                    {removeBlockerMutation.isPending ? 'Retrait...' : 'Retirer le blocage'}
-                  </button>
+                  <HelpTooltip content="Retirer le blocage et permettre au billet de progresser" side="left">
+                    <button
+                      onClick={() => removeBlockerMutation.mutate()}
+                      disabled={isMutating}
+                      className="text-xs px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50"
+                    >
+                      {removeBlockerMutation.isPending ? 'Retrait...' : 'Retirer le blocage'}
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
               <p className="text-sm text-red-700">{t.blockerReason}</p>
@@ -600,32 +605,38 @@ export default function TechTicketDetail() {
                       {/* Action buttons */}
                       {rejectingProposalId !== proposal.id && counterProposingId !== proposal.id && (
                         <div className="flex gap-2 pt-1">
-                          <button
-                            onClick={() => acceptProposalMutation.mutate({ proposalId: proposal.id })}
-                            disabled={isMutating}
-                            className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                          >
-                            {acceptProposalMutation.isPending ? 'Acceptation...' : 'Accepter'}
-                          </button>
-                          <button
-                            onClick={() => setRejectingProposalId(proposal.id)}
-                            disabled={isMutating}
-                            className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                          >
-                            Refuser
-                          </button>
-                          <button
-                            onClick={() => {
-                              setCounterProposingId(proposal.id);
-                              setCounterDate('');
-                              setCounterSlot(null);
-                              setCounterMessage('');
-                            }}
-                            disabled={isMutating}
-                            className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                          >
-                            Contre-proposer
-                          </button>
+                          <HelpTooltip content="Accepter cette proposition et créer le rendez-vous" side="bottom">
+                            <button
+                              onClick={() => acceptProposalMutation.mutate({ proposalId: proposal.id })}
+                              disabled={isMutating}
+                              className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                            >
+                              {acceptProposalMutation.isPending ? 'Acceptation...' : 'Accepter'}
+                            </button>
+                          </HelpTooltip>
+                          <HelpTooltip content="Refuser cette proposition avec un message optionnel" side="bottom">
+                            <button
+                              onClick={() => setRejectingProposalId(proposal.id)}
+                              disabled={isMutating}
+                              className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                            >
+                              Refuser
+                            </button>
+                          </HelpTooltip>
+                          <HelpTooltip content="Proposer un autre créneau horaire au client" side="bottom">
+                            <button
+                              onClick={() => {
+                                setCounterProposingId(proposal.id);
+                                setCounterDate('');
+                                setCounterSlot(null);
+                                setCounterMessage('');
+                              }}
+                              disabled={isMutating}
+                              className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              Contre-proposer
+                            </button>
+                          </HelpTooltip>
                         </div>
                       )}
 
@@ -641,18 +652,20 @@ export default function TechTicketDetail() {
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
                           />
                           <div className="flex gap-2">
-                            <button
-                              onClick={() =>
-                                rejectProposalMutation.mutate({
-                                  proposalId: proposal.id,
-                                  ...(rejectMessage.trim() ? { responseMessage: rejectMessage.trim() } : {}),
-                                })
-                              }
-                              disabled={isMutating}
-                              className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                            >
-                              {rejectProposalMutation.isPending ? 'Refus...' : 'Confirmer le refus'}
-                            </button>
+                            <HelpTooltip content="Confirmer le refus de cette proposition" side="bottom">
+                              <button
+                                onClick={() =>
+                                  rejectProposalMutation.mutate({
+                                    proposalId: proposal.id,
+                                    ...(rejectMessage.trim() ? { responseMessage: rejectMessage.trim() } : {}),
+                                  })
+                                }
+                                disabled={isMutating}
+                                className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {rejectProposalMutation.isPending ? 'Refus...' : 'Confirmer le refus'}
+                              </button>
+                            </HelpTooltip>
                             <button
                               onClick={() => {
                                 setRejectingProposalId(null);
@@ -737,13 +750,15 @@ export default function TechTicketDetail() {
 
                           {/* Submit / Cancel */}
                           <div className="flex gap-2">
-                            <button
-                              type="submit"
-                              disabled={isMutating || !counterSlot}
-                              className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                              {counterProposeMutation.isPending ? 'Envoi...' : 'Envoyer la contre-proposition'}
-                            </button>
+                            <HelpTooltip content="Envoyer votre contre-proposition au client" side="bottom">
+                              <button
+                                type="submit"
+                                disabled={isMutating || !counterSlot}
+                                className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                              >
+                                {counterProposeMutation.isPending ? 'Envoi...' : 'Envoyer la contre-proposition'}
+                              </button>
+                            </HelpTooltip>
                             <button
                               type="button"
                               onClick={() => {
@@ -808,12 +823,14 @@ export default function TechTicketDetail() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Rendez-vous</h3>
                 {!showApptForm && (
-                  <button
-                    onClick={() => setShowApptForm(true)}
-                    className="text-sm px-3 py-1 bg-primary text-primary-foreground rounded-md hover:opacity-90"
-                  >
-                    Planifier un rendez-vous
-                  </button>
+                  <HelpTooltip content="Planifier un nouveau rendez-vous pour ce billet" side="left">
+                    <button
+                      onClick={() => setShowApptForm(true)}
+                      className="text-sm px-3 py-1 bg-primary text-primary-foreground rounded-md hover:opacity-90"
+                    >
+                      Planifier un rendez-vous
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
 
@@ -840,30 +857,36 @@ export default function TechTicketDetail() {
                       {appt.status !== 'ANNULE' && appt.status !== 'TERMINE' && (
                         <div className="flex gap-2 pt-1">
                           {(appt.status === 'PLANIFIE' || appt.status === 'CONFIRME') && (
-                            <button
-                              onClick={() => apptStatusMutation.mutate({ apptId: appt.id, status: 'EN_COURS' })}
-                              disabled={isMutating}
-                              className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50"
-                            >
-                              Démarrer
-                            </button>
+                            <HelpTooltip content="Démarrer l'intervention pour ce rendez-vous" side="top">
+                              <button
+                                onClick={() => apptStatusMutation.mutate({ apptId: appt.id, status: 'EN_COURS' })}
+                                disabled={isMutating}
+                                className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 disabled:opacity-50"
+                              >
+                                Démarrer
+                              </button>
+                            </HelpTooltip>
                           )}
                           {appt.status === 'EN_COURS' && (
-                            <button
-                              onClick={() => apptStatusMutation.mutate({ apptId: appt.id, status: 'TERMINE' })}
-                              disabled={isMutating}
-                              className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50"
-                            >
-                              Terminer
-                            </button>
+                            <HelpTooltip content="Marquer l'intervention comme terminée" side="top">
+                              <button
+                                onClick={() => apptStatusMutation.mutate({ apptId: appt.id, status: 'TERMINE' })}
+                                disabled={isMutating}
+                                className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200 disabled:opacity-50"
+                              >
+                                Terminer
+                              </button>
+                            </HelpTooltip>
                           )}
-                          <button
-                            onClick={() => cancelApptMutation.mutate(appt.id)}
-                            disabled={isMutating}
-                            className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
-                          >
-                            {cancelApptMutation.isPending ? 'Annulation...' : 'Annuler'}
-                          </button>
+                          <HelpTooltip content="Annuler ce rendez-vous" side="top">
+                            <button
+                              onClick={() => cancelApptMutation.mutate(appt.id)}
+                              disabled={isMutating}
+                              className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
+                            >
+                              {cancelApptMutation.isPending ? 'Annulation...' : 'Annuler'}
+                            </button>
+                          </HelpTooltip>
                         </div>
                       )}
                     </div>
@@ -943,13 +966,15 @@ export default function TechTicketDetail() {
 
                   {/* Submit / Cancel */}
                   <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={isMutating || !apptSelectedSlot}
-                      className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
-                    >
-                      {createApptMutation.isPending ? 'Planification...' : 'Planifier'}
-                    </button>
+                    <HelpTooltip content="Confirmer et planifier ce rendez-vous" side="top">
+                      <button
+                        type="submit"
+                        disabled={isMutating || !apptSelectedSlot}
+                        className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+                      >
+                        {createApptMutation.isPending ? 'Planification...' : 'Planifier'}
+                      </button>
+                    </HelpTooltip>
                     <button
                       type="button"
                       onClick={() => {
@@ -1016,26 +1041,28 @@ export default function TechTicketDetail() {
           {isAssignedToMe && allowedStatuses.length > 0 && (
             <div className="bg-card border rounded-lg p-4 space-y-3">
               <h3 className="font-semibold text-sm">Changer le statut</h3>
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    statusMutation.mutate(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-                disabled={isMutating}
-                defaultValue=""
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
-              >
-                <option value="" disabled>
-                  {statusMutation.isPending ? 'Mise à jour...' : 'Sélectionner...'}
-                </option>
-                {allowedStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status] || status}
+              <HelpTooltip content="Sélectionner le prochain statut selon le flux de travail autorisé" side="left">
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      statusMutation.mutate(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                  disabled={isMutating}
+                  defaultValue=""
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+                >
+                  <option value="" disabled>
+                    {statusMutation.isPending ? 'Mise à jour...' : 'Sélectionner...'}
                   </option>
-                ))}
-              </select>
+                  {allowedStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {STATUS_LABELS[status] || status}
+                    </option>
+                  ))}
+                </select>
+              </HelpTooltip>
             </div>
           )}
 
@@ -1045,12 +1072,14 @@ export default function TechTicketDetail() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Devis</h3>
                 {!showQuoteForm && (
-                  <button
-                    onClick={() => setShowQuoteForm(true)}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    {t.quotedPrice != null ? 'Modifier' : 'Envoyer un devis'}
-                  </button>
+                  <HelpTooltip content="Créer ou modifier un devis pour le client" side="left">
+                    <button
+                      onClick={() => setShowQuoteForm(true)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {t.quotedPrice != null ? 'Modifier' : 'Envoyer un devis'}
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
               {showQuoteForm && (
@@ -1091,13 +1120,15 @@ export default function TechTicketDetail() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={isMutating}
-                      className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
-                    >
-                      {quoteMutation.isPending ? 'Envoi...' : 'Envoyer'}
-                    </button>
+                    <HelpTooltip content="Envoyer le devis au client pour approbation" side="top">
+                      <button
+                        type="submit"
+                        disabled={isMutating}
+                        className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm disabled:opacity-50"
+                      >
+                        {quoteMutation.isPending ? 'Envoi...' : 'Envoyer'}
+                      </button>
+                    </HelpTooltip>
                     <button
                       type="button"
                       onClick={() => setShowQuoteForm(false)}
@@ -1118,21 +1149,25 @@ export default function TechTicketDetail() {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">Blocage</h3>
                 {!t.blockerReason && !showBlockerForm && (
-                  <button
-                    onClick={() => setShowBlockerForm(true)}
-                    className="text-xs text-red-600 hover:underline"
-                  >
-                    Signaler un blocage
-                  </button>
+                  <HelpTooltip content="Signaler un obstacle empêchant la résolution du billet" side="left">
+                    <button
+                      onClick={() => setShowBlockerForm(true)}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Signaler un blocage
+                    </button>
+                  </HelpTooltip>
                 )}
                 {t.blockerReason && !showBlockerForm && (
-                  <button
-                    onClick={() => removeBlockerMutation.mutate()}
-                    disabled={isMutating}
-                    className="text-xs text-red-600 hover:underline disabled:opacity-50"
-                  >
-                    {removeBlockerMutation.isPending ? 'Retrait...' : 'Retirer'}
-                  </button>
+                  <HelpTooltip content="Retirer le blocage actif sur ce billet" side="left">
+                    <button
+                      onClick={() => removeBlockerMutation.mutate()}
+                      disabled={isMutating}
+                      className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                    >
+                      {removeBlockerMutation.isPending ? 'Retrait...' : 'Retirer'}
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
               {t.blockerReason && (
@@ -1154,13 +1189,15 @@ export default function TechTicketDetail() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={isMutating}
-                      className="flex-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm disabled:opacity-50"
-                    >
-                      {addBlockerMutation.isPending ? 'Ajout...' : 'Ajouter'}
-                    </button>
+                    <HelpTooltip content="Ajouter ce blocage au billet — le statut passera à BLOCAGE" side="top">
+                      <button
+                        type="submit"
+                        disabled={isMutating}
+                        className="flex-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm disabled:opacity-50"
+                      >
+                        {addBlockerMutation.isPending ? 'Ajout...' : 'Ajouter'}
+                      </button>
+                    </HelpTooltip>
                     <button
                       type="button"
                       onClick={() => setShowBlockerForm(false)}

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api, WorkOrder } from '../../api/client';
 import { useAuth } from '../../hooks/use-auth';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import {
   WO_STATUS_LABELS, WO_STATUS_COLORS, WO_KANBAN_COLUMNS,
   WO_TERMINAL_STATUSES, DEVICE_TYPE_LABELS,
@@ -58,9 +59,11 @@ function AgeBadge({ wo }: { wo: WorkOrder }) {
   const label = days === 0 ? '< 1j' : `${days}j`;
 
   return (
-    <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', colorClasses)}>
-      {label}
-    </span>
+    <HelpTooltip content="Âge du bon : vert = moins de 3 jours, jaune = 3-5 jours, orange = 6-9 jours, rouge = 10+ jours" side="top">
+      <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', colorClasses)}>
+        {label}
+      </span>
+    </HelpTooltip>
   );
 }
 
@@ -121,12 +124,14 @@ export default function WorkOrdersDashboard() {
           <p className="text-sm text-muted-foreground">Gestion des réparations en atelier</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            to={`${basePath}/bons-travail/nouveau`}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90"
-          >
-            + Nouvelle réception
-          </Link>
+          <HelpTooltip content="Créer un nouveau bon de travail pour enregistrer un appareil reçu en atelier" side="bottom">
+            <Link
+              to={`${basePath}/bons-travail/nouveau`}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90"
+            >
+              + Nouvelle réception
+            </Link>
+          </HelpTooltip>
         </div>
       </div>
 
@@ -151,46 +156,54 @@ export default function WorkOrdersDashboard() {
       <div className="flex items-center gap-3 flex-wrap">
         {/* View toggle */}
         <div className="flex border rounded-md overflow-hidden">
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={cn(
-              'px-3 py-1.5 text-xs font-medium',
-              viewMode === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
-            )}
-          >
-            Kanban
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={cn(
-              'px-3 py-1.5 text-xs font-medium',
-              viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
-            )}
-          >
-            Liste
-          </button>
+          <HelpTooltip content="Vue Kanban : affiche les bons de travail en colonnes par statut" side="bottom">
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={cn(
+                'px-3 py-1.5 text-xs font-medium',
+                viewMode === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
+              )}
+            >
+              Kanban
+            </button>
+          </HelpTooltip>
+          <HelpTooltip content="Vue liste : affiche les bons de travail dans un tableau triable" side="bottom">
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                'px-3 py-1.5 text-xs font-medium',
+                viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
+              )}
+            >
+              Liste
+            </button>
+          </HelpTooltip>
         </div>
 
         {/* Search */}
-        <input
-          type="text"
-          placeholder="Rechercher..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="px-3 py-1.5 text-sm border rounded-md bg-card w-48"
-        />
+        <HelpTooltip content="Rechercher par numéro de bon, nom du client, marque ou modèle d'appareil" side="bottom">
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="px-3 py-1.5 text-sm border rounded-md bg-card w-48"
+          />
+        </HelpTooltip>
 
         {/* Status filter (always visible, reset on kanban) */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-1.5 text-sm border rounded-md bg-card"
-        >
-          <option value="">Tous les statuts</option>
-          {Object.entries(WO_STATUS_LABELS).map(([val, label]) => (
-            <option key={val} value={val}>{label}</option>
-          ))}
-        </select>
+        <HelpTooltip content="Filtrer les bons de travail par statut. Sélectionnez « Tous » pour tout afficher." side="bottom">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-1.5 text-sm border rounded-md bg-card"
+          >
+            <option value="">Tous les statuts</option>
+            {Object.entries(WO_STATUS_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+        </HelpTooltip>
       </div>
 
       {/* ─── Content ─── */}
@@ -223,6 +236,17 @@ function StatCard({ label, value, color, bg }: { label: string; value: number; c
 // ─── Kanban View ───
 
 function KanbanView({ columns, basePath }: { columns: Record<string, WorkOrder[]>; basePath: string }) {
+  const columnTooltips: Record<string, string> = {
+    RECEPTION: 'Appareil reçu en atelier, en attente de diagnostic',
+    DIAGNOSTIC: 'Diagnostic en cours pour identifier le problème',
+    ATTENTE_APPROBATION: 'Devis envoyé au client, en attente de sa réponse',
+    APPROUVE: 'Devis approuvé par le client, prêt à démarrer',
+    ATTENTE_PIECES: 'En attente de pièces de rechange nécessaires',
+    EN_REPARATION: 'Réparation en cours par le technicien',
+    VERIFICATION: 'Réparation terminée, vérification qualité en cours',
+    PRET: 'Appareil prêt, en attente du ramassage par le client',
+  };
+
   return (
     <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: '60vh' }}>
       {WO_KANBAN_COLUMNS.map((status) => {
@@ -234,14 +258,16 @@ function KanbanView({ columns, basePath }: { columns: Record<string, WorkOrder[]
             className="flex-shrink-0 w-72 bg-muted/30 rounded-lg flex flex-col"
           >
             {/* Column header */}
-            <div className={cn('px-3 py-2 rounded-t-lg border-b flex items-center justify-between', colors?.bg)}>
-              <span className={cn('text-xs font-semibold', colors?.text)}>
-                {WO_STATUS_LABELS[status]}
-              </span>
-              <span className={cn('text-xs font-bold px-1.5 py-0.5 rounded-full', colors?.bg, colors?.text)}>
-                {items.length}
-              </span>
-            </div>
+            <HelpTooltip content={columnTooltips[status] || WO_STATUS_LABELS[status] || status} side="top">
+              <div className={cn('px-3 py-2 rounded-t-lg border-b flex items-center justify-between', colors?.bg)}>
+                <span className={cn('text-xs font-semibold', colors?.text)}>
+                  {WO_STATUS_LABELS[status]}
+                </span>
+                <span className={cn('text-xs font-bold px-1.5 py-0.5 rounded-full', colors?.bg, colors?.text)}>
+                  {items.length}
+                </span>
+              </div>
+            </HelpTooltip>
 
             {/* Cards */}
             <div className="flex-1 p-2 space-y-2 overflow-y-auto" style={{ maxHeight: '65vh' }}>

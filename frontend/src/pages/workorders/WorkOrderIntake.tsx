@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { api, type User } from '../../api/client';
 import { useAuth } from '../../hooks/use-auth';
 import { useToast } from '../../hooks/use-toast';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import { DEVICE_TYPE_LABELS, DATA_BACKUP_CONSENT_LABELS, SERVICE_CATEGORY_LABELS, PRIORITY_LABELS } from '../../lib/constants';
 
 const DEFAULT_CHECKLIST: Record<string, boolean> = {
@@ -203,13 +204,15 @@ export default function WorkOrderIntake() {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Rechercher un client existant</label>
-                <input
-                  type="text"
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  placeholder="Nom, courriel ou telephone..."
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
+                <HelpTooltip content="Tapez au moins 2 caractères pour rechercher un client par nom, courriel ou téléphone" side="right">
+                  <input
+                    type="text"
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    placeholder="Nom, courriel ou telephone..."
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </HelpTooltip>
               </div>
 
               {/* Results */}
@@ -291,46 +294,54 @@ export default function WorkOrderIntake() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Type d'appareil</label>
-              <select
-                value={deviceType}
-                onChange={(e) => setDeviceType(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {Object.entries(DEVICE_TYPE_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
+              <HelpTooltip content="Sélectionnez le type d'appareil : ordinateur portable, bureau, tablette, téléphone, etc." side="top">
+                <select
+                  value={deviceType}
+                  onChange={(e) => setDeviceType(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {Object.entries(DEVICE_TYPE_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+              </HelpTooltip>
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Marque *</label>
-              <input
-                type="text"
-                value={deviceBrand}
-                onChange={(e) => setDeviceBrand(e.target.value)}
-                placeholder="Ex: Dell, HP, Apple..."
-                required
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              <HelpTooltip content="Marque du fabricant de l'appareil (ex: Dell, HP, Apple, Lenovo)" side="top">
+                <input
+                  type="text"
+                  value={deviceBrand}
+                  onChange={(e) => setDeviceBrand(e.target.value)}
+                  placeholder="Ex: Dell, HP, Apple..."
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </HelpTooltip>
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Modele *</label>
-              <input
-                type="text"
-                value={deviceModel}
-                onChange={(e) => setDeviceModel(e.target.value)}
-                placeholder="Ex: Latitude 5540, MacBook Pro..."
-                required
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              <HelpTooltip content="Modèle exact de l'appareil, visible sur l'étiquette ou dans les paramètres système" side="top">
+                <input
+                  type="text"
+                  value={deviceModel}
+                  onChange={(e) => setDeviceModel(e.target.value)}
+                  placeholder="Ex: Latitude 5540, MacBook Pro..."
+                  required
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </HelpTooltip>
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">No. de serie</label>
-              <input
-                type="text"
-                value={deviceSerial}
-                onChange={(e) => setDeviceSerial(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              <HelpTooltip content="Numéro de série unique, souvent sur une étiquette sous l'appareil ou dans les paramètres" side="top">
+                <input
+                  type="text"
+                  value={deviceSerial}
+                  onChange={(e) => setDeviceSerial(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </HelpTooltip>
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Couleur</label>
@@ -353,13 +364,15 @@ export default function WorkOrderIntake() {
             </div>
             <div className="md:col-span-3">
               <label className="block text-xs text-muted-foreground mb-1">Mot de passe appareil</label>
-              <input
-                type="text"
-                value={devicePassword}
-                onChange={(e) => setDevicePassword(e.target.value)}
-                placeholder="PIN, mot de passe, pattern..."
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              <HelpTooltip content="Mot de passe, PIN ou schéma de déverrouillage nécessaire pour accéder à l'appareil durant le diagnostic" side="top">
+                <input
+                  type="text"
+                  value={devicePassword}
+                  onChange={(e) => setDevicePassword(e.target.value)}
+                  placeholder="PIN, mot de passe, pattern..."
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </HelpTooltip>
               <p className="text-[10px] text-muted-foreground mt-1">Necessaire pour le diagnostic</p>
             </div>
           </div>
@@ -371,7 +384,9 @@ export default function WorkOrderIntake() {
 
           {/* Condition checklist */}
           <div className="mb-4">
-            <label className="block text-xs text-muted-foreground mb-2">Inspection visuelle</label>
+            <HelpTooltip content="Décochez les éléments endommagés ou absents. Les éléments décochés apparaîtront en rouge comme avertissement." side="right">
+              <label className="block text-xs text-muted-foreground mb-2">Inspection visuelle</label>
+            </HelpTooltip>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {Object.entries(conditionChecklist).map(([key, val]) => (
                 <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -401,7 +416,9 @@ export default function WorkOrderIntake() {
 
           {/* Accessories */}
           <div>
-            <label className="block text-xs text-muted-foreground mb-2">Accessoires laisses</label>
+            <HelpTooltip content="Sélectionnez tous les accessoires laissés par le client avec l'appareil. Vous pouvez aussi en ajouter manuellement." side="right">
+              <label className="block text-xs text-muted-foreground mb-2">Accessoires laisses</label>
+            </HelpTooltip>
             <div className="flex flex-wrap gap-2 mb-2">
               {COMMON_ACCESSORIES.map((acc) => (
                 <button
@@ -456,14 +473,16 @@ export default function WorkOrderIntake() {
           <div className="space-y-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Description du probleme *</label>
-              <textarea
-                value={reportedIssue}
-                onChange={(e) => setReportedIssue(e.target.value)}
-                rows={4}
-                required
-                placeholder="Decrire le probleme tel que rapporte par le client..."
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-              />
+              <HelpTooltip content="Décrivez le problème tel que rapporté par le client. Soyez aussi précis que possible pour faciliter le diagnostic." side="top">
+                <textarea
+                  value={reportedIssue}
+                  onChange={(e) => setReportedIssue(e.target.value)}
+                  rows={4}
+                  required
+                  placeholder="Decrire le probleme tel que rapporte par le client..."
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                />
+              </HelpTooltip>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
@@ -500,15 +519,17 @@ export default function WorkOrderIntake() {
           <div className="space-y-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Sauvegarde des donnees</label>
-              <select
-                value={dataBackupConsent}
-                onChange={(e) => setDataBackupConsent(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {Object.entries(DATA_BACKUP_CONSENT_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
+              <HelpTooltip content="Client fait = le client a déjà sauvegardé. Atelier fait = nous faisons la sauvegarde. Décliné = le client refuse. Non applicable = pas de données à sauvegarder." side="right">
+                <select
+                  value={dataBackupConsent}
+                  onChange={(e) => setDataBackupConsent(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {Object.entries(DATA_BACKUP_CONSENT_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+              </HelpTooltip>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -528,40 +549,46 @@ export default function WorkOrderIntake() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Montant maximum autorise ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={maxAuthorizedSpend}
-                onChange={(e) => setMaxAuthorizedSpend(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              <HelpTooltip content="Montant au-delà duquel le client doit être contacté pour approbation avant de poursuivre les réparations" side="top">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={maxAuthorizedSpend}
+                  onChange={(e) => setMaxAuthorizedSpend(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </HelpTooltip>
               <p className="text-[10px] text-muted-foreground mt-1">Montant maximum que le client autorise sans rapprobation</p>
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Depot ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              <HelpTooltip content="Acompte versé par le client à la réception de l'appareil, déduit du coût final" side="top">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </HelpTooltip>
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Frais de diagnostic ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={diagnosticFee}
-                onChange={(e) => setDiagnosticFee(e.target.value)}
-                placeholder="0.00"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              <HelpTooltip content="Frais facturés pour le diagnostic initial, généralement non remboursables même si le client refuse la réparation" side="top">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={diagnosticFee}
+                  onChange={(e) => setDiagnosticFee(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </HelpTooltip>
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Date de ramassage estimee</label>
@@ -611,13 +638,15 @@ export default function WorkOrderIntake() {
           >
             Annuler
           </button>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="rounded-md bg-primary px-8 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
-            {createMutation.isPending ? 'Creation...' : 'Creer le bon de travail'}
-          </button>
+          <HelpTooltip content="Valide et crée le bon de travail. Le client, l'appareil, et la description du problème sont obligatoires." side="top">
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="rounded-md bg-primary px-8 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {createMutation.isPending ? 'Creation...' : 'Creer le bon de travail'}
+            </button>
+          </HelpTooltip>
         </div>
       </form>
     </div>

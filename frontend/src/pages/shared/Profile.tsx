@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function Profile() {
   const toast = useToast();
@@ -119,34 +120,40 @@ export default function Profile() {
           {/* Email (read-only) */}
           <div>
             <label className="block text-sm font-medium mb-1">Courriel</label>
-            <input
-              type="email"
-              value={profile?.email ?? ''}
-              disabled
-              className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground cursor-not-allowed"
-            />
+            <HelpTooltip content="Votre courriel est utilisé pour la connexion et ne peut pas être modifié ici. Contactez un administrateur pour le changer." side="right">
+              <input
+                type="email"
+                value={profile?.email ?? ''}
+                disabled
+                className="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground cursor-not-allowed"
+              />
+            </HelpTooltip>
           </div>
 
           {/* Phone */}
           <div>
             <label className="block text-sm font-medium mb-1">Téléphone</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 123-4567"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
+            <HelpTooltip content="Numéro de téléphone utilisé pour vous contacter concernant vos bons de travail et rendez-vous" side="right">
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+1 (555) 123-4567"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </HelpTooltip>
           </div>
 
           {/* Save button */}
-          <button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-          >
-            {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          <HelpTooltip content="Enregistrer les modifications apportées à votre prénom, nom et téléphone" side="right">
+            <button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </HelpTooltip>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { api } from '../../api/client';
 import { useAuth } from '../../hooks/use-auth';
 import { Link } from 'react-router-dom';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function PortalDashboard() {
   const { user } = useAuth();
@@ -14,7 +15,9 @@ export default function PortalDashboard() {
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex justify-between">
           <h2 className="font-semibold">Mes billets recents</h2>
-          <Link to="/portail/billets" className="text-sm text-primary hover:underline">Voir tout</Link>
+          <HelpTooltip content="Voir la liste complète de vos billets" side="left">
+            <Link to="/portail/billets" className="text-sm text-primary hover:underline">Voir tout</Link>
+          </HelpTooltip>
         </div>
         <div className="divide-y">
           {(tickets as any[])?.map((t: any) => (
@@ -23,7 +26,9 @@ export default function PortalDashboard() {
                 <span className="text-sm font-mono text-muted-foreground mr-2">{t.ticketNumber}</span>
                 <span className="text-sm">{t.title}</span>
               </div>
-              <StatusBadge status={t.status} />
+              <HelpTooltip content="Statut actuel de votre demande" side="left">
+                <span><StatusBadge status={t.status} /></span>
+              </HelpTooltip>
             </Link>
           ))}
           {(!tickets || (tickets as any[]).length === 0) && (

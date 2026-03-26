@@ -10,6 +10,7 @@ import {
   SERVICE_CATEGORY_LABELS,
   SERVICE_MODE_LABELS,
 } from '../../lib/constants';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 /** Shape of the "New Ticket" form data. */
 interface CreateTicketForm {
@@ -72,13 +73,15 @@ export default function PortalTickets() {
       {/* ─── Header ─── */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Mes billets</h1>
-        <button
-          type="button"
-          onClick={() => setShowForm((v) => !v)}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
-        >
-          {showForm ? 'Annuler' : '+ Nouveau billet'}
-        </button>
+        <HelpTooltip content="Créer une nouvelle demande de service" side="left">
+          <button
+            type="button"
+            onClick={() => setShowForm((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+          >
+            {showForm ? 'Annuler' : '+ Nouveau billet'}
+          </button>
+        </HelpTooltip>
       </div>
 
       {/* ─── Create ticket form ─── */}
@@ -183,13 +186,15 @@ export default function PortalTickets() {
 
           {/* Submit */}
           <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {createMutation.isPending ? 'Création…' : 'Créer le billet'}
-            </button>
+            <HelpTooltip content="Soumettre votre demande — un technicien sera assigné" side="left">
+              <button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createMutation.isPending ? 'Création…' : 'Créer le billet'}
+              </button>
+            </HelpTooltip>
           </div>
         </form>
       )}
@@ -217,8 +222,12 @@ export default function PortalTickets() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <StatusBadge status={t.status} />
-                <StatusBadge status={t.priority} type="priority" />
+                <HelpTooltip content="Statut actuel de votre demande" side="left">
+                  <span><StatusBadge status={t.status} /></span>
+                </HelpTooltip>
+                <HelpTooltip content="Niveau de priorité de la demande" side="left">
+                  <span><StatusBadge status={t.priority} type="priority" /></span>
+                </HelpTooltip>
               </div>
             </Link>
           ))}

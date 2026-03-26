@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, type WorkOrder } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import { DEVICE_TYPE_LABELS } from '../../lib/constants';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function PortalWorkOrders() {
   const { data: workOrders = [], isLoading, isError } = useQuery({
@@ -31,7 +32,9 @@ export default function PortalWorkOrders() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-mono font-bold text-primary">{wo.orderNumber}</span>
-                <StatusBadge status={wo.status} type="workorder" />
+                <HelpTooltip content="Étape actuelle du bon de travail" side="left">
+                  <span><StatusBadge status={wo.status} type="workorder" /></span>
+                </HelpTooltip>
               </div>
               <div className="text-sm">
                 <span className="text-muted-foreground">
@@ -48,9 +51,11 @@ export default function PortalWorkOrders() {
                 )}
               </div>
               {wo.status === 'ATTENTE_APPROBATION' && wo.estimatedCost && (
-                <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-md p-2 text-xs text-yellow-800">
-                  Devis en attente d'approbation: {wo.estimatedCost.toFixed(2)} $
-                </div>
+                <HelpTooltip content="Vous devez approuver ou refuser ce devis pour continuer" side="bottom">
+                  <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-md p-2 text-xs text-yellow-800">
+                    Devis en attente d'approbation: {wo.estimatedCost.toFixed(2)} $
+                  </div>
+                </HelpTooltip>
               )}
             </Link>
           ))}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, Appointment, Ticket, User } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useToast } from '../../hooks/use-toast';
 import type { AppointmentStatus } from '../../types';
 
@@ -252,46 +253,56 @@ export default function AdminCalendar() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Calendrier</h1>
-        <button
-          type="button"
-          onClick={() => setShowForm((v) => !v)}
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
-        >
-          {showForm ? 'Fermer' : '+ Nouveau rendez-vous'}
-        </button>
+        <HelpTooltip content="Créer un nouveau rendez-vous pour un billet existant" side="left">
+          <button
+            type="button"
+            onClick={() => setShowForm((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
+          >
+            {showForm ? 'Fermer' : '+ Nouveau rendez-vous'}
+          </button>
+        </HelpTooltip>
       </div>
 
       {/* Date navigation bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={handlePrevDay}
-          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-          aria-label="Jour précédent"
-        >
-          ← Préc.
-        </button>
-        <button
-          type="button"
-          onClick={handleToday}
-          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          Aujourd'hui
-        </button>
-        <button
-          type="button"
-          onClick={handleNextDay}
-          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-          aria-label="Jour suivant"
-        >
-          Suiv. →
-        </button>
-        <input
-          type="date"
-          value={date}
-          onChange={handleDateInput}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-        />
+        <HelpTooltip content="Afficher le jour précédent" side="bottom">
+          <button
+            type="button"
+            onClick={handlePrevDay}
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+            aria-label="Jour précédent"
+          >
+            ← Préc.
+          </button>
+        </HelpTooltip>
+        <HelpTooltip content="Revenir à la date d'aujourd'hui" side="bottom">
+          <button
+            type="button"
+            onClick={handleToday}
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            Aujourd'hui
+          </button>
+        </HelpTooltip>
+        <HelpTooltip content="Afficher le jour suivant" side="bottom">
+          <button
+            type="button"
+            onClick={handleNextDay}
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+            aria-label="Jour suivant"
+          >
+            Suiv. →
+          </button>
+        </HelpTooltip>
+        <HelpTooltip content="Sélectionner une date spécifique" side="bottom">
+          <input
+            type="date"
+            value={date}
+            onChange={handleDateInput}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+        </HelpTooltip>
         <span className="text-sm font-medium text-muted-foreground capitalize">
           {formatDateLabel(date)}
         </span>
@@ -307,20 +318,22 @@ export default function AdminCalendar() {
               <label htmlFor="apt-ticket" className="text-sm font-medium">
                 Ticket <span className="text-destructive">*</span>
               </label>
-              <select
-                id="apt-ticket"
-                value={form.ticketId}
-                onChange={(e) => handleFormChange('ticketId', e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                required
-              >
-                <option value="">— Sélectionner un ticket —</option>
-                {openTickets.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.ticketNumber} — {t.title}
-                  </option>
-                ))}
-              </select>
+              <HelpTooltip content="Sélectionner le billet associé à ce rendez-vous" side="bottom">
+                <select
+                  id="apt-ticket"
+                  value={form.ticketId}
+                  onChange={(e) => handleFormChange('ticketId', e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  required
+                >
+                  <option value="">— Sélectionner un ticket —</option>
+                  {openTickets.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.ticketNumber} — {t.title}
+                    </option>
+                  ))}
+                </select>
+              </HelpTooltip>
             </div>
 
             {/* Technician select */}
@@ -328,19 +341,21 @@ export default function AdminCalendar() {
               <label htmlFor="apt-tech" className="text-sm font-medium">
                 Technicien
               </label>
-              <select
-                id="apt-tech"
-                value={form.technicianId}
-                onChange={(e) => handleFormChange('technicianId', e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— Aucun —</option>
-                {(technicians ?? []).map((tech: User) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.firstName} {tech.lastName}
-                  </option>
-                ))}
-              </select>
+              <HelpTooltip content="Choisir le technicien pour voir ses disponibilités" side="bottom">
+                <select
+                  id="apt-tech"
+                  value={form.technicianId}
+                  onChange={(e) => handleFormChange('technicianId', e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">— Aucun —</option>
+                  {(technicians ?? []).map((tech: User) => (
+                    <option key={tech.id} value={tech.id}>
+                      {tech.firstName} {tech.lastName}
+                    </option>
+                  ))}
+                </select>
+              </HelpTooltip>
             </div>
 
             {/* Availability slots */}
@@ -448,13 +463,15 @@ export default function AdminCalendar() {
 
             {/* Submit */}
             <div className="sm:col-span-2 flex gap-2">
-              <button
-                type="submit"
-                disabled={createMutation.isPending}
-                className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50 transition-colors"
-              >
-                {createMutation.isPending ? 'Création…' : 'Créer le rendez-vous'}
-              </button>
+              <HelpTooltip content="Valider et créer le rendez-vous avec les informations saisies" side="top">
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {createMutation.isPending ? 'Création…' : 'Créer le rendez-vous'}
+                </button>
+              </HelpTooltip>
               <button
                 type="button"
                 onClick={() => {
@@ -532,40 +549,44 @@ export default function AdminCalendar() {
 
                 {/* Status change dropdown */}
                 {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        handleStatusChange(apt.id, e.target.value);
-                        e.target.value = '';
+                  <HelpTooltip content="Modifier le statut de ce rendez-vous" side="top">
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          handleStatusChange(apt.id, e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                      disabled={
+                        statusMutation.isPending || cancelMutation.isPending
                       }
-                    }}
-                    disabled={
-                      statusMutation.isPending || cancelMutation.isPending
-                    }
-                    className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-                    aria-label="Changer le statut"
-                  >
-                    <option value="">Changer statut…</option>
-                    {ALL_STATUSES.filter((s) => s !== apt.status).map((s) => (
-                      <option key={s} value={s}>
-                        {APPOINTMENT_STATUS_LABELS[s]}
-                      </option>
-                    ))}
-                  </select>
+                      className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+                      aria-label="Changer le statut"
+                    >
+                      <option value="">Changer statut…</option>
+                      {ALL_STATUSES.filter((s) => s !== apt.status).map((s) => (
+                        <option key={s} value={s}>
+                          {APPOINTMENT_STATUS_LABELS[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </HelpTooltip>
                 )}
 
                 {/* Cancel button (distinct from dropdown for quick access) */}
                 {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
-                  <button
-                    type="button"
-                    onClick={() => handleCancel(apt.id)}
-                    disabled={cancelMutation.isPending}
-                    className="inline-flex items-center rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50 transition-colors"
-                    title="Annuler le rendez-vous"
-                  >
-                    Annuler
-                  </button>
+                  <HelpTooltip content="Annuler définitivement ce rendez-vous" side="top">
+                    <button
+                      type="button"
+                      onClick={() => handleCancel(apt.id)}
+                      disabled={cancelMutation.isPending}
+                      className="inline-flex items-center rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50 transition-colors"
+                      title="Annuler le rendez-vous"
+                    >
+                      Annuler
+                    </button>
+                  </HelpTooltip>
                 )}
               </div>
             </div>

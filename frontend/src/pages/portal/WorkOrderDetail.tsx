@@ -8,6 +8,7 @@ import {
   WO_STATUS_LABELS, DEVICE_TYPE_LABELS,
   SERVICE_CATEGORY_LABELS,
 } from '../../lib/constants';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 export default function PortalWorkOrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -63,7 +64,9 @@ export default function PortalWorkOrderDetail() {
           &larr; Retour
         </Link>
         <h1 className="text-2xl font-bold font-mono">{wo.orderNumber}</h1>
-        <StatusBadge status={wo.status} type="workorder" />
+        <HelpTooltip content="Étape actuelle dans le processus de réparation" side="bottom">
+          <span><StatusBadge status={wo.status} type="workorder" /></span>
+        </HelpTooltip>
       </div>
 
       {/* Status explanation */}
@@ -72,7 +75,11 @@ export default function PortalWorkOrderDetail() {
           <span className="font-medium">Statut actuel:</span>{' '}
           {WO_STATUS_LABELS[wo.status] || wo.status}
         </p>
-        <StatusTimeline status={wo.status} />
+        <HelpTooltip content="Progression de votre bon de travail à travers les différentes étapes" side="bottom">
+          <div>
+            <StatusTimeline status={wo.status} />
+          </div>
+        </HelpTooltip>
       </div>
 
       {/* Quote approval section */}
@@ -92,28 +99,32 @@ export default function PortalWorkOrderDetail() {
             )}
           </div>
           <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => {
-                if (confirm('Approuver le devis et autoriser les réparations?')) {
-                  approveMutation.mutate();
-                }
-              }}
-              disabled={approveMutation.isPending || declineMutation.isPending}
-              className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-            >
-              {approveMutation.isPending ? 'Approbation...' : 'Approuver le devis'}
-            </button>
-            <button
-              onClick={() => {
-                if (confirm('Refuser le devis? Votre appareil sera retourné sans réparation.')) {
-                  declineMutation.mutate();
-                }
-              }}
-              disabled={approveMutation.isPending || declineMutation.isPending}
-              className="flex-1 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-            >
-              {declineMutation.isPending ? 'Refus...' : 'Refuser le devis'}
-            </button>
+            <HelpTooltip content="Approuver le devis et autoriser les réparations sur votre appareil" side="bottom">
+              <button
+                onClick={() => {
+                  if (confirm('Approuver le devis et autoriser les réparations?')) {
+                    approveMutation.mutate();
+                  }
+                }}
+                disabled={approveMutation.isPending || declineMutation.isPending}
+                className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {approveMutation.isPending ? 'Approbation...' : 'Approuver le devis'}
+              </button>
+            </HelpTooltip>
+            <HelpTooltip content="Refuser le devis — votre appareil sera retourné sans réparation" side="bottom">
+              <button
+                onClick={() => {
+                  if (confirm('Refuser le devis? Votre appareil sera retourné sans réparation.')) {
+                    declineMutation.mutate();
+                  }
+                }}
+                disabled={approveMutation.isPending || declineMutation.isPending}
+                className="flex-1 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+              >
+                {declineMutation.isPending ? 'Refus...' : 'Refuser le devis'}
+              </button>
+            </HelpTooltip>
           </div>
         </div>
       )}

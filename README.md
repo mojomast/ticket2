@@ -23,6 +23,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [Demo Mode](#demo-mode)
+- [Help System](#help-system)
 
 ---
 
@@ -222,12 +223,15 @@ ticket2/
         ├── types/
         │   └── index.ts           # Frontend TypeScript types
         ├── stores/
-        │   └── auth-store.ts      # Zustand auth state
+        │   ├── auth-store.ts      # Zustand auth state
+        │   └── help-store.ts      # Zustand help sidebar state
         ├── hooks/
         │   ├── use-auth.ts        # Auth hook (TanStack Query)
+        │   ├── use-page-help.ts   # Route → pageKey mapping + keyboard shortcuts
         │   └── use-toast.ts       # Toast hook
         ├── lib/
         │   ├── constants.ts       # Status/priority labels & colors
+        │   ├── help-content.ts    # All help articles (French, ~1100 lines)
         │   ├── utils.ts           # cn(), formatDate, formatCurrency, etc.
         │   └── i18n/
         │       ├── hook.ts        # useTranslation()
@@ -239,6 +243,8 @@ ticket2/
         │   ├── shared/
         │   │   ├── AppSidebar.tsx      # Role-based sidebar navigation
         │   │   ├── DemoBanner.tsx      # Demo mode banner + persona selector
+        │   │   ├── HelpSidebar.tsx     # Contextual help slide-out panel
+        │   │   ├── HelpTooltip.tsx     # Tooltip convenience wrapper
         │   │   ├── MessageThread.tsx   # Ticket message thread
         │   │   ├── NotificationBell.tsx # In-app notification dropdown
         │   │   └── StatusBadge.tsx     # Status badge (ticket/appointment/workorder)
@@ -836,16 +842,7 @@ When `DEMO_MODE=true`:
 | admin@valitek.ca | ADMIN | Full access |
 | tech1@valitek.ca | TECHNICIAN | can_view_all_tickets: true |
 | tech2@valitek.ca | TECHNICIAN | can_view_all_tickets: false |
-| client1@example.com | CUSTOMER | Residential |
-| client2@example.com | CUSTOMER | Commercial (Solutions Roy Inc.) |
-| client3@example.com | CUSTOMER | Residential |
-| client4@example.com | CUSTOMER | Commercial (Cafe Beaubien) |
-| client5@example.com | CUSTOMER | Residential |
-| client6@example.com | CUSTOMER | Commercial (Clinique Veterin. Plateau) |
-| client7@example.com | CUSTOMER | Residential |
-| client8@example.com | CUSTOMER | Commercial (Librairie du Quartier) |
-| client9@example.com | CUSTOMER | Commercial (Studio Photo Lumiere) |
-| client10@example.com | CUSTOMER | Residential |
+| client1@example.com - client25@example.com | CUSTOMER | 25 customers, mix of residential and commercial |
 
 ### Demo Banner
 
@@ -853,13 +850,55 @@ The demo banner at the top of the page shows admin and technician personas as bu
 
 ### Seed Data
 
-The seed creates: 13 users, 14 tickets, 6 appointments, 13 messages, 9 notifications, 16 work orders, 12 work order notes.
+The seed creates: 28 users, 30 tickets, 18 appointments, 25 messages, 18 notifications, 36 work orders, 22 work order notes.
 
-Work orders have intentionally varied intake dates (from 0 to 15 days ago) to demonstrate the age indicator feature.
+Work orders have intentionally varied intake dates (from 0 to 30 days ago) to demonstrate the age indicator feature. All 12 work order statuses and all 9 device types are represented.
 
 ```bash
 cd backend && npx prisma db seed
 ```
+
+---
+
+## Help System
+
+A comprehensive contextual help system is built into the frontend, providing role-aware, page-aware documentation and tooltips throughout the application.
+
+### Help Sidebar
+
+A slide-out panel accessible from any authenticated page:
+
+- **Toggle:** Click the `?` button in the header, or press `?` or `F1` on your keyboard
+- **Role-aware:** Content adapts based on the current user's role (Admin, Technician, Customer)
+- **Page-aware:** Content automatically changes based on the current route
+- **Collapsible sections:** Each help article has expandable/collapsible FAQ-style sections
+- **Tips section:** Practical tips displayed with a lightbulb icon at the bottom of each article
+- **Backdrop overlay:** Click outside the sidebar to close it
+
+### Architecture
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| `HelpSidebar` | `frontend/src/components/shared/HelpSidebar.tsx` | Slide-out panel (right, 384px, z-50) |
+| `HelpTooltip` | `frontend/src/components/shared/HelpTooltip.tsx` | Convenience wrapper for shadcn Tooltip |
+| `help-store` | `frontend/src/stores/help-store.ts` | Zustand store (isOpen, currentPageKey) |
+| `use-page-help` | `frontend/src/hooks/use-page-help.ts` | Route-to-pageKey mapping + keyboard shortcuts |
+| `help-content` | `frontend/src/lib/help-content.ts` | All help articles (~1100 lines, French) |
+
+### Help Content Coverage
+
+29 page keys covered across all roles:
+
+- **Admin (12):** Dashboard, Tickets, TicketDetail, Kanban, Calendar, Clients, Technicians, Settings, Backups, WorkOrders, WorkOrderIntake, WorkOrderDetail
+- **Technician (7):** Dashboard, Tickets, TicketDetail, Schedule, WorkOrders, WorkOrderIntake, WorkOrderDetail
+- **Customer (6):** Dashboard, Tickets, TicketDetail, Appointments, WorkOrders, WorkOrderDetail
+- **General (4):** Profile, Landing, Login, ServiceRequest
+
+### Tooltips
+
+170+ tooltips added across all pages using the `HelpTooltip` wrapper component. Tooltips are applied to key interactive elements: buttons, dropdowns, status badges, form fields, and navigation elements. All tooltip text is in French.
+
+The `TooltipProvider` (from Radix UI via shadcn) is configured in `main.tsx` with a 300ms delay.
 
 ---
 

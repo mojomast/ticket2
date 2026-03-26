@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
+import HelpTooltip from '../../components/shared/HelpTooltip';
 
 // ─── Constants ───
 
@@ -203,22 +204,26 @@ export default function AdminClients() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Clients</h1>
-        <button
-          onClick={openCreate}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          Nouveau client
-        </button>
+        <HelpTooltip content="Ajouter un nouveau client dans le système" side="bottom">
+          <button
+            onClick={openCreate}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            Nouveau client
+          </button>
+        </HelpTooltip>
       </div>
 
       {/* Search */}
-      <input
-        type="text"
-        placeholder="Rechercher un client..."
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        className="max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
-      />
+      <HelpTooltip content="Rechercher par nom, courriel ou téléphone" side="right">
+        <input
+          type="text"
+          placeholder="Rechercher un client..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          className="max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
+        />
+      </HelpTooltip>
 
       {/* Table */}
       {isLoading ? (
@@ -272,32 +277,36 @@ export default function AdminClients() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Toggle active */}
-                      <button
-                        onClick={() =>
-                          toggleActiveMutation.mutate({
-                            id: user.id,
-                            isActive: !user.isActive,
-                          })
-                        }
-                        disabled={toggleActiveMutation.isPending}
-                        title={user.isActive ? 'Désactiver' : 'Activer'}
-                        className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
-                          user.isActive
-                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                            : 'bg-green-100 text-green-800 hover:bg-green-200'
-                        }`}
-                      >
-                        {user.isActive ? 'Désactiver' : 'Activer'}
-                      </button>
+                      <HelpTooltip content={user.isActive ? 'Désactiver l\'accès de ce client' : 'Réactiver l\'accès de ce client'} side="bottom">
+                        <button
+                          onClick={() =>
+                            toggleActiveMutation.mutate({
+                              id: user.id,
+                              isActive: !user.isActive,
+                            })
+                          }
+                          disabled={toggleActiveMutation.isPending}
+                          title={user.isActive ? 'Désactiver' : 'Activer'}
+                          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                            user.isActive
+                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                              : 'bg-green-100 text-green-800 hover:bg-green-200'
+                          }`}
+                        >
+                          {user.isActive ? 'Désactiver' : 'Activer'}
+                        </button>
+                      </HelpTooltip>
 
                       {/* Edit */}
-                      <button
-                        onClick={() => openEdit(user)}
-                        title="Modifier"
-                        className="rounded px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                      >
-                        Modifier
-                      </button>
+                      <HelpTooltip content="Modifier les informations de ce client" side="bottom">
+                        <button
+                          onClick={() => openEdit(user)}
+                          title="Modifier"
+                          className="rounded px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                        >
+                          Modifier
+                        </button>
+                      </HelpTooltip>
 
                       {/* Delete */}
                       {deleteConfirmId === user.id ? (
@@ -317,13 +326,15 @@ export default function AdminClients() {
                           </button>
                         </span>
                       ) : (
-                        <button
-                          onClick={() => setDeleteConfirmId(user.id)}
-                          title="Supprimer"
-                          className="rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
-                        >
-                          Supprimer
-                        </button>
+                        <HelpTooltip content="Supprimer définitivement ce client" side="bottom">
+                          <button
+                            onClick={() => setDeleteConfirmId(user.id)}
+                            title="Supprimer"
+                            className="rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                          >
+                            Supprimer
+                          </button>
+                        </HelpTooltip>
                       )}
                     </div>
                   </td>
@@ -476,17 +487,19 @@ export default function AdminClients() {
                 >
                   Annuler
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                >
-                  {isSaving
-                    ? 'Enregistrement...'
-                    : dialogMode === 'create'
-                      ? 'Créer le client'
-                      : 'Enregistrer'}
-                </button>
+                <HelpTooltip content={dialogMode === 'create' ? 'Créer le compte client et envoyer les accès' : 'Sauvegarder les modifications du client'} side="top">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  >
+                    {isSaving
+                      ? 'Enregistrement...'
+                      : dialogMode === 'create'
+                        ? 'Créer le client'
+                        : 'Enregistrer'}
+                  </button>
+                </HelpTooltip>
               </div>
             </form>
           </div>

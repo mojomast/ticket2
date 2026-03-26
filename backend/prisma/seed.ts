@@ -235,6 +235,239 @@ export async function seedDemoData() {
     },
   });
 
+  // ─── New Customers (15 more: client11-client25) ───
+  const customer11 = await prisma.user.create({
+    data: {
+      email: 'client11@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Émile',
+      lastName: 'Lafleur',
+      phone: '514-555-0020',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '55 Rue Wellington, Verdun, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer12 = await prisma.user.create({
+    data: {
+      email: 'client12@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Geneviève',
+      lastName: 'Dufresne',
+      phone: '514-555-0021',
+      role: 'CUSTOMER',
+      customerType: 'COMMERCIAL',
+      companyName: 'Boutique Mode Gigi',
+      address: '112 Ave Laurier Ouest, Outremont, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer13 = await prisma.user.create({
+    data: {
+      email: 'client13@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Alain',
+      lastName: 'Bergeron',
+      phone: '450-555-0022',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '340 Boul. Curé-Poirier, Longueuil, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer14 = await prisma.user.create({
+    data: {
+      email: 'client14@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Mélanie',
+      lastName: 'Savard',
+      phone: '450-555-0023',
+      role: 'CUSTOMER',
+      customerType: 'COMMERCIAL',
+      companyName: 'Agence de Voyage Savard',
+      address: '2050 Boul. Le Carrefour, Laval, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer15 = await prisma.user.create({
+    data: {
+      email: 'client15@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Réjean',
+      lastName: 'Paquette',
+      phone: '514-555-0024',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '1845 Rue Masson, Rosemont, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer16 = await prisma.user.create({
+    data: {
+      email: 'client16@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Véronique',
+      lastName: 'Lemieux',
+      phone: '514-555-0025',
+      role: 'CUSTOMER',
+      customerType: 'COMMERCIAL',
+      companyName: 'Studio de Yoga Harmonie',
+      address: '5430 Ave de Monkland, NDG, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer17 = await prisma.user.create({
+    data: {
+      email: 'client17@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Patrick',
+      lastName: 'Desjardins',
+      phone: '514-555-0026',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '8800 Boul. Viau, Saint-Léonard, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer18 = await prisma.user.create({
+    data: {
+      email: 'client18@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Josée',
+      lastName: 'Gauthier',
+      phone: '438-555-0027',
+      role: 'CUSTOMER',
+      customerType: 'COMMERCIAL',
+      companyName: 'Garderie Les Petits Anges',
+      address: '7420 Rue Saint-Hubert, Villeray, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer19 = await prisma.user.create({
+    data: {
+      email: 'client19@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Daniel',
+      lastName: 'Morin',
+      phone: '514-555-0028',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '1200 Boul. Newman, LaSalle, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer20 = await prisma.user.create({
+    data: {
+      email: 'client20@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Catherine',
+      lastName: 'Brassard',
+      phone: '438-555-0029',
+      role: 'CUSTOMER',
+      customerType: 'COMMERCIAL',
+      companyName: 'Salon de Coiffure Belle Tête',
+      address: '5245 Ave du Parc, Mile End, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer21 = await prisma.user.create({
+    data: {
+      email: 'client21@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Stéphane',
+      lastName: 'Nadeau',
+      phone: '514-555-0030',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '7300 Boul. des Galeries d\'Anjou, Anjou, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer22 = await prisma.user.create({
+    data: {
+      email: 'client22@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Annie',
+      lastName: 'Ouellet',
+      phone: '514-555-0031',
+      role: 'CUSTOMER',
+      customerType: 'COMMERCIAL',
+      companyName: 'Centre de Massothérapie Zen',
+      address: '4050 Rue Ontario Est, Hochelaga, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer23 = await prisma.user.create({
+    data: {
+      email: 'client23@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Michel',
+      lastName: 'Simard',
+      phone: '514-555-0032',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '12400 Rue Sherbrooke Est, Pointe-aux-Trembles, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer24 = await prisma.user.create({
+    data: {
+      email: 'client24@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Julie',
+      lastName: 'Paradis',
+      phone: '514-555-0033',
+      role: 'CUSTOMER',
+      customerType: 'COMMERCIAL',
+      companyName: 'Fleuriste Paradis',
+      address: '4900 Rue Sherbrooke Ouest, Westmount, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
+  const customer25 = await prisma.user.create({
+    data: {
+      email: 'client25@example.com',
+      passwordHash: demoPasswordHash,
+      firstName: 'Robert',
+      lastName: 'Champagne',
+      phone: '514-555-0034',
+      role: 'CUSTOMER',
+      customerType: 'RESIDENTIAL',
+      address: '800 Ave Dawson, Dorval, QC',
+      isDemo: true,
+      isActive: true,
+    },
+  });
+
   // ─── Tickets ───
   const ticket1 = await prisma.ticket.create({
     data: {
@@ -438,6 +671,235 @@ export async function seedDemoData() {
     },
   });
 
+  // ─── New Tickets (16 more: TKT-260115 to TKT-260130) ───
+  const ticket15 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260115',
+      title: 'Ordinateur portable ne charge plus',
+      description: 'Mon portable Dell ne charge plus. Le voyant de charge ne s\'allume pas quand je branche le chargeur. J\'ai essaye un autre chargeur sans succes.',
+      status: 'NOUVELLE',
+      priority: 'HAUTE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'REPARATION',
+      customerId: customer11.id,
+    },
+  });
+
+  const ticket16 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260116',
+      title: 'Installation systeme de caisse',
+      description: 'Besoin d\'installer un systeme de caisse pour la boutique. Ecran tactile, tiroir-caisse, imprimante de recus.',
+      status: 'EN_ATTENTE_APPROBATION',
+      priority: 'NORMALE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'INSTALLATION',
+      quotedPrice: 2800.00,
+      quoteDescription: 'Installation systeme POS complet: ecran tactile, tiroir-caisse, imprimante thermique et configuration logicielle',
+      quoteDuration: '1 journee',
+      customerId: customer12.id,
+      technicianId: tech1.id,
+    },
+  });
+
+  const ticket17 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260117',
+      title: 'Lenteur generale de l\'ordinateur',
+      description: 'Mon ordinateur est de plus en plus lent. Le demarrage prend plus de 5 minutes et les programmes gèlent souvent.',
+      status: 'EN_COURS',
+      priority: 'NORMALE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'LOGICIEL',
+      customerId: customer13.id,
+      technicianId: tech2.id,
+    },
+  });
+
+  const ticket18 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260118',
+      title: 'Migration vers le cloud',
+      description: 'Nous souhaitons migrer nos donnees et notre messagerie vers Microsoft 365. 12 employes.',
+      status: 'APPROUVEE',
+      priority: 'HAUTE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'DONNEES',
+      customerId: customer14.id,
+      technicianId: tech1.id,
+    },
+  });
+
+  const ticket19 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260119',
+      title: 'Ecran bleu au demarrage',
+      description: 'Mon PC affiche un ecran bleu avec le code d\'erreur CRITICAL_PROCESS_DIED a chaque demarrage. Impossible d\'acceder a Windows.',
+      status: 'BLOCAGE',
+      priority: 'URGENTE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'LOGICIEL',
+      blockerReason: 'Disque dur en fin de vie. En attente de l\'approbation du client pour le remplacement du SSD.',
+      customerId: customer15.id,
+      technicianId: tech1.id,
+    },
+  });
+
+  const ticket20 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260120',
+      title: 'Installation cameras de securite IP',
+      description: 'Installation de 4 cameras IP et d\'un NVR pour le studio. Couverture de l\'entree, la salle principale et le stationnement.',
+      status: 'PLANIFIEE',
+      priority: 'NORMALE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'INSTALLATION',
+      customerId: customer16.id,
+      technicianId: tech2.id,
+    },
+  });
+
+  const ticket21 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260121',
+      title: 'Probleme de surchauffe laptop gaming',
+      description: 'Mon laptop gaming surchauffe enormement pendant les jeux. Il s\'eteint parfois apres 30 minutes de jeu.',
+      status: 'NOUVELLE',
+      priority: 'NORMALE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'REPARATION',
+      customerId: customer17.id,
+    },
+  });
+
+  const ticket22 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260122',
+      title: 'Configuration reseau garderie',
+      description: 'Mise en place du wifi securise et du controle parental pour la garderie. 3 tablettes pour les educatrices et un poste administratif.',
+      status: 'EN_ATTENTE_REPONSE_CLIENT',
+      priority: 'BASSE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'RESEAU',
+      customerId: customer18.id,
+      technicianId: tech2.id,
+    },
+  });
+
+  const ticket23 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260123',
+      title: 'Recuperation photos telephone',
+      description: 'J\'ai supprime par erreur toutes les photos de mon telephone. Plus de 2000 photos de famille. Besoin de recuperation urgente.',
+      status: 'EN_COURS',
+      priority: 'URGENTE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'DONNEES',
+      customerId: customer19.id,
+      technicianId: tech2.id,
+    },
+  });
+
+  const ticket24 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260124',
+      title: 'Mise a jour systeme de reservation',
+      description: 'Notre systeme de reservation en ligne est desuet. Besoin de mettre a jour le logiciel et le serveur.',
+      status: 'TERMINEE',
+      priority: 'NORMALE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'LOGICIEL',
+      customerId: customer20.id,
+      technicianId: tech1.id,
+    },
+  });
+
+  const ticket25 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260125',
+      title: 'Remplacement batterie tablette',
+      description: 'La batterie de ma tablette Samsung gonfle. L\'ecran commence a se decoller sur le cote.',
+      status: 'FERMEE',
+      priority: 'HAUTE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'REPARATION',
+      customerId: customer21.id,
+      technicianId: tech2.id,
+    },
+  });
+
+  const ticket26 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260126',
+      title: 'Audit securite reseau',
+      description: 'Nous souhaitons un audit de securite complet de notre reseau. Verification des pare-feux, politiques de mots de passe et vulnerabilites.',
+      status: 'EN_ATTENTE_APPROBATION',
+      priority: 'HAUTE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'CONSULTATION',
+      quotedPrice: 3200.00,
+      quoteDescription: 'Audit de securite complet: scan de vulnerabilites, revue des configurations, rapport detaille et recommandations',
+      quoteDuration: '2 jours',
+      customerId: customer22.id,
+      technicianId: tech1.id,
+    },
+  });
+
+  const ticket27 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260127',
+      title: 'Installation imprimante 3D',
+      description: 'J\'ai achete une imprimante 3D Prusa et j\'ai besoin d\'aide pour l\'assembler et la configurer avec mon ordinateur.',
+      status: 'PLANIFIEE',
+      priority: 'BASSE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'INSTALLATION',
+      customerId: customer23.id,
+      technicianId: tech2.id,
+    },
+  });
+
+  const ticket28 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260128',
+      title: 'Configuration site web et email professionnel',
+      description: 'Besoin de configurer notre nom de domaine, hebergement web et adresses email professionnelles pour la fleuriste.',
+      status: 'EN_COURS',
+      priority: 'NORMALE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'LOGICIEL',
+      customerId: customer24.id,
+      technicianId: tech1.id,
+    },
+  });
+
+  const ticket29 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260129',
+      title: 'Sauvegarde et clonage disque dur',
+      description: 'Je veux cloner mon disque dur actuel vers un nouveau SSD plus rapide. Mon PC a Windows 10 et environ 500GB de donnees.',
+      status: 'ANNULEE',
+      priority: 'BASSE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'DONNEES',
+      customerId: customer25.id,
+    },
+  });
+
+  const ticket30 = await prisma.ticket.create({
+    data: {
+      ticketNumber: 'TKT-260130',
+      title: 'Formation cybersecurite pour employes',
+      description: 'Formation de sensibilisation a la cybersecurite pour nos 8 employes. Phishing, mots de passe, bonnes pratiques.',
+      status: 'APPROUVEE',
+      priority: 'NORMALE',
+      serviceMode: 'SUR_ROUTE',
+      serviceCategory: 'FORMATION',
+      customerId: customer18.id,
+      technicianId: tech1.id,
+    },
+  });
+
   // ─── Appointments ───
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -546,6 +1008,204 @@ export async function seedDemoData() {
     },
   });
 
+  // ─── New Appointments (12 more) ───
+
+  // Past appointment 1 - completed 5 days ago
+  const fiveDaysAgoAppt = new Date();
+  fiveDaysAgoAppt.setDate(fiveDaysAgoAppt.getDate() - 5);
+  fiveDaysAgoAppt.setHours(9, 0, 0, 0);
+  const fiveDaysAgoApptEnd = new Date(fiveDaysAgoAppt);
+  fiveDaysAgoApptEnd.setHours(12, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket7.id,
+      technicianId: tech1.id,
+      scheduledStart: fiveDaysAgoAppt,
+      scheduledEnd: fiveDaysAgoApptEnd,
+      status: 'TERMINE',
+      notes: 'Audit de securite termine. Rapport envoye au client.',
+    },
+  });
+
+  // Past appointment 2 - completed 2 days ago
+  const twoDaysAgoAppt = new Date();
+  twoDaysAgoAppt.setDate(twoDaysAgoAppt.getDate() - 2);
+  twoDaysAgoAppt.setHours(13, 0, 0, 0);
+  const twoDaysAgoApptEnd = new Date(twoDaysAgoAppt);
+  twoDaysAgoApptEnd.setHours(16, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket24.id,
+      technicianId: tech1.id,
+      scheduledStart: twoDaysAgoAppt,
+      scheduledEnd: twoDaysAgoApptEnd,
+      status: 'TERMINE',
+      notes: 'Mise a jour du systeme de reservation effectuee avec succes.',
+    },
+  });
+
+  // Past appointment 3 - cancelled last week
+  const sixDaysAgoAppt = new Date();
+  sixDaysAgoAppt.setDate(sixDaysAgoAppt.getDate() - 6);
+  sixDaysAgoAppt.setHours(10, 0, 0, 0);
+  const sixDaysAgoApptEnd = new Date(sixDaysAgoAppt);
+  sixDaysAgoApptEnd.setHours(11, 30, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket29.id,
+      technicianId: tech2.id,
+      scheduledStart: sixDaysAgoAppt,
+      scheduledEnd: sixDaysAgoApptEnd,
+      status: 'ANNULE',
+      cancelReason: 'Le client a decide de faire le clonage lui-meme.',
+    },
+  });
+
+  // Past appointment 4 - completed yesterday
+  const yesterdayAppt = new Date();
+  yesterdayAppt.setDate(yesterdayAppt.getDate() - 1);
+  yesterdayAppt.setHours(14, 0, 0, 0);
+  const yesterdayApptEnd = new Date(yesterdayAppt);
+  yesterdayApptEnd.setHours(17, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket25.id,
+      technicianId: tech2.id,
+      scheduledStart: yesterdayAppt,
+      scheduledEnd: yesterdayApptEnd,
+      status: 'TERMINE',
+      notes: 'Remplacement batterie tablette termine. Client satisfait.',
+    },
+  });
+
+  // Today appointment 1 - in progress
+  const todayAppt2 = new Date();
+  todayAppt2.setHours(9, 0, 0, 0);
+  const todayAppt2End = new Date(todayAppt2);
+  todayAppt2End.setHours(12, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket28.id,
+      technicianId: tech1.id,
+      scheduledStart: todayAppt2,
+      scheduledEnd: todayAppt2End,
+      status: 'EN_COURS',
+      notes: 'Configuration du domaine et des emails pour Fleuriste Paradis',
+    },
+  });
+
+  // Today appointment 2 - planned for afternoon
+  const todayAppt3 = new Date();
+  todayAppt3.setHours(13, 30, 0, 0);
+  const todayAppt3End = new Date(todayAppt3);
+  todayAppt3End.setHours(15, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket23.id,
+      technicianId: tech2.id,
+      scheduledStart: todayAppt3,
+      scheduledEnd: todayAppt3End,
+      status: 'PLANIFIE',
+      notes: 'Recuperation de photos - apporter cable OTG et logiciel de recuperation',
+    },
+  });
+
+  // Future appointment 1 - 3 days from now
+  const threeDaysFromNow = new Date();
+  threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+  threeDaysFromNow.setHours(10, 0, 0, 0);
+  const threeDaysFromNowEnd = new Date(threeDaysFromNow);
+  threeDaysFromNowEnd.setHours(12, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket18.id,
+      technicianId: tech1.id,
+      scheduledStart: threeDaysFromNow,
+      scheduledEnd: threeDaysFromNowEnd,
+      status: 'CONFIRME',
+      notes: 'Premiere session de migration cloud - preparation des comptes Microsoft 365',
+    },
+  });
+
+  // Future appointment 2 - 5 days from now
+  const fiveDaysFromNowAppt = new Date();
+  fiveDaysFromNowAppt.setDate(fiveDaysFromNowAppt.getDate() + 5);
+  fiveDaysFromNowAppt.setHours(9, 0, 0, 0);
+  const fiveDaysFromNowApptEnd = new Date(fiveDaysFromNowAppt);
+  fiveDaysFromNowApptEnd.setHours(17, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket20.id,
+      technicianId: tech2.id,
+      scheduledStart: fiveDaysFromNowAppt,
+      scheduledEnd: fiveDaysFromNowApptEnd,
+      status: 'PLANIFIE',
+      notes: 'Installation cameras IP - journee complete prevue',
+    },
+  });
+
+  // Future appointment 3 - 6 days from now
+  const sixDaysFromNow = new Date();
+  sixDaysFromNow.setDate(sixDaysFromNow.getDate() + 6);
+  sixDaysFromNow.setHours(13, 0, 0, 0);
+  const sixDaysFromNowEnd = new Date(sixDaysFromNow);
+  sixDaysFromNowEnd.setHours(16, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket27.id,
+      technicianId: tech2.id,
+      scheduledStart: sixDaysFromNow,
+      scheduledEnd: sixDaysFromNowEnd,
+      status: 'PLANIFIE',
+      notes: 'Installation et configuration imprimante 3D Prusa',
+    },
+  });
+
+  // Future appointment 4 - 8 days from now (demand)
+  const eightDaysFromNow = new Date();
+  eightDaysFromNow.setDate(eightDaysFromNow.getDate() + 8);
+  eightDaysFromNow.setHours(10, 0, 0, 0);
+  const eightDaysFromNowEnd = new Date(eightDaysFromNow);
+  eightDaysFromNowEnd.setHours(12, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket30.id,
+      technicianId: tech1.id,
+      scheduledStart: eightDaysFromNow,
+      scheduledEnd: eightDaysFromNowEnd,
+      status: 'DEMANDE',
+      notes: 'Formation cybersecurite - premiere session (4 employes)',
+    },
+  });
+
+  // Future appointment 5 - 10 days from now (demand)
+  const tenDaysFromNow = new Date();
+  tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
+  tenDaysFromNow.setHours(10, 0, 0, 0);
+  const tenDaysFromNowEnd = new Date(tenDaysFromNow);
+  tenDaysFromNowEnd.setHours(12, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      ticketId: ticket30.id,
+      technicianId: tech1.id,
+      scheduledStart: tenDaysFromNow,
+      scheduledEnd: tenDaysFromNowEnd,
+      status: 'DEMANDE',
+      notes: 'Formation cybersecurite - deuxieme session (4 employes restants)',
+    },
+  });
+
   // ─── Messages ───
   await prisma.message.create({
     data: {
@@ -647,6 +1307,106 @@ export async function seedDemoData() {
     },
   });
 
+  // ─── New Messages (12 more) ───
+  await prisma.message.create({
+    data: {
+      ticketId: ticket15.id,
+      authorId: customer11.id,
+      content: 'J\'ai essaye deux chargeurs differents et aucun ne fonctionne. Le port de charge semble un peu lache.',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket16.id,
+      authorId: tech1.id,
+      content: 'Bonjour Mme Dufresne, le devis inclut l\'ecran tactile 15 pouces, le tiroir-caisse, l\'imprimante thermique et la configuration du logiciel de caisse.',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket16.id,
+      authorId: customer12.id,
+      content: 'Merci pour le devis. Est-ce que le logiciel de caisse est compatible avec la gestion d\'inventaire?',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket17.id,
+      authorId: tech2.id,
+      content: 'Diagnostic en cours. Le disque dur mecanique est la cause principale de la lenteur. Je recommande un remplacement par un SSD.',
+      isInternal: false,
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket17.id,
+      authorId: tech2.id,
+      content: 'Note interne: le client a aussi 47 programmes au demarrage. Faire le menage apres l\'installation du SSD.',
+      isInternal: true,
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket19.id,
+      authorId: tech1.id,
+      content: 'Le disque dur est en fin de vie (SMART indique de nombreux secteurs realloues). Le SSD de remplacement coutera environ 120$ pour un 500GB.',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket19.id,
+      authorId: customer15.id,
+      content: 'D\'accord pour le remplacement. Est-ce que vous pouvez recuperer mes donnees avant?',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket23.id,
+      authorId: tech2.id,
+      content: 'Bonne nouvelle: le scan initial montre que les photos sont recuperables. Je commence la procedure de recuperation.',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket23.id,
+      authorId: customer19.id,
+      content: 'Merci beaucoup! C\'est un grand soulagement. Combien de temps ca va prendre?',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket26.id,
+      authorId: tech1.id,
+      content: 'Note interne: le client a mentionne avoir eu un incident de securite il y a 2 mois. Verifier les logs du pare-feu en priorite.',
+      isInternal: true,
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket28.id,
+      authorId: tech1.id,
+      content: 'Le domaine fleuristeparadis.ca est disponible. J\'ai configure les enregistrements DNS et les boites email. Premiere connexion envoyee par courriel.',
+    },
+  });
+
+  await prisma.message.create({
+    data: {
+      ticketId: ticket28.id,
+      authorId: customer24.id,
+      content: 'Parfait! J\'ai recu le courriel de configuration. Est-ce que je peux aussi avoir une adresse info@fleuristeparadis.ca?',
+    },
+  });
+
   // ─── Notifications ───
   await prisma.notification.createMany({
     data: [
@@ -715,6 +1475,71 @@ export async function seedDemoData() {
         title: 'Nouveau message',
         message: 'Un nouveau message a ete ajoute au billet TKT-260112',
       },
+      // New notifications (9 more)
+      {
+        userId: admin.id,
+        ticketId: ticket15.id,
+        type: 'TICKET_CREATED',
+        title: 'Nouveau billet',
+        message: 'Le billet TKT-260115 a ete cree par Émile Lafleur',
+      },
+      {
+        userId: admin.id,
+        ticketId: ticket21.id,
+        type: 'TICKET_CREATED',
+        title: 'Nouveau billet',
+        message: 'Le billet TKT-260121 a ete cree par Patrick Desjardins',
+      },
+      {
+        userId: customer12.id,
+        ticketId: ticket16.id,
+        type: 'QUOTE_SENT',
+        title: 'Devis envoye',
+        message: 'Un devis de 2 800,00 $ a ete soumis pour le billet TKT-260116 (systeme de caisse)',
+      },
+      {
+        userId: customer22.id,
+        ticketId: ticket26.id,
+        type: 'QUOTE_SENT',
+        title: 'Devis envoye',
+        message: 'Un devis de 3 200,00 $ a ete soumis pour le billet TKT-260126 (audit securite)',
+      },
+      {
+        userId: tech2.id,
+        ticketId: ticket17.id,
+        type: 'TECHNICIAN_ASSIGNED',
+        title: 'Billet assigne',
+        message: 'Le billet TKT-260117 vous a ete assigne',
+      },
+      {
+        userId: tech1.id,
+        ticketId: ticket18.id,
+        type: 'TECHNICIAN_ASSIGNED',
+        title: 'Billet assigne',
+        message: 'Le billet TKT-260118 vous a ete assigne',
+      },
+      {
+        userId: customer20.id,
+        ticketId: ticket24.id,
+        type: 'STATUS_CHANGED',
+        title: 'Statut modifie',
+        message: 'Le billet TKT-260124 a ete marque comme termine',
+        readAt: new Date(),
+      },
+      {
+        userId: tech2.id,
+        ticketId: ticket20.id,
+        type: 'APPOINTMENT_BOOKED',
+        title: 'Rendez-vous planifie',
+        message: 'Un rendez-vous a ete planifie pour le billet TKT-260120 (cameras de securite)',
+      },
+      {
+        userId: customer19.id,
+        ticketId: ticket23.id,
+        type: 'NEW_MESSAGE',
+        title: 'Nouveau message',
+        message: 'Un nouveau message a ete ajoute au billet TKT-260123 (recuperation de photos)',
+      },
     ],
   });
 
@@ -733,6 +1558,13 @@ export async function seedDemoData() {
   const twelveDaysAgo = new Date(now); twelveDaysAgo.setDate(now.getDate() - 12);
   const fifteenDaysAgo = new Date(now); fifteenDaysAgo.setDate(now.getDate() - 15);
   const twoWeeksFromNow = new Date(now); twoWeeksFromNow.setDate(now.getDate() + 14);
+
+  const twoDaysAgo = new Date(now); twoDaysAgo.setDate(now.getDate() - 2);
+  const sixDaysAgo = new Date(now); sixDaysAgo.setDate(now.getDate() - 6);
+  const nineteenDaysAgo = new Date(now); nineteenDaysAgo.setDate(now.getDate() - 19);
+  const twentyDaysAgo = new Date(now); twentyDaysAgo.setDate(now.getDate() - 20);
+  const twentyFiveDaysAgo = new Date(now); twentyFiveDaysAgo.setDate(now.getDate() - 25);
+  const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 30);
 
   // WO1: Just received at the counter
   const wo1 = await prisma.workOrder.create({
@@ -1343,6 +2175,802 @@ export async function seedDemoData() {
       warrantyDays: 30,
     },
   });
+
+  // ─── New Work Orders (20 more: BDT-260317 to BDT-260336) ───
+
+  // WO17: RECEPTION - Laptop just received today
+  const wo17 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260317',
+      status: 'RECEPTION',
+      priority: 'HAUTE',
+      customerId: customer11.id,
+      customerName: 'Émile Lafleur',
+      customerPhone: '514-555-0020',
+      customerEmail: 'client11@example.com',
+      deviceType: 'LAPTOP',
+      deviceBrand: 'Dell',
+      deviceModel: 'Inspiron 15 3520',
+      deviceSerial: 'DL3520-F8901',
+      deviceColor: 'Argent',
+      deviceOs: 'Windows 11 Home',
+      conditionNotes: 'Port de charge lache. Quelques egratignures mineures.',
+      accessories: ['Chargeur Dell 65W'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Clavier fonctionnel': true,
+        'Batterie presente': true,
+        'Chargeur inclus': true,
+        'Chassis sans dommage': true,
+        'Ports USB fonctionnels': true,
+      },
+      reportedIssue: 'Le portable ne charge plus du tout. Le voyant de charge ne s\'allume pas. J\'ai teste avec 2 chargeurs differents.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'CLIENT_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: now,
+      intakeDate: now,
+      estimatedPickupDate: fiveDaysFromNow,
+      intakeById: admin.id,
+      diagnosticFee: 45.00,
+      warrantyDays: 30,
+    },
+  });
+
+  // WO18: DIAGNOSTIC - Desktop 2 days ago
+  const wo18 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260318',
+      status: 'DIAGNOSTIC',
+      priority: 'NORMALE',
+      customerId: customer13.id,
+      customerName: 'Alain Bergeron',
+      customerPhone: '450-555-0022',
+      customerEmail: 'client13@example.com',
+      deviceType: 'DESKTOP',
+      deviceBrand: 'Acer',
+      deviceModel: 'Aspire TC-1780',
+      deviceSerial: 'ACR-TC-G2345',
+      deviceOs: 'Windows 11 Home',
+      conditionNotes: 'Tour en bon etat, pas de dommages physiques.',
+      accessories: ['Cable alimentation', 'Cable HDMI'],
+      conditionChecklist: {
+        'Chassis intact': true,
+        'Ventilateurs fonctionnels': true,
+        'Ports USB avant': true,
+        'Lecteur optique': true,
+      },
+      reportedIssue: 'L\'ordinateur est extremement lent. Le demarrage prend 5+ minutes. Les programmes gèlent regulierement.',
+      serviceCategory: 'LOGICIEL',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: twoDaysAgo,
+      intakeDate: twoDaysAgo,
+      estimatedPickupDate: fiveDaysFromNow,
+      intakeById: admin.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Disque dur mecanique a 95% de capacite. 47 programmes au demarrage. Recommandation: SSD + nettoyage logiciel.',
+      diagnosticFee: 45.00,
+      warrantyDays: 30,
+    },
+  });
+
+  // WO19: ATTENTE_APPROBATION - Telephone 6 days ago
+  const wo19 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260319',
+      status: 'ATTENTE_APPROBATION',
+      priority: 'URGENTE',
+      customerId: customer19.id,
+      customerName: 'Daniel Morin',
+      customerPhone: '514-555-0028',
+      customerEmail: 'client19@example.com',
+      deviceType: 'TELEPHONE',
+      deviceBrand: 'Samsung',
+      deviceModel: 'Galaxy S23 Ultra',
+      deviceSerial: 'SGS23U-D7890',
+      deviceColor: 'Vert',
+      deviceOs: 'Android 14',
+      conditionNotes: 'Appareil en bon etat physique.',
+      accessories: ['Chargeur USB-C', 'Stylet S Pen'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Boutons fonctionnels': true,
+        'Appareil photo': true,
+        'Stylet S Pen': true,
+      },
+      reportedIssue: 'Photos supprimees par erreur. Plus de 2000 photos de famille. Besoin de recuperation urgente.',
+      serviceCategory: 'DONNEES',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: sixDaysAgo,
+      intakeDate: sixDaysAgo,
+      intakeById: tech2.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Scan initial montre que 1847 photos sont recuperables sur 2100. Procedure de recuperation estimee a 4 heures.',
+      estimatedCost: 350.00,
+      maxAuthorizedSpend: 400.00,
+      diagnosticFee: 45.00,
+      warrantyDays: 0,
+    },
+  });
+
+  // WO20: APPROUVE - Tablette 6 days ago
+  const wo20 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260320',
+      status: 'APPROUVE',
+      priority: 'NORMALE',
+      customerId: customer21.id,
+      customerName: 'Stéphane Nadeau',
+      customerPhone: '514-555-0030',
+      customerEmail: 'client21@example.com',
+      deviceType: 'TABLETTE',
+      deviceBrand: 'Samsung',
+      deviceModel: 'Galaxy Tab S8+',
+      deviceSerial: 'SGT-S8P-K1234',
+      deviceColor: 'Gris',
+      deviceOs: 'Android 14',
+      conditionNotes: 'Ecran commence a se decoller sur le cote gauche.',
+      accessories: ['Chargeur USB-C', 'Etui a rabat'],
+      conditionChecklist: {
+        'Ecran intact': false,
+        'Haut-parleurs': true,
+        'Port USB-C': true,
+        'Boutons volume/power': true,
+      },
+      reportedIssue: 'La batterie gonfle et l\'ecran se decolle. La tablette chauffe beaucoup en utilisation.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'CLIENT_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: sixDaysAgo,
+      intakeDate: sixDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Batterie gonflee confirmee. Remplacement urgent necessaire. Ecran non endommage.',
+      estimatedCost: 200.00,
+      maxAuthorizedSpend: 250.00,
+      estimatedPickupDate: twoDaysFromNow,
+      diagnosticFee: 0,
+      warrantyDays: 60,
+    },
+  });
+
+  // WO21: ATTENTE_PIECES - Imprimante 12 days ago
+  const wo21 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260321',
+      status: 'ATTENTE_PIECES',
+      priority: 'BASSE',
+      customerId: customer14.id,
+      customerName: 'Mélanie Savard - Agence de Voyage Savard',
+      customerPhone: '450-555-0023',
+      customerEmail: 'client14@example.com',
+      deviceType: 'IMPRIMANTE',
+      deviceBrand: 'Epson',
+      deviceModel: 'WorkForce Pro WF-4830',
+      deviceSerial: 'EPS-WF4830-N5678',
+      conditionNotes: 'Appareil en etat moyen, quelques traces d\'encre.',
+      accessories: ['Cable alimentation', 'Cable USB'],
+      conditionChecklist: {
+        'Ecran affichage OK': true,
+        'Bac papier intact': true,
+        'Chargeur docs ADF': true,
+        'Vitre scanner': true,
+      },
+      reportedIssue: 'L\'imprimante ne reconnait plus les cartouches d\'encre. Message d\'erreur "cartouche non reconnue" sur toutes les couleurs.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'NON_APPLICABLE',
+      termsAccepted: true,
+      termsAcceptedAt: twelveDaysAgo,
+      intakeDate: twelveDaysAgo,
+      intakeById: tech1.id,
+      technicianId: tech1.id,
+      diagnosticNotes: 'Chip de lecture des cartouches defectueux sur la tete d\'impression. Remplacement de la tete necessaire.',
+      repairNotes: 'Tete d\'impression commandee chez Epson. Delai: 7-10 jours ouvrables.',
+      estimatedCost: 180.00,
+      depositAmount: 50.00,
+      diagnosticFee: 35.00,
+      warrantyDays: 30,
+    },
+  });
+
+  // WO22: EN_REPARATION - Serveur 8 days ago
+  const wo22 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260322',
+      status: 'EN_REPARATION',
+      priority: 'URGENTE',
+      customerId: customer18.id,
+      customerName: 'Josée Gauthier - Garderie Les Petits Anges',
+      customerPhone: '438-555-0027',
+      customerEmail: 'client18@example.com',
+      deviceType: 'SERVEUR',
+      deviceBrand: 'HP',
+      deviceModel: 'ProLiant MicroServer Gen10 Plus',
+      deviceSerial: 'HP-MS10P-L9012',
+      deviceOs: 'Windows Server 2019 Essentials',
+      conditionNotes: 'Serveur en bon etat physique.',
+      accessories: ['Cable alimentation', '2x Cable RJ45'],
+      conditionChecklist: {
+        'Chassis intact': true,
+        'Ventilateurs fonctionnels': true,
+        'Disques durs presents': true,
+        'Ports reseau': true,
+      },
+      reportedIssue: 'Le serveur de fichiers de la garderie ne demarre plus. Erreur au POST. Les donnees des enfants et les dossiers administratifs sont dessus.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: eightDaysAgo,
+      intakeDate: eightDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech1.id,
+      diagnosticNotes: 'Module memoire ECC defectueux (slot 2). Remplacement en cours.',
+      repairNotes: 'Memoire ECC remplacee. Verification de l\'integrite des donnees en cours.',
+      estimatedCost: 300.00,
+      depositAmount: 100.00,
+      partsUsed: [
+        { name: 'Module DDR4 ECC 16GB HP', cost: 120.00, type: 'OEM' },
+      ],
+      diagnosticFee: 45.00,
+      warrantyDays: 90,
+    },
+  });
+
+  // WO23: VERIFICATION - Laptop 10 days ago
+  const wo23 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260323',
+      status: 'VERIFICATION',
+      priority: 'NORMALE',
+      customerId: customer15.id,
+      customerName: 'Réjean Paquette',
+      customerPhone: '514-555-0024',
+      customerEmail: 'client15@example.com',
+      deviceType: 'LAPTOP',
+      deviceBrand: 'ASUS',
+      deviceModel: 'ROG Strix G16',
+      deviceSerial: 'ASU-ROG-M3456',
+      deviceColor: 'Noir Eclipse',
+      deviceOs: 'Windows 11 Home',
+      conditionNotes: 'Portable gaming en bon etat. Stickers sur le couvercle.',
+      accessories: ['Chargeur 280W', 'Souris gaming'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Clavier fonctionnel': true,
+        'Batterie presente': true,
+        'Ventilateurs': true,
+        'Ports USB/HDMI': true,
+      },
+      reportedIssue: 'Ecran bleu CRITICAL_PROCESS_DIED a chaque demarrage. Impossible d\'acceder a Windows. Le mode sans echec ne fonctionne pas non plus.',
+      serviceCategory: 'LOGICIEL',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: tenDaysAgo,
+      intakeDate: tenDaysAgo,
+      intakeById: tech1.id,
+      technicianId: tech1.id,
+      diagnosticNotes: 'SSD NVMe en fin de vie - SMART critique. Remplacement effectue, Windows reinstalle.',
+      repairNotes: 'SSD Samsung 990 Pro 1TB installe. Windows 11 reinstalle. Donnees recuperees du vieux SSD. Tests de stabilite en cours.',
+      estimatedCost: 220.00,
+      finalCost: 210.00,
+      partsUsed: [
+        { name: 'Samsung 990 Pro 1TB NVMe', cost: 130.00, type: 'OEM' },
+        { name: 'Pate thermique Arctic MX-6', cost: 12.00, type: 'AFTERMARKET' },
+      ],
+      diagnosticFee: 45.00,
+      warrantyDays: 90,
+    },
+  });
+
+  // WO24: PRET - Telephone 15 days ago
+  const wo24 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260324',
+      status: 'PRET',
+      priority: 'HAUTE',
+      customerId: customer17.id,
+      customerName: 'Patrick Desjardins',
+      customerPhone: '514-555-0026',
+      customerEmail: 'client17@example.com',
+      deviceType: 'TELEPHONE',
+      deviceBrand: 'Google',
+      deviceModel: 'Pixel 8 Pro',
+      deviceSerial: 'GPX8P-R5678',
+      deviceColor: 'Porcelaine',
+      deviceOs: 'Android 14',
+      conditionNotes: 'Ecran micro-fissure coin superieur droit.',
+      accessories: ['Chargeur USB-C', 'Etui transparent'],
+      conditionChecklist: {
+        'Ecran intact': false,
+        'Boutons fonctionnels': true,
+        'Appareil photo': true,
+        'Haut-parleur': true,
+      },
+      reportedIssue: 'L\'ecran a des zones mortes au tactile apres une micro-fissure. Certaines applications sont impossibles a utiliser.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'CLIENT_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: fifteenDaysAgo,
+      intakeDate: fifteenDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Digitizer endommage. Remplacement de l\'ensemble ecran+digitizer.',
+      repairNotes: 'Ecran OLED remplace. Tests tactiles OK. Calibration effectuee.',
+      estimatedCost: 380.00,
+      finalCost: 370.00,
+      completedDate: twoDaysAgo,
+      estimatedPickupDate: now,
+      partsUsed: [
+        { name: 'Ecran OLED Pixel 8 Pro', cost: 250.00, type: 'OEM' },
+        { name: 'Kit adhesif etancheite', cost: 15.00, type: 'AFTERMARKET' },
+      ],
+      warrantyDays: 90,
+    },
+  });
+
+  // WO25: REMIS - Tout-en-un 20 days ago (terminal)
+  await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260325',
+      status: 'REMIS',
+      priority: 'NORMALE',
+      customerId: customer16.id,
+      customerName: 'Véronique Lemieux - Studio de Yoga Harmonie',
+      customerPhone: '514-555-0025',
+      customerEmail: 'client16@example.com',
+      deviceType: 'TOUT_EN_UN',
+      deviceBrand: 'Lenovo',
+      deviceModel: 'IdeaCentre AIO 3 27',
+      deviceSerial: 'LNV-AIO3-P4567',
+      deviceColor: 'Blanc',
+      deviceOs: 'Windows 11 Home',
+      conditionNotes: 'Appareil en bon etat, quelques traces de doigts sur l\'ecran.',
+      accessories: ['Clavier sans fil', 'Souris sans fil', 'Cable alimentation'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Clavier fonctionnel': true,
+        'Souris fonctionnelle': true,
+        'Webcam': true,
+        'Haut-parleurs': true,
+      },
+      reportedIssue: 'Le systeme est infecte par des adwares. Publicites intempestives et redirections de navigateur.',
+      serviceCategory: 'LOGICIEL',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: twentyDaysAgo,
+      intakeDate: twentyDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Infection adware confirmee. 12 PUPs detectes. Nettoyage complet effectue.',
+      repairNotes: 'Nettoyage malware complet. Adwcleaner + Malwarebytes. Chrome reinitialise. Antivirus installe.',
+      estimatedCost: 120.00,
+      finalCost: 120.00,
+      completedDate: fifteenDaysAgo,
+      pickupDate: twelveDaysAgo,
+      warrantyStartDate: twelveDaysAgo,
+      warrantyDays: 30,
+    },
+  });
+
+  // WO26: REFUSE - Desktop 19 days ago (terminal)
+  await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260326',
+      status: 'REFUSE',
+      priority: 'BASSE',
+      customerId: customer23.id,
+      customerName: 'Michel Simard',
+      customerPhone: '514-555-0032',
+      deviceType: 'DESKTOP',
+      deviceBrand: 'HP',
+      deviceModel: 'Pavilion Desktop TP01',
+      deviceSerial: 'HP-TP01-Q7890',
+      deviceOs: 'Windows 10 Home',
+      conditionNotes: 'Tour poussiereuse, quelques marques.',
+      accessories: ['Cable alimentation'],
+      conditionChecklist: {
+        'Chassis intact': true,
+        'Ventilateurs fonctionnels': false,
+        'Ports USB avant': true,
+      },
+      reportedIssue: 'L\'ordinateur fait un bruit fort de ventilateur et surchauffe. Il s\'eteint tout seul apres 15 minutes.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'NON_APPLICABLE',
+      termsAccepted: true,
+      termsAcceptedAt: nineteenDaysAgo,
+      intakeDate: nineteenDaysAgo,
+      intakeById: tech1.id,
+      technicianId: tech1.id,
+      diagnosticNotes: 'Ventilateur CPU HS + pate thermique sechee. GPU aussi en surchauffe. Reparation estimee a 180$ mais le PC vaut environ 200$.',
+      estimatedCost: 180.00,
+      diagnosticFee: 45.00,
+      warrantyDays: 0,
+    },
+  });
+
+  // WO27: ABANDONNE - Tablette 25 days ago (terminal)
+  await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260327',
+      status: 'ABANDONNE',
+      priority: 'BASSE',
+      customerId: customer25.id,
+      customerName: 'Robert Champagne',
+      customerPhone: '514-555-0034',
+      deviceType: 'TABLETTE',
+      deviceBrand: 'Amazon',
+      deviceModel: 'Fire HD 10 (2023)',
+      deviceSerial: 'AMZ-FHD10-S1234',
+      deviceOs: 'FireOS 7',
+      conditionNotes: 'Tablette en etat moyen, ecran raye.',
+      accessories: ['Chargeur USB-C'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Haut-parleurs': true,
+        'Port USB-C': true,
+        'Boutons': true,
+      },
+      reportedIssue: 'La tablette ne s\'allume plus du tout. Aucune reaction au bouton power ni a la charge.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'DECLINE',
+      termsAccepted: true,
+      termsAcceptedAt: twentyFiveDaysAgo,
+      intakeDate: twentyFiveDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Carte mere grillee. Cout de reparation superieur au prix d\'achat. Client informe mais ne donne pas suite.',
+      estimatedCost: 150.00,
+      diagnosticFee: 45.00,
+      abandonedDate: tenDaysAgo,
+      warrantyDays: 0,
+    },
+  });
+
+  // WO28: ANNULE - Reseau equip 3 days ago (terminal)
+  await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260328',
+      status: 'ANNULE',
+      priority: 'NORMALE',
+      customerId: customer12.id,
+      customerName: 'Geneviève Dufresne - Boutique Mode Gigi',
+      customerPhone: '514-555-0021',
+      customerEmail: 'client12@example.com',
+      deviceType: 'RESEAU_EQUIP',
+      deviceBrand: 'TP-Link',
+      deviceModel: 'Archer AX73',
+      deviceSerial: 'TPL-AX73-T5678',
+      conditionNotes: 'Routeur en bon etat.',
+      accessories: ['Cable alimentation', 'Cable RJ45'],
+      conditionChecklist: {
+        'Antennes intactes': true,
+        'Ports RJ45': true,
+        'LED statut': true,
+      },
+      reportedIssue: 'Le WiFi decroche toutes les heures. Les appareils doivent se reconnecter manuellement.',
+      serviceCategory: 'RESEAU',
+      dataBackupConsent: 'NON_APPLICABLE',
+      termsAccepted: true,
+      termsAcceptedAt: threeDaysAgo,
+      intakeDate: threeDaysAgo,
+      intakeById: admin.id,
+      diagnosticFee: 0,
+      warrantyDays: 0,
+    },
+  });
+
+  // WO29: RECEPTION - Autre (peripherique) today
+  const wo29 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260329',
+      status: 'RECEPTION',
+      priority: 'BASSE',
+      customerId: customer22.id,
+      customerName: 'Annie Ouellet - Centre de Massothérapie Zen',
+      customerPhone: '514-555-0031',
+      customerEmail: 'client22@example.com',
+      deviceType: 'AUTRE',
+      deviceBrand: 'Clover',
+      deviceModel: 'Station Duo',
+      deviceSerial: 'CLV-DUO-U9012',
+      conditionNotes: 'Terminal de paiement en bon etat physique.',
+      accessories: ['Cable alimentation', 'Cable Ethernet', 'Rouleau de papier'],
+      conditionChecklist: {
+        'Ecran tactile OK': true,
+        'Imprimante recus': true,
+        'Lecteur carte': true,
+        'NFC/sans contact': true,
+      },
+      reportedIssue: 'Le terminal de paiement affiche "Erreur de connexion" depuis 2 jours. Impossible de prendre les paiements par carte.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'NON_APPLICABLE',
+      termsAccepted: true,
+      termsAcceptedAt: now,
+      intakeDate: now,
+      estimatedPickupDate: twoDaysFromNow,
+      intakeById: tech1.id,
+      diagnosticFee: 35.00,
+      warrantyDays: 30,
+    },
+  });
+
+  // WO30: DIAGNOSTIC - Laptop 4 days ago
+  const wo30 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260330',
+      status: 'DIAGNOSTIC',
+      priority: 'HAUTE',
+      customerId: customer20.id,
+      customerName: 'Catherine Brassard - Salon de Coiffure Belle Tête',
+      customerPhone: '438-555-0029',
+      customerEmail: 'client20@example.com',
+      deviceType: 'LAPTOP',
+      deviceBrand: 'HP',
+      deviceModel: 'Pavilion 15-eg',
+      deviceSerial: 'HP-PAV15-V3456',
+      deviceColor: 'Rose dore',
+      deviceOs: 'Windows 11 Home',
+      conditionNotes: 'Quelques egratignures cosmetiques.',
+      accessories: ['Chargeur HP 45W'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Clavier fonctionnel': true,
+        'Batterie presente': true,
+        'Chargeur inclus': true,
+      },
+      reportedIssue: 'Le logiciel de reservation du salon plante constamment. Les rendez-vous disparaissent parfois de la base de donnees.',
+      serviceCategory: 'LOGICIEL',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: fourDaysAgo,
+      intakeDate: fourDaysAgo,
+      estimatedPickupDate: fiveDaysFromNow,
+      intakeById: admin.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Corruption de la base de donnees SQLite du logiciel. Secteurs defectueux sur le disque HDD.',
+      diagnosticFee: 45.00,
+      warrantyDays: 30,
+    },
+  });
+
+  // WO31: EN_REPARATION - Desktop 10 days ago
+  const wo31 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260331',
+      status: 'EN_REPARATION',
+      priority: 'NORMALE',
+      customerId: customer24.id,
+      customerName: 'Julie Paradis - Fleuriste Paradis',
+      customerPhone: '514-555-0033',
+      customerEmail: 'client24@example.com',
+      deviceType: 'DESKTOP',
+      deviceBrand: 'Dell',
+      deviceModel: 'OptiPlex 7010',
+      deviceSerial: 'DL-OPT7010-W7890',
+      deviceOs: 'Windows 11 Pro',
+      conditionNotes: 'Tour de bureau en bon etat general.',
+      accessories: ['Cable alimentation', 'Clavier', 'Souris'],
+      conditionChecklist: {
+        'Chassis intact': true,
+        'Ventilateurs fonctionnels': true,
+        'Ports USB': true,
+        'Lecteur carte SD': true,
+      },
+      reportedIssue: 'L\'ordinateur redemarre tout seul de maniere aleatoire. Parfois en plein milieu d\'une commande client. Tres genante pour le commerce.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: tenDaysAgo,
+      intakeDate: tenDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech1.id,
+      diagnosticNotes: 'Alimentation defectueuse - tension instable sur le rail 12V. Condensateurs gonfles.',
+      repairNotes: 'Remplacement de l\'alimentation en cours. Nouvelle alimentation 80+ Gold installee.',
+      estimatedCost: 160.00,
+      depositAmount: 50.00,
+      partsUsed: [
+        { name: 'Alimentation Corsair CX450M 80+ Bronze', cost: 65.00, type: 'AFTERMARKET' },
+      ],
+      diagnosticFee: 45.00,
+      warrantyDays: 90,
+    },
+  });
+
+  // WO32: ATTENTE_APPROBATION - Telephone 5 days ago
+  const wo32 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260332',
+      status: 'ATTENTE_APPROBATION',
+      priority: 'NORMALE',
+      customerId: customer17.id,
+      customerName: 'Patrick Desjardins',
+      customerPhone: '514-555-0026',
+      customerEmail: 'client17@example.com',
+      deviceType: 'TELEPHONE',
+      deviceBrand: 'Apple',
+      deviceModel: 'iPhone 14',
+      deviceSerial: 'F2LY98765432',
+      deviceColor: 'Bleu',
+      deviceOs: 'iOS 17.3',
+      conditionNotes: 'Appareil en bon etat, avec etui de protection.',
+      accessories: ['Chargeur Lightning'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Boutons fonctionnels': true,
+        'Appareil photo': true,
+        'Face ID': true,
+      },
+      reportedIssue: 'La batterie ne tient plus que 3 heures. Le telephone s\'eteint a 20% de batterie.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'CLIENT_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: fiveDaysAgo,
+      intakeDate: fiveDaysAgo,
+      intakeById: tech2.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'Batterie a 67% de sa capacite originale (cycles: 1247). Remplacement recommande.',
+      estimatedCost: 130.00,
+      diagnosticFee: 0,
+      warrantyDays: 90,
+    },
+  });
+
+  // WO33: APPROUVE - TOUT_EN_UN 8 days ago
+  const wo33 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260333',
+      status: 'APPROUVE',
+      priority: 'HAUTE',
+      customerId: customer22.id,
+      customerName: 'Annie Ouellet - Centre de Massothérapie Zen',
+      customerPhone: '514-555-0031',
+      customerEmail: 'client22@example.com',
+      deviceType: 'TOUT_EN_UN',
+      deviceBrand: 'HP',
+      deviceModel: 'All-in-One 27-cr',
+      deviceSerial: 'HP-AIO27-X1234',
+      deviceColor: 'Blanc coquillage',
+      deviceOs: 'Windows 11 Home',
+      conditionNotes: 'Appareil en bon etat, ecran propre.',
+      accessories: ['Clavier HP', 'Souris HP', 'Cable alimentation'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Clavier fonctionnel': true,
+        'Webcam': true,
+        'Haut-parleurs': true,
+        'Ports USB': true,
+      },
+      reportedIssue: 'L\'ecran clignote de maniere aleatoire. Parfois completement noir pendant 2-3 secondes puis revient.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'NON_APPLICABLE',
+      termsAccepted: true,
+      termsAcceptedAt: eightDaysAgo,
+      intakeDate: eightDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech1.id,
+      diagnosticNotes: 'Retro-eclairage LED defectueux. Remplacement du ruban LED necessaire.',
+      estimatedCost: 280.00,
+      maxAuthorizedSpend: 300.00,
+      diagnosticFee: 45.00,
+      warrantyDays: 60,
+    },
+  });
+
+  // WO34: REMIS - Laptop 30 days ago (terminal)
+  await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260334',
+      status: 'REMIS',
+      priority: 'URGENTE',
+      customerId: customer14.id,
+      customerName: 'Mélanie Savard - Agence de Voyage Savard',
+      customerPhone: '450-555-0023',
+      customerEmail: 'client14@example.com',
+      deviceType: 'LAPTOP',
+      deviceBrand: 'Lenovo',
+      deviceModel: 'ThinkPad T14s Gen 4',
+      deviceSerial: 'LNV-T14S-Y5678',
+      deviceColor: 'Noir tonnerre',
+      deviceOs: 'Windows 11 Pro',
+      reportedIssue: 'Ecran noir apres mise a jour Windows. Le portable demarre (LED allumee) mais rien a l\'ecran.',
+      serviceCategory: 'LOGICIEL',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: thirtyDaysAgo,
+      intakeDate: thirtyDaysAgo,
+      intakeById: admin.id,
+      technicianId: tech1.id,
+      diagnosticNotes: 'Pilote GPU corrompu apres Windows Update. Demarrage en mode sans echec OK.',
+      repairNotes: 'Pilote GPU reinstalle. Windows Update problematique desinstalle. Mise a jour bloquee.',
+      estimatedCost: 80.00,
+      finalCost: 80.00,
+      completedDate: twentyFiveDaysAgo,
+      pickupDate: twentyDaysAgo,
+      warrantyStartDate: twentyDaysAgo,
+      warrantyDays: 30,
+    },
+  });
+
+  // WO35: PRET - Desktop 20 days ago
+  const wo35 = await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260335',
+      status: 'PRET',
+      priority: 'NORMALE',
+      customerId: customer13.id,
+      customerName: 'Alain Bergeron',
+      customerPhone: '450-555-0022',
+      customerEmail: 'client13@example.com',
+      deviceType: 'DESKTOP',
+      deviceBrand: 'Custom',
+      deviceModel: 'Tour bureautique personnalisee',
+      deviceSerial: 'CUSTOM-2023-BRG',
+      deviceOs: 'Windows 10 Pro',
+      conditionNotes: 'Tour en etat moyen, poussiereuse.',
+      accessories: ['Cable alimentation'],
+      conditionChecklist: {
+        'Chassis intact': true,
+        'Ventilateurs fonctionnels': true,
+        'Ports USB': true,
+      },
+      reportedIssue: 'Mise a niveau demandee: ajout de RAM et remplacement du disque dur par un SSD.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'ATELIER_FAIT',
+      termsAccepted: true,
+      termsAcceptedAt: twentyDaysAgo,
+      intakeDate: twentyDaysAgo,
+      intakeById: tech1.id,
+      technicianId: tech2.id,
+      diagnosticNotes: 'PC fonctionnel mais lent. HDD 500GB a 85% capacite. 4GB RAM insuffisant.',
+      repairNotes: 'SSD 1TB installe, 16GB RAM ajoutee. Windows migre. Nettoyage complet et mise a jour.',
+      estimatedCost: 280.00,
+      finalCost: 260.00,
+      completedDate: fifteenDaysAgo,
+      estimatedPickupDate: twelveDaysAgo,
+      partsUsed: [
+        { name: 'SSD Kingston A400 1TB', cost: 80.00, type: 'AFTERMARKET' },
+        { name: 'RAM DDR4 16GB (2x8GB) Crucial', cost: 55.00, type: 'AFTERMARKET' },
+      ],
+      warrantyDays: 60,
+    },
+  });
+
+  // WO36: ANNULE - Telephone 2 days ago (terminal)
+  await prisma.workOrder.create({
+    data: {
+      orderNumber: 'BDT-260336',
+      status: 'ANNULE',
+      priority: 'NORMALE',
+      customerId: customer25.id,
+      customerName: 'Robert Champagne',
+      customerPhone: '514-555-0034',
+      deviceType: 'TELEPHONE',
+      deviceBrand: 'Motorola',
+      deviceModel: 'Moto G Power 5G',
+      deviceSerial: 'MOT-GP5G-A1234',
+      deviceColor: 'Gris mineral',
+      deviceOs: 'Android 14',
+      conditionNotes: 'Telephone en bon etat.',
+      accessories: ['Chargeur USB-C'],
+      conditionChecklist: {
+        'Ecran intact': true,
+        'Boutons fonctionnels': true,
+        'Appareil photo': true,
+      },
+      reportedIssue: 'Le wifi ne se connecte plus. Le bluetooth fonctionne mais le wifi reste en recherche.',
+      serviceCategory: 'REPARATION',
+      dataBackupConsent: 'NON_APPLICABLE',
+      termsAccepted: true,
+      termsAcceptedAt: twoDaysAgo,
+      intakeDate: twoDaysAgo,
+      intakeById: admin.id,
+      diagnosticFee: 0,
+      warrantyDays: 0,
+    },
+  });
+
   await prisma.workOrderNote.createMany({
     data: [
       {
@@ -1418,6 +3046,67 @@ export async function seedDemoData() {
         content: 'Reparation terminee. Tests d\'impression couleur passes avec succes. Qualite excellente.',
         isInternal: false,
       },
+      // New work order notes (10 more)
+      {
+        workOrderId: wo17.id,
+        authorId: admin.id,
+        content: 'Appareil recu. Port de charge visuellement lache. Diagnostic planifie pour demain matin.',
+        isInternal: false,
+      },
+      {
+        workOrderId: wo18.id,
+        authorId: tech2.id,
+        content: 'Note interne: HDD Seagate 1TB presque plein. Recommander SSD 500GB Samsung + nettoyage des programmes au demarrage.',
+        isInternal: true,
+      },
+      {
+        workOrderId: wo19.id,
+        authorId: tech2.id,
+        content: 'Scan de recuperation termine. 1847 photos sur 2100 recuperables. En attente de l\'approbation du client pour proceder.',
+        isInternal: false,
+      },
+      {
+        workOrderId: wo22.id,
+        authorId: tech1.id,
+        content: 'Module memoire ECC remplace. Demarrage OK. Verification de l\'integrite des fichiers en cours avec chkdsk.',
+        isInternal: true,
+      },
+      {
+        workOrderId: wo22.id,
+        authorId: admin.id,
+        content: 'Garderie informee que le serveur sera pret demain. Ils ont un backup sur cle USB en attendant.',
+        isInternal: false,
+      },
+      {
+        workOrderId: wo23.id,
+        authorId: tech1.id,
+        content: 'SSD installe et Windows reinstalle. Donnees utilisateur restaurees depuis le vieux SSD. Lancement de 48h de tests de stabilite.',
+        isInternal: true,
+      },
+      {
+        workOrderId: wo24.id,
+        authorId: tech2.id,
+        content: 'Ecran OLED remplace avec succes. Client appele pour ramassage - pas de reponse, message vocal laisse.',
+        isInternal: false,
+      },
+      {
+        workOrderId: wo31.id,
+        authorId: tech1.id,
+        content: 'Alimentation remplacee. Tests de stress en cours (Prime95 + FurMark). Aucun redemarrage apres 2 heures.',
+        isInternal: true,
+      },
+      {
+        workOrderId: wo33.id,
+        authorId: tech1.id,
+        content: 'Client approuve la reparation a 280$. Ruban LED commande, disponible en 2-3 jours.',
+        isInternal: false,
+      },
+      {
+        workOrderId: wo35.id,
+        authorId: tech2.id,
+        content: 'Mise a niveau terminee. PC demarre en 12 secondes vs 4 minutes avant. Client contacte pour ramassage.',
+        isInternal: false,
+      },
     ],
   });
 
@@ -1434,13 +3123,13 @@ export async function seedDemoData() {
   });
 
   console.log('Demo data seeded successfully!');
-  console.log(`  Users: 13 (1 admin, 2 technicians, 10 customers)`);
-  console.log(`  Tickets: 14`);
-  console.log(`  Appointments: 6`);
-  console.log(`  Messages: 13`);
-  console.log(`  Notifications: 9`);
-  console.log(`  Work Orders: 16`);
-  console.log(`  Work Order Notes: 12`);
+  console.log(`  Users: 28 (1 admin, 2 technicians, 25 customers)`);
+  console.log(`  Tickets: 30`);
+  console.log(`  Appointments: 18`);
+  console.log(`  Messages: 25`);
+  console.log(`  Notifications: 18`);
+  console.log(`  Work Orders: 36`);
+  console.log(`  Work Order Notes: 22`);
 }
 
 // Run when called directly (prisma db seed)
