@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+.next/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Database
+*.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Prisma
+prisma/migrations/**/migration_lock.toml
+
+# Backups
+data/backups/
+
+# Coverage
+coverage/
+
+# TypeScript build info
+*.tsbuildinfo

@@ -1,0 +1,37 @@
+{
+  "name": "valitek-v2-backend",
+  "version": "1.0.0",
+  "description": "Valitek v2 IT ticket management system - Backend API",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/index.ts",
+    "build": "tsup src/index.ts --format esm --dts",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "lint": "tsc --noEmit",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "npx prisma db seed"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "hono": "^4",
+    "@hono/node-server": "^1",
+    "jose": "^5",
+    "hash-wasm": "^4",
+    "zod": "^3.23",
+    "@prisma/client": "^6",
+    "pino": "^9"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^22",
+    "prisma": "^6",
+    "vitest": "^3",
+    "tsx": "^4",
+    "tsup": "^8",
+    "pino-pretty": "^13"
+  }
+}

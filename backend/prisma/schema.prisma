@@ -1,0 +1,454 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  TECHNICIAN
+  ADMIN
+}
+
+enum CustomerType {
+  RESIDENTIAL
+  COMMERCIAL
+}
+
+enum ServiceMode {
+  SUR_ROUTE
+  EN_CUBICULE
+}
+
+enum ServiceCategory {
+  REPARATION
+  LOGICIEL
+  RESEAU
+  DONNEES
+  INSTALLATION
+  MAINTENANCE
+  CONSULTATION
+  FORMATION
+  AUTRE
+}
+
+enum TicketStatus {
+  NOUVELLE
+  EN_ATTENTE_APPROBATION
+  EN_ATTENTE_REPONSE_CLIENT
+  APPROUVEE
+  PLANIFIEE
+  EN_COURS
+  BLOCAGE
+  TERMINEE
+  FERMEE
+  ANNULEE
+}
+
+enum Priority {
+  BASSE
+  NORMALE
+  HAUTE
+  URGENTE
+}
+
+enum AppointmentStatus {
+  DEMANDE
+  PLANIFIE
+  CONFIRME
+  EN_COURS
+  TERMINE
+  ANNULE
+}
+
+enum ProposalStatus {
+  PROPOSEE
+  ACCEPTEE
+  REFUSEE
+  ANNULEE
+}
+
+enum NotificationType {
+  TICKET_CREATED
+  STATUS_CHANGED
+  QUOTE_SENT
+  QUOTE_APPROVED
+  QUOTE_DECLINED
+  NEW_MESSAGE
+  BLOCKER_ADDED
+  BLOCKER_REMOVED
+  TECHNICIAN_ASSIGNED
+  APPOINTMENT_BOOKED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_PROPOSED
+  APPOINTMENT_PROPOSAL_ACCEPTED
+  APPOINTMENT_PROPOSAL_REJECTED
+  APPOINTMENT_COUNTER_PROPOSED
+  BACKUP_COMPLETED
+  BACKUP_RESTORED
+}
+
+enum BackupStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  RESTORED
+}
+
+enum BackupType {
+  FULL
+  PARTIAL
+}
+
+// ─── Work Order (Bon de travail) ───
+
+enum WorkOrderStatus {
+  RECEPTION            // Device checked in at counter
+  DIAGNOSTIC           // Tech is diagnosing the issue
+  ATTENTE_APPROBATION  // Waiting for customer to approve quote
+  APPROUVE             // Customer approved, work authorized
+  ATTENTE_PIECES       // Waiting for parts to arrive
+  EN_REPARATION        // Actively being repaired
+  VERIFICATION         // Quality check / testing
+  PRET                 // Ready for pickup, customer notified
+  REMIS                // Customer picked up device (terminal)
+  REFUSE               // Customer declined repair (terminal)
+  ABANDONNE            // Device abandoned (terminal)
+  ANNULE               // Cancelled (terminal)
+}
+
+enum DeviceType {
+  LAPTOP
+  DESKTOP
+  TABLETTE
+  TELEPHONE
+  TOUT_EN_UN
+  IMPRIMANTE
+  SERVEUR
+  RESEAU_EQUIP
+  AUTRE
+}
+
+enum DataBackupConsent {
+  CLIENT_FAIT          // Customer backed up their own data
+  ATELIER_FAIT         // Shop to perform backup
+  DECLINE              // Customer declined backup
+  NON_APPLICABLE       // Not applicable (e.g., printer)
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  role         UserRole
+  customerType CustomerType?
+  companyName  String?
+  address      String?
+  isActive     Boolean       @default(true)
+  isDemo       Boolean       @default(false)
+  permissions  Json?
+  deletedAt    DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  customerTickets  Ticket[]       @relation("CustomerTickets")
+  technicianTickets Ticket[]      @relation("TechnicianTickets")
+  appointments     Appointment[]
+  messages         Message[]
+  notifications    Notification[]
+  attachments      Attachment[]
+  proposalsAuthored  AppointmentProposal[] @relation("ProposalAuthor")
+  proposalsResponded AppointmentProposal[] @relation("ProposalResponder")
+  customerWorkOrders   WorkOrder[]     @relation("CustomerWorkOrders")
+  technicianWorkOrders WorkOrder[]     @relation("TechnicianWorkOrders")
+  intakeByWorkOrders   WorkOrder[]     @relation("IntakeByWorkOrders")
+  workOrderNotes       WorkOrderNote[]
+
+  @@index([role, isActive])
+  @@index([deletedAt])
+}
+
+model Ticket {
+  id               String          @id @default(uuid())
+  ticketNumber     String          @unique
+  title            String
+  description      String
+  status           TicketStatus    @default(NOUVELLE)
+  priority         Priority        @default(NORMALE)
+  serviceMode      ServiceMode     @default(EN_CUBICULE)
+  serviceCategory  ServiceCategory @default(REPARATION)
+  quotedPrice      Float?
+  quoteDescription String?
+  quoteDuration    String?
+  blockerReason    String?
+  customerId       String
+  technicianId     String?
+  deletedAt        DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  customer      User           @relation("CustomerTickets", fields: [customerId], references: [id], onDelete: Restrict)
+  technician    User?          @relation("TechnicianTickets", fields: [technicianId], references: [id], onDelete: SetNull)
+  appointments  Appointment[]
+  proposals     AppointmentProposal[]
+  messages      Message[]
+  notifications Notification[]
+  attachments   Attachment[]
+
+  @@index([status, createdAt])
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([deletedAt])
+}
+
+model Appointment {
+  id             String            @id @default(uuid())
+  ticketId       String
+  technicianId   String?
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  travelBuffer   Int               @default(0)
+  status         AppointmentStatus @default(PLANIFIE)
+  notes          String?
+  cancelReason   String?
+  proposalId     String?           // Link to the proposal that created this appointment
+  deletedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  ticket     Ticket @relation(fields: [ticketId], references: [id])
+  technician User?  @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  proposal   AppointmentProposal? @relation(fields: [proposalId], references: [id])
+
+  @@index([ticketId, status])
+  @@index([technicianId])
+  @@index([scheduledStart])
+  @@index([deletedAt])
+}
+
+model AppointmentProposal {
+  id              String         @id @default(uuid())
+  ticketId        String
+  proposedById    String
+  proposedStart   DateTime
+  proposedEnd     DateTime
+  message         String?
+  status          ProposalStatus @default(PROPOSEE)
+  responseMessage String?
+  respondedById   String?
+  respondedAt     DateTime?
+  parentId        String?        // Links counter-proposals to the original
+  deletedAt       DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  ticket      Ticket                @relation(fields: [ticketId], references: [id])
+  proposedBy  User                  @relation("ProposalAuthor", fields: [proposedById], references: [id])
+  respondedBy User?                 @relation("ProposalResponder", fields: [respondedById], references: [id])
+  parent      AppointmentProposal?  @relation("ProposalThread", fields: [parentId], references: [id])
+  replies     AppointmentProposal[] @relation("ProposalThread")
+  appointments Appointment[]
+
+  @@index([ticketId, status])
+  @@index([proposedById])
+  @@index([parentId])
+  @@index([deletedAt])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  ticketId   String
+  authorId   String
+  content    String
+  isInternal Boolean  @default(false)
+  deletedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  ticket      Ticket       @relation(fields: [ticketId], references: [id])
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  attachments Attachment[]
+
+  @@index([ticketId, createdAt])
+  @@index([deletedAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  ticketId  String?
+  type      NotificationType
+  title     String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  ticket Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([ticketId])
+}
+
+model Attachment {
+  id          String  @id @default(uuid())
+  ticketId    String
+  messageId   String?
+  uploadedBy  String
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  storagePath String
+  createdAt   DateTime @default(now())
+
+  ticket  Ticket   @relation(fields: [ticketId], references: [id])
+  message Message? @relation(fields: [messageId], references: [id])
+  uploader User    @relation(fields: [uploadedBy], references: [id])
+
+  @@index([ticketId])
+  @@index([messageId])
+}
+
+// ─── Work Order (Bon de travail — in-shop repair) ───
+
+model WorkOrder {
+  id                  String            @id @default(uuid())
+  orderNumber         String            @unique // BDT-YYMMNN format
+  status              WorkOrderStatus   @default(RECEPTION)
+  priority            Priority          @default(NORMALE)
+
+  // ─── Customer info ───
+  customerId          String
+  customerName        String             // Denormalized for quick display (walk-in may not have account)
+  customerPhone       String
+  customerEmail       String?
+
+  // ─── Device info ───
+  deviceType          DeviceType         @default(LAPTOP)
+  deviceBrand         String             // e.g., Dell, HP, Apple
+  deviceModel         String             // e.g., Latitude 5520
+  deviceSerial        String?            // Serial number / service tag
+  deviceColor         String?
+  devicePassword      String?            // Stored for technician access
+  deviceOs            String?            // e.g., Windows 11, macOS Ventura
+
+  // ─── Condition & accessories ───
+  conditionNotes      String?            // Pre-existing cosmetic condition
+  accessories         Json?              // Array of strings: ["Chargeur", "Souris", "Sac"]
+  conditionChecklist  Json?              // { screenOk: bool, keyboardOk: bool, ... }
+
+  // ─── Problem & service ───
+  reportedIssue       String             // Customer description of the problem
+  serviceCategory     ServiceCategory    @default(REPARATION)
+  diagnosticNotes     String?            // Tech findings after diagnosis (internal)
+  repairNotes         String?            // Work performed (internal)
+  partsUsed           Json?              // Array of { name, cost, type: "OEM"|"AFTERMARKET"|"REFURBISHED" }
+
+  // ─── Quote & financial ───
+  estimatedCost       Float?             // Initial estimate given at intake
+  finalCost           Float?             // Actual cost after repair
+  maxAuthorizedSpend  Float?             // Customer-approved ceiling
+  depositAmount       Float?             // Deposit collected at intake
+  diagnosticFee       Float?             // Non-refundable diagnostic fee
+
+  // ─── Consent & legal ───
+  dataBackupConsent   DataBackupConsent  @default(NON_APPLICABLE)
+  termsAccepted       Boolean            @default(false)
+  termsAcceptedAt     DateTime?
+  signatureData       String?            // Base64 signature image (optional for future)
+
+  // ─── Dates ───
+  intakeDate          DateTime           @default(now())
+  estimatedPickupDate DateTime?
+  completedDate       DateTime?          // When repair was finished
+  pickupDate          DateTime?          // When customer actually picked up
+  abandonedDate       DateTime?          // When marked as abandoned
+
+  // ─── Assignment ───
+  intakeById          String             // Tech/Admin who checked in the device
+  technicianId        String?            // Assigned repair technician
+
+  // ─── Warranty ───
+  warrantyDays        Int?               // e.g., 30, 60, 90
+  warrantyStartDate   DateTime?          // Auto-set on completion
+
+  deletedAt           DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  customer    User   @relation("CustomerWorkOrders", fields: [customerId], references: [id], onDelete: Restrict)
+  intakeBy    User   @relation("IntakeByWorkOrders", fields: [intakeById], references: [id], onDelete: Restrict)
+  technician  User?  @relation("TechnicianWorkOrders", fields: [technicianId], references: [id], onDelete: SetNull)
+  notes       WorkOrderNote[]
+
+  @@index([status, createdAt])
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([orderNumber])
+  @@index([intakeDate])
+  @@index([deletedAt])
+}
+
+model WorkOrderNote {
+  id          String   @id @default(uuid())
+  workOrderId String
+  authorId    String
+  content     String
+  isInternal  Boolean  @default(true)  // Most work order notes are internal
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([workOrderId, createdAt])
+}
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  userId     String
+  oldValue   Json?
+  newValue   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model BackupRecord {
+  id           String       @id @default(uuid())
+  fileName     String
+  fileSize     Int
+  storagePath  String
+  type         BackupType
+  status       BackupStatus @default(PENDING)
+  tables       Json
+  recordCount  Json
+  createdBy    String
+  restoredAt   DateTime?
+  restoredBy   String?
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+
+  @@index([createdAt])
+  @@index([status])
+}
