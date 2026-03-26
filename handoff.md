@@ -1,85 +1,76 @@
 # Handoff
 
-## Current State: Feature Complete
+## Latest Session Changes
 
-All core functionality is implemented, tested, and verified. The application is ready for browser testing and deployment.
+Three features implemented in parallel:
 
-## What Was Built
+### 1. Expanded Seed Data (`backend/prisma/seed.ts`)
 
-### 1. Full IT Ticket Management System (from newspec.md)
+| Entity | Before | After |
+|--------|--------|-------|
+| Users | 6 (1 admin, 2 techs, 3 customers) | 13 (1 admin, 2 techs, 10 customers) |
+| Tickets | 7 | 14 |
+| Appointments | 2 | 6 |
+| Messages | 5 | 13 |
+| Notifications | 4 | 9 |
+| Work Orders | 8 | 16 |
+| Work Order Notes | 7 | 12 |
+
+- 7 new CUSTOMER users (client4-client10) with French-Canadian names and Montreal addresses
+- Mix of RESIDENTIAL and COMMERCIAL customers (some with companyName)
+- 7 new tickets (TKT-260108 through TKT-260114) in various statuses
+- 4 new appointments (TERMINE past, EN_COURS today, ANNULE, PLANIFIE future)
+- 8 new work orders (BDT-260309 through BDT-260316) with spread intake dates for age indicator:
+  - 0 days (RECEPTION), 1 day (DIAGNOSTIC), 4 days (EN_REPARATION), 8 days (VERIFICATION + PRET), 10 days (APPROUVE), 12 days (ATTENTE_PIECES), 15 days (ABANDONNE)
+  - Device types: TELEPHONE, IMPRIMANTE, TOUT_EN_UN, RESEAU_EQUIP, DESKTOP, TABLETTE, LAPTOP
+- 8 new messages on various tickets
+- 5 new notifications (TICKET_CREATED, QUOTE_SENT, APPOINTMENT_BOOKED, STATUS_CHANGED, NEW_MESSAGE)
+- 5 new work order notes
+
+Date variables added: fourDaysAgo, eightDaysAgo, tenDaysAgo, twelveDaysAgo, fifteenDaysAgo, twoWeeksFromNow
+
+### 2. DemoBanner Customer Dropdown (`frontend/src/components/shared/DemoBanner.tsx`)
+
+- Personas grouped by role: ADMIN, TECHNICIAN, CUSTOMER
+- Admin and Technician personas remain as pill buttons
+- Customer personas rendered in a `<select>` dropdown (shows "Clients (N)" as placeholder)
+- Dropdown highlights with amber active styling when current user is a customer
+- Handles 10+ customer personas without overflowing the toolbar
+
+### 3. Work Order Age Indicator (`frontend/src/pages/workorders/WorkOrdersDashboard.tsx`)
+
+- New `AgeBadge` component calculates days since `wo.intakeDate`
+- Color-coded: green (0-2 days), yellow (3-5 days), orange (6-9 days), red (10+ days)
+- Rendered as small rounded pill badge (text-xs, rounded-full)
+- Integrated into both KanbanCard and ListView table (new "Age" column)
+- Returns null for terminal statuses (REMIS, REFUSE, ABANDONNE, ANNULE)
+
+## Files Modified
+- `backend/prisma/seed.ts` -- Expanded from 713 to ~1452 lines
+- `frontend/src/components/shared/DemoBanner.tsx` -- Refactored persona rendering
+- `frontend/src/pages/workorders/WorkOrdersDashboard.tsx` -- Added AgeBadge component
+- `README.md` -- Updated demo accounts, seed data counts, feature descriptions
+- `handoff.md` -- This file
+
+## Verification
+- Backend TypeScript: Clean (tsc --noEmit)
+- Frontend TypeScript: Clean (tsc --noEmit)
+- Vite production build: Clean (41 chunks)
+- Backend tests: 83/83 passing
+- Database seed: Successful
+
+## Previous State
+All core functionality was already implemented:
 - 3 role-based portals: Admin, Technician, Customer
 - 10-state ticket lifecycle with role-gated state machine
-- Quote workflow (send / approve / decline)
-- Blocker workflow (add / remove)
-- Appointment scheduling with availability checking
-- Appointment proposals with accept/reject/counter-propose negotiation
-- Inline day calendar for scheduling visualization
-- Kanban board with drag-and-drop status changes
-- Message threads with internal (staff-only) messages
-- In-app notification system with bell dropdown
-- Database backup and restore (admin)
-- User management with technician permissions (5 booleans)
-- User profile page
-- Demo mode with persona selector and data reset
+- Work Order system with 12-state lifecycle, Kanban dashboard, detail/edit page, intake form
+- Appointment proposals with accept/reject/counter-propose
 - French/English internationalization
-- Public service request form
 
-### 2. Work Order System (Bons de Travail) -- New Feature
-A complete in-shop repair work order system, separate from tickets:
-- 12-state lifecycle (RECEPTION through REMIS/REFUSE/ABANDONNE/ANNULE)
-- Backend: Prisma model (40+ fields), service, routes, validation schemas, state machine
-- Frontend: Kanban dashboard, detail/edit page, 6-section intake form
-- Customer portal: Work order list, detail page with status timeline, quote approval
-- Order numbers in BDT-YYMMNN format
-- Device tracking, condition checklists, accessories, parts used
-- Data backup consent options
-- Internal/external notes system
-- Dashboard statistics
-
-### 3. Bug Fixes
-- Technicians can now see customer-proposed appointment slots (removed overly restrictive guard)
-- Fixed French accent characters in validation messages and UI labels
-
-## Verification Status
-
-| Check | Result |
-|-------|--------|
-| Backend TypeScript | Clean (tsc --noEmit) |
-| Backend Tests | 83/83 passing (vitest) |
-| Frontend TypeScript | Clean (tsc --noEmit) |
-| Frontend Build | Clean (vite build, 41 chunks) |
-| Database Seed | Working (6 users, 7 tickets, 8 work orders) |
-
-## Files Modified (This Session)
-
-### Backend
-- `prisma/schema.prisma` -- Added WorkOrderStatus, DeviceType, DataBackupConsent enums + WorkOrder + WorkOrderNote models
-- `prisma/seed.ts` -- Added 8 demo work orders + 7 notes, fixed FK ordering
-- `src/index.ts` -- Mounted workorder routes at /api/workorders
-- `src/types/index.ts` -- Added WO_ALLOWED_TRANSITIONS state machine
-- `src/validations/workorder.ts` -- New: all Zod schemas
-- `src/services/workorder.service.ts` -- New: full CRUD, state machine, quotes, notes, stats
-- `src/routes/workorder.routes.ts` -- New: all work order HTTP endpoints
-
-### Frontend
-- `src/App.tsx` -- Added lazy imports + routes for work orders
-- `src/types/index.ts` -- Added WorkOrderStatus, DeviceType, DataBackupConsent types
-- `src/api/client.ts` -- Added WorkOrder interfaces + api.workorders namespace
-- `src/lib/constants.ts` -- Added WO labels with proper French accents
-- `src/lib/i18n/locales/fr.ts` -- Added nav.workorders
-- `src/lib/i18n/locales/en.ts` -- Added nav.workorders
-- `src/components/shared/StatusBadge.tsx` -- Added type="workorder" support
-- `src/components/shared/AppSidebar.tsx` -- Added work orders nav item
-- `src/pages/workorders/WorkOrdersDashboard.tsx` -- New: Kanban + list view
-- `src/pages/workorders/WorkOrderDetail.tsx` -- New: full detail/edit page
-- `src/pages/workorders/WorkOrderIntake.tsx` -- New: 6-section intake form
-- `src/pages/portal/WorkOrders.tsx` -- New: customer work order list
-- `src/pages/portal/WorkOrderDetail.tsx` -- New: customer detail with timeline + quote approval
-- `src/pages/technician/TicketDetail.tsx` -- Fixed: removed isAssignedToMe guard on proposals
-
-## Remaining Low-Priority Items (Optional Polish)
-- Debounce customer search in work order intake form
-- Add customer note/message input on portal work order detail (currently read-only)
-- Optimistic updates on mutations
-- Clean up unnecessary type casts
-- `request()` function doesn't handle non-JSON responses gracefully
+## Key Technical Notes
+- Demo password hash is pre-computed (no hash-wasm import in seed): `$argon2id$v=19$m=19456,t=2,p=1$c2VlZHNhbHQxMjM0NTY3OA$YnJpZ2h0aGFzaGVkdmFsdWVoZXJl`
+- TanStack Query v5 removed `onSuccess` from `useQuery` -- use `useEffect` instead
+- CSRF validates Origin header against `FRONTEND_URL` env var
+- `workOrderListQuerySchema` has `.max(100)` on limit
+- Backend port 3200, frontend port 5173
+- Prisma requires `Prisma.JsonNull` instead of raw `null` for nullable JSON fields

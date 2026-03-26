@@ -31,6 +31,39 @@ function isOverdue(wo: WorkOrder): boolean {
   return new Date(wo.estimatedPickupDate) < new Date();
 }
 
+// ─── Age Badge ───
+// Color-coded pill showing how many days since intake
+
+function AgeBadge({ wo }: { wo: WorkOrder }) {
+  // Don't show for terminal statuses
+  if ((WO_TERMINAL_STATUSES as readonly string[]).includes(wo.status)) return null;
+
+  const now = new Date();
+  const intake = new Date(wo.intakeDate);
+  const diffMs = now.getTime() - intake.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  // Determine color based on age
+  let colorClasses: string;
+  if (days <= 2) {
+    colorClasses = 'bg-green-100 text-green-700';
+  } else if (days <= 5) {
+    colorClasses = 'bg-yellow-100 text-yellow-700';
+  } else if (days <= 9) {
+    colorClasses = 'bg-orange-100 text-orange-700';
+  } else {
+    colorClasses = 'bg-red-100 text-red-700';
+  }
+
+  const label = days === 0 ? '< 1j' : `${days}j`;
+
+  return (
+    <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', colorClasses)}>
+      {label}
+    </span>
+  );
+}
+
 export default function WorkOrdersDashboard() {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
@@ -261,7 +294,10 @@ function KanbanCard({ wo, basePath }: { wo: WorkOrder; basePath: string }) {
         ) : (
           <span className="italic">Non assigné</span>
         )}
-        <span>{formatRelativeTime(wo.intakeDate)}</span>
+        <div className="flex items-center gap-1.5">
+          <AgeBadge wo={wo} />
+          <span>{formatRelativeTime(wo.intakeDate)}</span>
+        </div>
       </div>
 
       {overdue && (
@@ -304,6 +340,7 @@ function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath:
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Technicien</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Priorité</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">Réception</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Âge</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -330,6 +367,9 @@ function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath:
                 </td>
                 <td className="px-4 py-3 text-muted-foreground text-xs">
                   {new Date(wo.intakeDate).toLocaleDateString('fr-CA')}
+                </td>
+                <td className="px-4 py-3">
+                  <AgeBadge wo={wo} />
                 </td>
               </tr>
             ))}

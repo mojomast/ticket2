@@ -42,7 +42,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Intake form with customer search, device details, condition checklist, accessories tracking
 - Quote/approval flow with customer portal integration
 - Internal and external notes system
-- Dashboard with Kanban view, list view, and statistics cards
+- Dashboard with Kanban view, list view, statistics cards, and color-coded age indicators
 - Order numbers in `BDT-YYMMNN` format
 - Parts tracking, warranty management, data backup consent
 
@@ -62,7 +62,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Message threads with internal (staff-only) messages
 - Database backup/restore (admin)
 - French/English internationalization
-- Demo mode with persona selector and data reset
+- Demo mode with persona selector (dropdown for customers) and data reset
 - User profile management
 
 ---
@@ -836,13 +836,26 @@ When `DEMO_MODE=true`:
 | admin@valitek.ca | ADMIN | Full access |
 | tech1@valitek.ca | TECHNICIAN | can_view_all_tickets: true |
 | tech2@valitek.ca | TECHNICIAN | can_view_all_tickets: false |
-| client1@example.com | CUSTOMER | |
-| client2@example.com | CUSTOMER | |
-| client3@example.com | CUSTOMER | |
+| client1@example.com | CUSTOMER | Residential |
+| client2@example.com | CUSTOMER | Commercial (Solutions Roy Inc.) |
+| client3@example.com | CUSTOMER | Residential |
+| client4@example.com | CUSTOMER | Commercial (Cafe Beaubien) |
+| client5@example.com | CUSTOMER | Residential |
+| client6@example.com | CUSTOMER | Commercial (Clinique Veterin. Plateau) |
+| client7@example.com | CUSTOMER | Residential |
+| client8@example.com | CUSTOMER | Commercial (Librairie du Quartier) |
+| client9@example.com | CUSTOMER | Commercial (Studio Photo Lumiere) |
+| client10@example.com | CUSTOMER | Residential |
+
+### Demo Banner
+
+The demo banner at the top of the page shows admin and technician personas as buttons, and customer personas in a compact dropdown `<select>` to handle the larger number of customers without overflowing the toolbar.
 
 ### Seed Data
 
-The seed creates: 6 users, 7 tickets, 2 appointments, 5 messages, 4 notifications, 8 work orders, 7 work order notes.
+The seed creates: 13 users, 14 tickets, 6 appointments, 13 messages, 9 notifications, 16 work orders, 12 work order notes.
+
+Work orders have intentionally varied intake dates (from 0 to 15 days ago) to demonstrate the age indicator feature.
 
 ```bash
 cd backend && npx prisma db seed
