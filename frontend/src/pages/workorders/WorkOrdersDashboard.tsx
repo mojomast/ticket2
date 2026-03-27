@@ -352,14 +352,6 @@ function KanbanCard({ wo, basePath }: { wo: WorkOrder; basePath: string }) {
 function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath: string }) {
   const { t } = useTranslation();
 
-  if (workOrders.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        {t('wo.dashboard.noWorkOrders')}
-      </div>
-    );
-  }
-
   return (
     <div className="bg-card border rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
@@ -378,7 +370,13 @@ function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath:
             </tr>
           </thead>
           <tbody className="divide-y">
-            {workOrders.map((wo) => (
+            {workOrders.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-10 text-center text-muted-foreground">
+                  {t('wo.dashboard.noWorkOrders')}
+                </td>
+              </tr>
+            ) : workOrders.map((wo) => (
               <tr key={wo.id} className={cn('hover:bg-muted/50', isOverdue(wo) && 'bg-red-50/50')}>
                 <td className="px-4 py-3">
                   <Link to={`${basePath}/bons-travail/${wo.id}`} className="font-mono font-medium text-primary hover:underline">

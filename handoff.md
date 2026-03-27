@@ -41,6 +41,7 @@
 - **Button consistency** tightened for destructive actions and loading labels (`common.saving`, `common.deleting`) in portal ticket detail, admin client detail, and admin worksheet detail
 - **Empty states** added for sparse appointment/proposal sections in customer and technician ticket detail pages
 - **Admin list empty states follow-up** added context-aware empty rows/messages for admin tickets, worksheets, knowledge base, and clients lists, including separate filtered/search-empty messaging
+- **Non-admin empty states follow-up** added empty rows for customer worksheet detail labor/parts/travel tables and the shared work-order dashboard list view
 
 ## Known Issues NOT Fixed (documented for future)
 - `Float` for currency fields should be `Decimal` — requires schema migration + code changes across entire app
