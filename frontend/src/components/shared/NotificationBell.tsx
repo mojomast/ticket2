@@ -104,7 +104,7 @@ export default function NotificationBell() {
         <button
           onClick={() => setOpen(!open)}
           className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          aria-label="Notifications"
+          aria-label={t('common.notifications')}
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (

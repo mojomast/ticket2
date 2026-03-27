@@ -70,12 +70,12 @@ export default function AdminWorksheets() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-3 font-medium">{t('worksheet.woNumber')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.client')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.technician')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.device')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.client')}</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">{t('worksheet.technician')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.device')}</th>
                     <th className="text-left p-3 font-medium">{t('worksheet.status')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.total')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.date')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.date')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -92,19 +92,19 @@ export default function AdminWorksheets() {
                       </td>
 
                       {/* Client */}
-                      <td className="p-3">
+                      <td className="p-3 hidden md:table-cell">
                         {ws.workOrder?.customerName || (ws.ticket?.customer ? `${ws.ticket.customer.firstName} ${ws.ticket.customer.lastName}` : '—')}
                       </td>
 
                       {/* Technician */}
-                      <td className="p-3">
+                      <td className="p-3 hidden lg:table-cell">
                         {ws.technician
                           ? `${ws.technician.firstName} ${ws.technician.lastName}`
                           : '—'}
                       </td>
 
                       {/* Device / Ticket title */}
-                      <td className="p-3 text-muted-foreground">
+                      <td className="p-3 text-muted-foreground hidden md:table-cell min-w-0 truncate max-w-[180px]">
                         {ws.workOrder
                           ? `${ws.workOrder.deviceBrand ?? ''} ${ws.workOrder.deviceModel ?? ''}`
                           : ws.ticket?.title ?? '—'}
@@ -125,7 +125,7 @@ export default function AdminWorksheets() {
                       </td>
 
                       {/* Date */}
-                      <td className="p-3 text-muted-foreground">
+                      <td className="p-3 text-muted-foreground hidden md:table-cell">
                         {formatDate(ws.createdAt)}
                       </td>
                     </tr>

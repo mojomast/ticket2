@@ -53,6 +53,11 @@ export default function AdminSettings() {
   const [wsEnableTravel, setWsEnableTravel] = useState(true);
   const [wsEnableNotes, setWsEnableNotes] = useState(true);
   const [wsEnableFollowUps, setWsEnableFollowUps] = useState(true);
+
+  // ── Validation error state ─────────────────────────────────────
+  const [brandingErrors, setBrandingErrors] = useState<Record<string, string>>({});
+  const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
+  const [smsErrors, setSmsErrors] = useState<Record<string, string>>({});
   // ── Queries ─────────────────────────────────────────────────────
   const { data: branding, isLoading, isError } = useQuery({
     queryKey: ['config', 'branding'],
@@ -140,6 +145,32 @@ export default function AdminSettings() {
   }, [worksheetConfigData]);
 
   // ── Mutations ───────────────────────────────────────────────────
+  function validateBranding(): boolean {
+    const errs: Record<string, string> = {};
+    if (!companyName.trim()) errs.companyName = t('validation.companyNameRequired');
+    setBrandingErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function validateEmailConfig(): boolean {
+    const errs: Record<string, string> = {};
+    if (!m365TenantId.trim()) errs.tenantId = t('validation.tenantIdRequired');
+    if (!m365ClientId.trim()) errs.clientId = t('validation.clientIdRequired');
+    if (!m365ClientSecret.trim()) errs.clientSecret = t('validation.clientSecretRequired');
+    if (!m365SenderEmail.trim()) errs.senderEmail = t('validation.senderEmailRequired');
+    setEmailErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function validateSmsConfig(): boolean {
+    const errs: Record<string, string> = {};
+    if (!voipmsUsername.trim()) errs.username = t('validation.smsUsernameRequired');
+    if (!voipmsPassword.trim()) errs.password = t('validation.smsPasswordRequired');
+    if (!voipmsDid.trim()) errs.did = t('validation.smsDidRequired');
+    setSmsErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
   const saveBrandingMutation = useMutation({
     mutationFn: () =>
       api.admin.config.updateBranding({
@@ -314,10 +345,12 @@ export default function AdminSettings() {
               <Input
                 type="text"
                 value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
+                onChange={(e) => { setCompanyName(e.target.value); setBrandingErrors((prev) => { const { companyName: _, ...rest } = prev; return rest; }); }}
                 placeholder="Valitek"
+                className={brandingErrors.companyName ? 'border-destructive' : ''}
               />
             </HelpTooltip>
+            {brandingErrors.companyName && <p className="text-sm text-destructive mt-1">{brandingErrors.companyName}</p>}
           </div>
 
           {/* Primary colour */}
@@ -392,7 +425,7 @@ export default function AdminSettings() {
           {/* Save button */}
           <HelpTooltip content={t('settings.saveTooltip')} side="right">
             <Button
-              onClick={() => saveBrandingMutation.mutate()}
+              onClick={() => { if (validateBranding()) saveBrandingMutation.mutate(); }}
               disabled={saveBrandingMutation.isPending}
             >
               {saveBrandingMutation.isPending ? t('common.saving') : t('common.save')}
@@ -431,11 +464,12 @@ export default function AdminSettings() {
               <Input
                 type="text"
                 value={m365TenantId}
-                onChange={(e) => setM365TenantId(e.target.value)}
+                onChange={(e) => { setM365TenantId(e.target.value); setEmailErrors((prev) => { const { tenantId: _, ...rest } = prev; return rest; }); }}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                className="font-mono"
+                className={`font-mono ${emailErrors.tenantId ? 'border-destructive' : ''}`}
               />
             </HelpTooltip>
+            {emailErrors.tenantId && <p className="text-sm text-destructive mt-1">{emailErrors.tenantId}</p>}
           </div>
 
           {/* Client ID */}
@@ -445,11 +479,12 @@ export default function AdminSettings() {
               <Input
                 type="text"
                 value={m365ClientId}
-                onChange={(e) => setM365ClientId(e.target.value)}
+                onChange={(e) => { setM365ClientId(e.target.value); setEmailErrors((prev) => { const { clientId: _, ...rest } = prev; return rest; }); }}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                className="font-mono"
+                className={`font-mono ${emailErrors.clientId ? 'border-destructive' : ''}`}
               />
             </HelpTooltip>
+            {emailErrors.clientId && <p className="text-sm text-destructive mt-1">{emailErrors.clientId}</p>}
           </div>
 
           {/* Client Secret */}
@@ -459,11 +494,12 @@ export default function AdminSettings() {
               <Input
                 type="password"
                 value={m365ClientSecret}
-                onChange={(e) => setM365ClientSecret(e.target.value)}
+                onChange={(e) => { setM365ClientSecret(e.target.value); setEmailErrors((prev) => { const { clientSecret: _, ...rest } = prev; return rest; }); }}
                 placeholder="••••••••"
-                className="font-mono"
+                className={`font-mono ${emailErrors.clientSecret ? 'border-destructive' : ''}`}
               />
             </HelpTooltip>
+            {emailErrors.clientSecret && <p className="text-sm text-destructive mt-1">{emailErrors.clientSecret}</p>}
           </div>
 
           {/* Sender Email */}
@@ -473,15 +509,17 @@ export default function AdminSettings() {
               <Input
                 type="email"
                 value={m365SenderEmail}
-                onChange={(e) => setM365SenderEmail(e.target.value)}
+                onChange={(e) => { setM365SenderEmail(e.target.value); setEmailErrors((prev) => { const { senderEmail: _, ...rest } = prev; return rest; }); }}
                 placeholder="noreply@entreprise.com"
+                className={emailErrors.senderEmail ? 'border-destructive' : ''}
               />
             </HelpTooltip>
+            {emailErrors.senderEmail && <p className="text-sm text-destructive mt-1">{emailErrors.senderEmail}</p>}
           </div>
 
           {/* Save button */}
           <Button
-            onClick={() => saveEmailMutation.mutate()}
+            onClick={() => { if (validateEmailConfig()) saveEmailMutation.mutate(); }}
             disabled={saveEmailMutation.isPending}
           >
             {saveEmailMutation.isPending ? t('common.saving') : t('settings.saveEmailConfig')}
@@ -519,10 +557,12 @@ export default function AdminSettings() {
               <Input
                 type="text"
                 value={voipmsUsername}
-                onChange={(e) => setVoipmsUsername(e.target.value)}
+                onChange={(e) => { setVoipmsUsername(e.target.value); setSmsErrors((prev) => { const { username: _, ...rest } = prev; return rest; }); }}
                 placeholder="user@example.com"
+                className={smsErrors.username ? 'border-destructive' : ''}
               />
             </HelpTooltip>
+            {smsErrors.username && <p className="text-sm text-destructive mt-1">{smsErrors.username}</p>}
           </div>
 
           {/* Password */}
@@ -532,11 +572,12 @@ export default function AdminSettings() {
               <Input
                 type="password"
                 value={voipmsPassword}
-                onChange={(e) => setVoipmsPassword(e.target.value)}
+                onChange={(e) => { setVoipmsPassword(e.target.value); setSmsErrors((prev) => { const { password: _, ...rest } = prev; return rest; }); }}
                 placeholder="••••••••"
-                className="font-mono"
+                className={`font-mono ${smsErrors.password ? 'border-destructive' : ''}`}
               />
             </HelpTooltip>
+            {smsErrors.password && <p className="text-sm text-destructive mt-1">{smsErrors.password}</p>}
           </div>
 
           {/* DID */}
@@ -546,16 +587,17 @@ export default function AdminSettings() {
               <Input
                 type="tel"
                 value={voipmsDid}
-                onChange={(e) => setVoipmsDid(e.target.value)}
+                onChange={(e) => { setVoipmsDid(e.target.value); setSmsErrors((prev) => { const { did: _, ...rest } = prev; return rest; }); }}
                 placeholder="15141234567"
-                className="font-mono"
+                className={`font-mono ${smsErrors.did ? 'border-destructive' : ''}`}
               />
             </HelpTooltip>
+            {smsErrors.did && <p className="text-sm text-destructive mt-1">{smsErrors.did}</p>}
           </div>
 
           {/* Save button */}
           <Button
-            onClick={() => saveSmsMutation.mutate()}
+            onClick={() => { if (validateSmsConfig()) saveSmsMutation.mutate(); }}
             disabled={saveSmsMutation.isPending}
           >
             {saveSmsMutation.isPending ? t('common.saving') : t('settings.saveSmsConfig')}

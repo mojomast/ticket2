@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/use-auth';
 import { useToast } from '../../hooks/use-toast';
 import { formatCurrency, formatDateTime } from '../../lib/utils';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
@@ -48,6 +49,8 @@ export default function PortalTicketDetail() {
   // ─── Proposal response state ───
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [responseMessage, setResponseMessage] = useState('');
+  const [appointmentToCancel, setAppointmentToCancel] = useState<string | null>(null);
+  const [proposalToCancel, setProposalToCancel] = useState<string | null>(null);
 
   // ─── Queries ───
   const { data: ticket, isLoading } = useQuery({
@@ -254,22 +257,37 @@ export default function PortalTicketDetail() {
           <p className="text-sm mb-4">{tk.quoteDescription}</p>
           <div className="flex gap-2">
             <HelpTooltip content={t('portal.ticketDetail.approveTooltip')} side="bottom">
-              <Button onClick={() => approveMutation.mutate()} className="bg-green-600 hover:bg-green-700">{t('portal.ticketDetail.approve')}</Button>
+              <Button
+                onClick={() => approveMutation.mutate()}
+                disabled={approveMutation.isPending || declineMutation.isPending}
+              >
+                {approveMutation.isPending ? t('common.loadingEllipsis') : t('portal.ticketDetail.approve')}
+              </Button>
             </HelpTooltip>
             <HelpTooltip content={t('portal.ticketDetail.declineTooltip')} side="bottom">
-              <Button variant="destructive" onClick={() => declineMutation.mutate()}>{t('portal.ticketDetail.decline')}</Button>
+              <Button
+                variant="destructive"
+                onClick={() => declineMutation.mutate()}
+                disabled={approveMutation.isPending || declineMutation.isPending}
+              >
+                {declineMutation.isPending ? t('common.loadingEllipsis') : t('portal.ticketDetail.decline')}
+              </Button>
             </HelpTooltip>
           </div>
         </div>
       )}
 
       {/* ─── Active Appointments ─── */}
-      {activeAppointments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('portal.ticketDetail.activeAppointments')}</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('portal.ticketDetail.activeAppointments')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {activeAppointments.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              {t('portal.ticketDetail.noActiveAppointments')}
+            </div>
+          ) : (
             <div className="space-y-3">
               {activeAppointments.map((apt: any) => (
                 <div key={apt.id} className="flex items-center justify-between border rounded-md p-3 bg-background">
@@ -287,55 +305,64 @@ export default function PortalTicketDetail() {
                   </div>
                   <HelpTooltip content={t('portal.ticketDetail.cancelApptTooltip')} side="left">
                     <Button
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
-                      onClick={() => cancelAppointmentMutation.mutate(apt.id)}
+                      onClick={() => setAppointmentToCancel(apt.id)}
                       disabled={cancelAppointmentMutation.isPending}
-                      className="text-red-700 bg-red-100 hover:bg-red-200 border-red-200"
                     >
-                      {t('portal.ticketDetail.cancelAppt')}
+                      {cancelAppointmentMutation.isPending ? t('common.loadingEllipsis') : t('portal.ticketDetail.cancelAppt')}
                     </Button>
                   </HelpTooltip>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* ─── Past Appointments ─── */}
-      {pastAppointments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">{t('portal.ticketDetail.pastAppointments')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-          <div className="space-y-2">
-            {pastAppointments.map((apt: any) => (
-              <div key={apt.id} className="flex items-center justify-between border rounded-md p-3 bg-background opacity-60">
-                <div>
-                  <p className="text-sm">
-                    {formatDateTime(apt.scheduledStart)} — {formatSlotTime(apt.scheduledEnd)}
-                  </p>
-                  <StatusBadge status={apt.status} type="appointment" />
-                  {apt.cancelReason && (
-                    <p className="text-xs text-red-600 mt-1">{t('portal.ticketDetail.cancelReason', { reason: apt.cancelReason })}</p>
-                  )}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base text-muted-foreground">{t('portal.ticketDetail.pastAppointments')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pastAppointments.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              {t('portal.ticketDetail.noPastAppointments')}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {pastAppointments.map((apt: any) => (
+                <div key={apt.id} className="flex items-center justify-between border rounded-md p-3 bg-background opacity-60">
+                  <div>
+                    <p className="text-sm">
+                      {formatDateTime(apt.scheduledStart)} — {formatSlotTime(apt.scheduledEnd)}
+                    </p>
+                    <StatusBadge status={apt.status} type="appointment" />
+                    {apt.cancelReason && (
+                      <p className="text-xs text-red-600 mt-1">{t('portal.ticketDetail.cancelReason', { reason: apt.cancelReason })}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          </CardContent>
-        </Card>
-      )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ─── Proposals Section ─── */}
-      {(myProposals.length > 0 || counterProposals.length > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('portal.ticketDetail.proposals')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('portal.ticketDetail.proposals')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+
+          {myProposals.length === 0 && counterProposals.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              {t('portal.ticketDetail.noProposals')}
+            </div>
+          ) : (
+            <>
 
           {/* My proposals */}
           {myProposals.length > 0 && (
@@ -370,13 +397,13 @@ export default function PortalTicketDetail() {
                       {proposal.status === 'PROPOSEE' && (
                         <HelpTooltip content={t('portal.ticketDetail.cancelProposalTooltip')} side="left">
                           <Button
-                            variant="outline"
+                            variant="destructive"
                             size="sm"
-                            onClick={() => cancelProposalMutation.mutate(proposal.id)}
+                            onClick={() => setProposalToCancel(proposal.id)}
                             disabled={cancelProposalMutation.isPending}
-                            className="text-red-700 bg-red-100 hover:bg-red-200 border-red-200 shrink-0"
+                            className="shrink-0"
                           >
-                            {t('portal.ticketDetail.cancelProposal')}
+                            {cancelProposalMutation.isPending ? t('common.loadingEllipsis') : t('portal.ticketDetail.cancelProposal')}
                           </Button>
                         </HelpTooltip>
                       )}
@@ -509,9 +536,10 @@ export default function PortalTicketDetail() {
               </div>
             </div>
           )}
-          </CardContent>
-        </Card>
-      )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ─── Appointment Booking / Proposal Section ─── */}
       {canBook && (
@@ -693,6 +721,38 @@ export default function PortalTicketDetail() {
 
       {/* ─── Attachments Section ─── */}
       <AttachmentSection ticketId={id!} canUpload={true} isAdmin={false} />
+
+      <ConfirmDialog
+        open={!!appointmentToCancel}
+        onOpenChange={(open) => {
+          if (!open) setAppointmentToCancel(null);
+        }}
+        title={t('appointment.cancelConfirmTitle')}
+        description={t('appointment.cancelConfirmDescription')}
+        confirmLabel={t('portal.ticketDetail.cancelAppt')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          if (appointmentToCancel) {
+            cancelAppointmentMutation.mutate(appointmentToCancel);
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!proposalToCancel}
+        onOpenChange={(open) => {
+          if (!open) setProposalToCancel(null);
+        }}
+        title={t('portal.ticketDetail.cancelProposalConfirmTitle')}
+        description={t('portal.ticketDetail.cancelProposalConfirmDescription')}
+        confirmLabel={t('portal.ticketDetail.cancelProposal')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          if (proposalToCancel) {
+            cancelProposalMutation.mutate(proposalToCancel);
+          }
+        }}
+      />
 
       {/* Messages */}
       <Card>

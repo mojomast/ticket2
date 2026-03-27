@@ -80,21 +80,22 @@ export default function AdminBackups() {
         </div>
       ) : (
         <div className="bg-card border rounded-lg overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-3 text-sm font-medium">{t('common.file')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('common.type')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('common.type')}</th>
                 <th className="text-left p-3 text-sm font-medium">{t('common.status')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('common.date')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('common.date')}</th>
                 <th className="text-left p-3 text-sm font-medium">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {(backups as Backup[])?.map((backup) => (
                 <tr key={backup.id}>
-                  <td className="p-3 text-sm font-mono">{backup.fileName}</td>
-                  <td className="p-3 text-sm">{backup.type}</td>
+                  <td className="p-3 text-sm font-mono min-w-0 truncate max-w-[180px] md:max-w-[260px]">{backup.fileName}</td>
+                  <td className="p-3 text-sm hidden md:table-cell">{backup.type}</td>
                   <td className="p-3">
                     <HelpTooltip content={
                       backup.status === 'COMPLETED' ? t('backup.statusCompleted') :
@@ -110,67 +111,70 @@ export default function AdminBackups() {
                       </span>
                     </HelpTooltip>
                   </td>
-                  <td className="p-3 text-sm text-muted-foreground">{formatDateTime(backup.createdAt)}</td>
-                  <td className="p-3 flex gap-2">
-                    {backup.status === 'COMPLETED' && (
-                      <>
-                        <HelpTooltip content={t('backup.downloadTooltip')} side="top">
-                          <a
-                            href={api.admin.backups.download(backup.id)}
-                            className="text-xs text-primary hover:underline"
-                          >
-                            {t('common.download')}
-                          </a>
-                        </HelpTooltip>
-                        <HelpTooltip content={t('backup.restoreTooltip')} side="top">
+                  <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{formatDateTime(backup.createdAt)}</td>
+                  <td className="p-3">
+                    <div className="flex flex-col items-start gap-1 whitespace-nowrap sm:flex-row sm:items-center sm:gap-2">
+                      {backup.status === 'COMPLETED' && (
+                        <>
+                          <HelpTooltip content={t('backup.downloadTooltip')} side="top">
+                            <a
+                              href={api.admin.backups.download(backup.id)}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              {t('common.download')}
+                            </a>
+                          </HelpTooltip>
+                          <HelpTooltip content={t('backup.restoreTooltip')} side="top">
+                            <button
+                              onClick={() => {
+                                const confirmed = window.confirm(
+                                  t('backup.restoreConfirm')
+                                );
+                                if (confirmed) {
+                                  restoreMutation.mutate(backup.id);
+                                }
+                              }}
+                              disabled={restoreMutation.isPending}
+                              className="text-xs text-orange-600 hover:underline disabled:opacity-50"
+                            >
+                              {restoreMutation.isPending ? t('common.restoring') : t('common.restore')}
+                            </button>
+                          </HelpTooltip>
+                        </>
+                      )}
+                      {confirmDeleteId === backup.id ? (
+                        <>
                           <button
-                            onClick={() => {
-                              const confirmed = window.confirm(
-                                t('backup.restoreConfirm')
-                              );
-                              if (confirmed) {
-                                restoreMutation.mutate(backup.id);
-                              }
-                            }}
-                            disabled={restoreMutation.isPending}
-                            className="text-xs text-orange-600 hover:underline disabled:opacity-50"
+                            onClick={() => deleteMutation.mutate(backup.id)}
+                            disabled={deleteMutation.isPending}
+                            className="text-xs text-red-700 font-medium hover:underline disabled:opacity-50"
                           >
-                            {restoreMutation.isPending ? t('common.restoring') : t('common.restore')}
+                            {deleteMutation.isPending ? t('common.deleting') : t('common.confirm')}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-xs text-muted-foreground hover:underline"
+                          >
+                            {t('common.cancel')}
+                          </button>
+                        </>
+                      ) : (
+                          <HelpTooltip content={t('backup.deleteTooltip')} side="top">
+                          <button
+                            onClick={() => setConfirmDeleteId(backup.id)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            {t('common.delete')}
                           </button>
                         </HelpTooltip>
-                      </>
-                    )}
-                    {confirmDeleteId === backup.id ? (
-                      <>
-                        <button
-                          onClick={() => deleteMutation.mutate(backup.id)}
-                          disabled={deleteMutation.isPending}
-                          className="text-xs text-red-700 font-medium hover:underline disabled:opacity-50"
-                        >
-                          {deleteMutation.isPending ? t('common.deleting') : t('common.confirm')}
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="text-xs text-muted-foreground hover:underline"
-                        >
-                          {t('common.cancel')}
-                        </button>
-                      </>
-                    ) : (
-                        <HelpTooltip content={t('backup.deleteTooltip')} side="top">
-                        <button
-                          onClick={() => setConfirmDeleteId(backup.id)}
-                          className="text-xs text-red-600 hover:underline"
-                        >
-                          {t('common.delete')}
-                        </button>
-                      </HelpTooltip>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

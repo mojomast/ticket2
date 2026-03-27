@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/use-auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -5,6 +6,7 @@ import { api } from '../../api/client';
 import { ROLE_LABELS } from '../../lib/constants';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from './HelpTooltip';
+import ConfirmDialog from './ConfirmDialog';
 import { useTranslation } from '../../lib/i18n/hook';
 
 export default function DemoBanner() {
@@ -13,6 +15,7 @@ export default function DemoBanner() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const resetMutation = useMutation({
     mutationFn: () => api.demo.reset(),
@@ -114,7 +117,7 @@ export default function DemoBanner() {
           {user?.role === 'ADMIN' && (
             <HelpTooltip content={t('demo.resetTooltip')} side="bottom">
               <button
-                onClick={() => resetMutation.mutate()}
+                onClick={() => setResetConfirmOpen(true)}
                 disabled={resetMutation.isPending}
                 className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
               >
@@ -124,6 +127,16 @@ export default function DemoBanner() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        onOpenChange={setResetConfirmOpen}
+        title={t('demo.resetConfirmTitle')}
+        description={t('demo.resetConfirmDescription')}
+        confirmLabel={t('demo.reset')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => resetMutation.mutate()}
+      />
     </div>
   );
 }

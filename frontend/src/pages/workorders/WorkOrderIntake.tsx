@@ -84,6 +84,9 @@ export default function WorkOrderIntake() {
   const [priority, setPriority] = useState('NORMALE');
   const [warrantyDays, setWarrantyDays] = useState('30');
 
+  // ─── Inline validation errors ───
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   // ─── Technicians query ───
   const { data: technicians } = useQuery({
     queryKey: ['technicians'],
@@ -109,6 +112,9 @@ export default function WorkOrderIntake() {
     setCustomerEmail(c.email || '');
     setShowCustomerSearch(false);
     setCustomerSearch('');
+    clearError('customer');
+    clearError('customerName');
+    clearError('customerPhone');
   }
 
   function handleToggleAccessory(acc: string) {
@@ -128,40 +134,34 @@ export default function WorkOrderIntake() {
     setConditionChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
+  // Helper to clear a single field error on change
+  function clearError(field: string) {
+    setFormErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
+  }
+
+  function validateForm(): boolean {
+    const errs: Record<string, string> = {};
+    if (!selectedCustomer) errs.customer = t('wo.intake.errorSelectClient');
+    if (!customerName.trim()) errs.customerName = t('wo.intake.errorClientName');
+    if (!customerPhone.trim()) errs.customerPhone = t('wo.intake.errorPhone');
+    if (!deviceBrand.trim()) errs.deviceBrand = t('wo.intake.errorBrand');
+    if (!deviceModel.trim()) errs.deviceModel = t('wo.intake.errorModel');
+    if (!reportedIssue.trim()) errs.reportedIssue = t('wo.intake.errorIssue');
+    if (!termsAccepted) errs.termsAccepted = t('wo.intake.errorTerms');
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!selectedCustomer) {
-      toast.error(t('wo.intake.errorSelectClient'));
-      return;
-    }
-    if (!customerName.trim()) {
-      toast.error(t('wo.intake.errorClientName'));
-      return;
-    }
-    if (!customerPhone.trim()) {
-      toast.error(t('wo.intake.errorPhone'));
-      return;
-    }
-    if (!deviceBrand.trim()) {
-      toast.error(t('wo.intake.errorBrand'));
-      return;
-    }
-    if (!deviceModel.trim()) {
-      toast.error(t('wo.intake.errorModel'));
-      return;
-    }
-    if (!reportedIssue.trim()) {
-      toast.error(t('wo.intake.errorIssue'));
-      return;
-    }
-    if (!termsAccepted) {
-      toast.error(t('wo.intake.errorTerms'));
-      return;
-    }
+    if (!validateForm()) return;
+
+    // selectedCustomer is guaranteed non-null after validateForm()
+    const customer = selectedCustomer!;
 
     const payload: Record<string, unknown> = {
-      customerId: selectedCustomer.id,
+      customerId: customer.id,
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
       customerEmail: customerEmail.trim() || undefined,
@@ -205,6 +205,9 @@ export default function WorkOrderIntake() {
         {/* ─── Section 1: Client ─── */}
         <section className="bg-card border rounded-lg p-6">
           <h2 className="font-semibold mb-4">{t('wo.intake.sectionClient')}</h2>
+          {formErrors.customer && showCustomerSearch && (
+            <p className="text-sm text-destructive mb-2">{formErrors.customer}</p>
+          )}
 
           {showCustomerSearch ? (
             <div className="space-y-3">
@@ -265,20 +268,22 @@ export default function WorkOrderIntake() {
                   <input
                     type="text"
                     value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
+                    onChange={(e) => { setCustomerName(e.target.value); clearError('customerName'); }}
                     required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className={`w-full rounded-md border ${formErrors.customerName ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
                   />
+                  {formErrors.customerName && <p className="text-sm text-destructive mt-1">{formErrors.customerName}</p>}
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.phone')}</label>
                   <input
                     type="tel"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => { setCustomerPhone(e.target.value); clearError('customerPhone'); }}
                     required
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className={`w-full rounded-md border ${formErrors.customerPhone ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
                   />
+                  {formErrors.customerPhone && <p className="text-sm text-destructive mt-1">{formErrors.customerPhone}</p>}
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.email')}</label>
@@ -318,12 +323,13 @@ export default function WorkOrderIntake() {
                 <input
                   type="text"
                   value={deviceBrand}
-                  onChange={(e) => setDeviceBrand(e.target.value)}
+                  onChange={(e) => { setDeviceBrand(e.target.value); clearError('deviceBrand'); }}
                   placeholder={t('wo.intake.brandPlaceholder')}
                   required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={`w-full rounded-md border ${formErrors.deviceBrand ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
                 />
               </HelpTooltip>
+              {formErrors.deviceBrand && <p className="text-sm text-destructive mt-1">{formErrors.deviceBrand}</p>}
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.model')}</label>
@@ -331,12 +337,13 @@ export default function WorkOrderIntake() {
                 <input
                   type="text"
                   value={deviceModel}
-                  onChange={(e) => setDeviceModel(e.target.value)}
+                  onChange={(e) => { setDeviceModel(e.target.value); clearError('deviceModel'); }}
                   placeholder={t('wo.intake.modelPlaceholder')}
                   required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={`w-full rounded-md border ${formErrors.deviceModel ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
                 />
               </HelpTooltip>
+              {formErrors.deviceModel && <p className="text-sm text-destructive mt-1">{formErrors.deviceModel}</p>}
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.serialNumber')}</label>
@@ -465,7 +472,7 @@ export default function WorkOrderIntake() {
                 {accessories.filter((a) => !(COMMON_ACCESSORY_KEYS as readonly string[]).includes(a)).map((a) => (
                   <span key={a} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     {a}
-                    <button type="button" onClick={() => handleToggleAccessory(a)} className="text-primary/50 hover:text-primary">x</button>
+                    <button type="button" onClick={() => handleToggleAccessory(a)} aria-label={t('wo.intake.removeAccessory', { accessory: a })} className="text-primary/50 hover:text-primary">x</button>
                   </span>
                 ))}
               </div>
@@ -482,13 +489,14 @@ export default function WorkOrderIntake() {
               <HelpTooltip content={t('wo.intake.problemDescTooltip')} side="top">
                 <textarea
                   value={reportedIssue}
-                  onChange={(e) => setReportedIssue(e.target.value)}
+                  onChange={(e) => { setReportedIssue(e.target.value); clearError('reportedIssue'); }}
                   rows={4}
                   required
                   placeholder={t('wo.intake.problemDescPlaceholder')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                  className={`w-full rounded-md border ${formErrors.reportedIssue ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm resize-none`}
                 />
               </HelpTooltip>
+              {formErrors.reportedIssue && <p className="text-sm text-destructive mt-1">{formErrors.reportedIssue}</p>}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
@@ -537,15 +545,18 @@ export default function WorkOrderIntake() {
                 </select>
               </HelpTooltip>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="rounded border-input"
-              />
-              {t('wo.intake.termsAccept')}
-            </label>
+            <div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => { setTermsAccepted(e.target.checked); clearError('termsAccepted'); }}
+                  className="rounded border-input"
+                />
+                {t('wo.intake.termsAccept')}
+              </label>
+              {formErrors.termsAccepted && <p className="text-sm text-destructive mt-1">{formErrors.termsAccepted}</p>}
+            </div>
           </div>
         </section>
 

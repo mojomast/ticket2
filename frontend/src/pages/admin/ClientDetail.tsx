@@ -326,6 +326,7 @@ export default function ClientDetail() {
                       onClick={() => togglePinMutation.mutate(note.id)}
                       disabled={togglePinMutation.isPending}
                       title={t('clientDetail.pinNote')}
+                      aria-label={t('clientDetail.pinNote')}
                       className={
                         note.isPinned
                           ? 'bg-yellow-200 text-yellow-800 hover:bg-yellow-300'
@@ -344,7 +345,7 @@ export default function ClientDetail() {
                           onClick={() => deleteNoteMutation.mutate(note.id)}
                           disabled={deleteNoteMutation.isPending}
                         >
-                          {deleteNoteMutation.isPending ? '...' : t('common.confirm')}
+                          {deleteNoteMutation.isPending ? t('common.deleting') : t('common.confirm')}
                         </Button>
                         <Button
                           variant="outline"
@@ -356,10 +357,9 @@ export default function ClientDetail() {
                       </span>
                     ) : (
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
                         onClick={() => setDeleteNoteConfirmId(note.id)}
-                        className="text-red-800 bg-red-100 hover:bg-red-200 border-red-200"
                       >
                         {t('common.delete')}
                       </Button>
@@ -431,6 +431,7 @@ export default function ClientDetail() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-md border">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
@@ -443,10 +444,10 @@ export default function ClientDetail() {
                   <th className="text-left p-3 text-sm font-medium">
                     {t('clientDetail.ticketStatus')}
                   </th>
-                  <th className="text-left p-3 text-sm font-medium">
+                  <th className="text-left p-3 text-sm font-medium hidden md:table-cell">
                     {t('clientDetail.ticketPriority')}
                   </th>
-                  <th className="text-left p-3 text-sm font-medium">
+                  <th className="text-left p-3 text-sm font-medium hidden md:table-cell">
                     {t('clientDetail.ticketCreated')}
                   </th>
                 </tr>
@@ -459,20 +460,21 @@ export default function ClientDetail() {
                     className="hover:bg-muted/50 cursor-pointer transition-colors"
                   >
                     <td className="p-3 text-sm font-medium">{tk.ticketNumber}</td>
-                    <td className="p-3 text-sm">{tk.title}</td>
+                    <td className="p-3 text-sm min-w-0 truncate max-w-[200px]">{tk.title}</td>
                     <td className="p-3">
                       <StatusBadge status={tk.status} />
                     </td>
-                    <td className="p-3">
+                    <td className="p-3 hidden md:table-cell">
                       <StatusBadge status={tk.priority} type="priority" />
                     </td>
-                    <td className="p-3 text-sm text-muted-foreground">
+                    <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">
                       {formatDateTime(tk.createdAt)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
@@ -523,6 +525,7 @@ export default function ClientDetail() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-md border">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
@@ -535,10 +538,10 @@ export default function ClientDetail() {
                   <th className="text-left p-3 text-sm font-medium">
                     {t('clientDetail.woStatus')}
                   </th>
-                  <th className="text-left p-3 text-sm font-medium">
+                  <th className="text-left p-3 text-sm font-medium hidden md:table-cell">
                     {t('clientDetail.woPriority')}
                   </th>
-                  <th className="text-left p-3 text-sm font-medium">
+                  <th className="text-left p-3 text-sm font-medium hidden md:table-cell">
                     {t('clientDetail.intakeDate')}
                   </th>
                 </tr>
@@ -551,22 +554,23 @@ export default function ClientDetail() {
                     className="hover:bg-muted/50 cursor-pointer transition-colors"
                   >
                     <td className="p-3 text-sm font-medium">{wo.orderNumber}</td>
-                    <td className="p-3 text-sm">
+                    <td className="p-3 text-sm min-w-0 truncate max-w-[180px]">
                       {wo.deviceBrand} {wo.deviceModel}
                     </td>
                     <td className="p-3">
                       <StatusBadge status={wo.status} type="workorder" />
                     </td>
-                    <td className="p-3">
+                    <td className="p-3 hidden md:table-cell">
                       <StatusBadge status={wo.priority} type="priority" />
                     </td>
-                    <td className="p-3 text-sm text-muted-foreground">
+                    <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">
                       {formatDateTime(wo.intakeDate)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
         </CardContent>
@@ -636,7 +640,7 @@ export default function ClientDetail() {
                         onClick={() => unlinkArticleMutation.mutate(lk.id)}
                         disabled={unlinkArticleMutation.isPending}
                       >
-                        {unlinkArticleMutation.isPending ? '...' : t('common.confirm')}
+                        {unlinkArticleMutation.isPending ? t('common.deleting') : t('common.confirm')}
                       </Button>
                       <Button
                         variant="outline"
@@ -648,10 +652,9 @@ export default function ClientDetail() {
                     </span>
                   ) : (
                     <Button
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
                       onClick={() => setUnlinkConfirmId(lk.id)}
-                      className="text-red-800 bg-red-100 hover:bg-red-200 border-red-200"
                     >
                       {t('common.delete')}
                     </Button>

@@ -276,22 +276,23 @@ export default function AdminTickets() {
         <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <div className="bg-card border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-3 text-sm font-medium">#</th>
                 <th className="text-left p-3 text-sm font-medium">{t('ticket.title')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('ticket.customer')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('ticket.customer')}</th>
                 <HelpTooltip content={t('admin.tickets.technicianTooltip')} side="bottom">
-                  <th className="text-left p-3 text-sm font-medium">{t('ticket.technician')}</th>
+                  <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('ticket.technician')}</th>
                 </HelpTooltip>
                 <HelpTooltip content={t('admin.tickets.statusTooltip')} side="bottom">
                   <th className="text-left p-3 text-sm font-medium">{t('ticket.status')}</th>
                 </HelpTooltip>
                 <HelpTooltip content={t('admin.tickets.priorityTooltip')} side="bottom">
-                  <th className="text-left p-3 text-sm font-medium">{t('ticket.priority')}</th>
+                  <th className="text-left p-3 text-sm font-medium hidden lg:table-cell">{t('ticket.priority')}</th>
                 </HelpTooltip>
-                <th className="text-left p-3 text-sm font-medium">{t('common.date')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('common.date')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -302,20 +303,21 @@ export default function AdminTickets() {
                       {ticket.ticketNumber}
                     </Link>
                   </td>
-                  <td className="p-3 text-sm">{ticket.title}</td>
-                  <td className="p-3 text-sm">
+                  <td className="p-3 text-sm min-w-0 truncate max-w-[200px]">{ticket.title}</td>
+                  <td className="p-3 text-sm hidden md:table-cell">
                     {ticket.customer?.firstName} {ticket.customer?.lastName}
                   </td>
-                  <td className="p-3 text-sm">
+                  <td className="p-3 text-sm hidden md:table-cell">
                     {ticket.technician ? `${ticket.technician.firstName} ${ticket.technician.lastName}` : '-'}
                   </td>
                   <td className="p-3"><StatusBadge status={ticket.status} /></td>
-                  <td className="p-3"><StatusBadge status={ticket.priority} type="priority" /></td>
-                  <td className="p-3 text-sm text-muted-foreground">{formatDate(ticket.createdAt)}</td>
+                  <td className="p-3 hidden lg:table-cell"><StatusBadge status={ticket.priority} type="priority" /></td>
+                  <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{formatDate(ticket.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
           {tickets.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">{t('ticket.noTickets')}</div>
           )}

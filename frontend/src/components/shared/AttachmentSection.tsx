@@ -187,6 +187,7 @@ export default function AttachmentSection({
                         }}
                         className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
                         title={t('fileViewer.view')}
+                        aria-label={t('common.view')}
                       >
                         <Eye className="h-4 w-4 text-gray-800" />
                       </button>
@@ -197,6 +198,7 @@ export default function AttachmentSection({
                         rel="noopener noreferrer"
                         className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
                         title={t('attachment.download')}
+                        aria-label={t('common.download')}
                       >
                         <Download className="h-4 w-4 text-gray-800" />
                       </a>
@@ -211,6 +213,7 @@ export default function AttachmentSection({
                           disabled={deleteMutation.isPending}
                           className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
                           title={t('attachment.delete')}
+                          aria-label={t('common.delete')}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </button>

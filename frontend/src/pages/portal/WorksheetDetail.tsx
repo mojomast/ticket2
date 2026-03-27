@@ -228,15 +228,15 @@ export default function PortalWorksheetDetail() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-3 font-medium">{t('worksheet.laborType')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.description')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.startTime')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.endTime')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.description')}</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">{t('worksheet.startTime')}</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">{t('worksheet.endTime')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.billableHours')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.hourlyRate')}</th>
+                    <th className="text-right p-3 font-medium hidden md:table-cell">{t('worksheet.hourlyRate')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.lineTotal')}</th>
                   </tr>
                 </thead>
@@ -248,18 +248,18 @@ export default function PortalWorksheetDetail() {
                           {t(`label.laborType.${entry.laborType}`) || entry.laborType}
                         </span>
                       </td>
-                      <td className="p-3 text-muted-foreground max-w-xs truncate">
+                      <td className="p-3 text-muted-foreground hidden md:table-cell max-w-[220px] truncate">
                         {entry.description || '—'}
                       </td>
-                      <td className="p-3 whitespace-nowrap">{formatDateTime(entry.startTime)}</td>
-                      <td className="p-3 whitespace-nowrap">
+                      <td className="p-3 whitespace-nowrap hidden lg:table-cell">{formatDateTime(entry.startTime)}</td>
+                      <td className="p-3 whitespace-nowrap hidden lg:table-cell">
                         {entry.endTime ? formatDateTime(entry.endTime) : '—'}
                       </td>
-                      <td className="p-3 text-right tabular-nums">
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap">
                         {entry.billableHours != null ? entry.billableHours.toFixed(2) : '—'}
                       </td>
-                      <td className="p-3 text-right tabular-nums">{money(entry.hourlyRate)}</td>
-                      <td className="p-3 text-right tabular-nums font-medium">{money(entry.lineTotal)}</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap hidden md:table-cell">{money(entry.hourlyRate)}</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap font-medium">{money(entry.lineTotal)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -279,26 +279,26 @@ export default function PortalWorksheetDetail() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-3 font-medium">{t('worksheet.partName')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.partNumber')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.partNumber')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.quantity')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.unitPrice')}</th>
+                    <th className="text-right p-3 font-medium hidden md:table-cell">{t('worksheet.unitPrice')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.lineTotal')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {ws.parts.map((part) => (
                     <tr key={part.id} className="hover:bg-muted/30">
-                      <td className="p-3 font-medium">{part.partName}</td>
-                      <td className="p-3 font-mono text-xs text-muted-foreground">
+                      <td className="p-3 font-medium max-w-[220px] truncate">{part.partName}</td>
+                      <td className="p-3 font-mono text-xs text-muted-foreground hidden md:table-cell">
                         {part.partNumber || '—'}
                       </td>
-                      <td className="p-3 text-right tabular-nums">{part.quantity}</td>
-                      <td className="p-3 text-right tabular-nums">{money(part.unitPrice)}</td>
-                      <td className="p-3 text-right tabular-nums font-medium">{money(part.lineTotal)}</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap">{part.quantity}</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap hidden md:table-cell">{money(part.unitPrice)}</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap font-medium">{money(part.lineTotal)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -318,26 +318,26 @@ export default function PortalWorksheetDetail() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left p-3 font-medium">{t('worksheet.travelDate')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.travelDate')}</th>
                     <th className="text-left p-3 font-medium">{t('worksheet.departureAddress')}</th>
                     <th className="text-left p-3 font-medium">{t('worksheet.arrivalAddress')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.distanceKm')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.ratePerKm')}</th>
+                    <th className="text-right p-3 font-medium hidden md:table-cell">{t('worksheet.ratePerKm')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.lineTotal')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {ws.travelEntries.map((entry) => (
                     <tr key={entry.id} className="hover:bg-muted/30">
-                      <td className="p-3 whitespace-nowrap">{formatDate(entry.travelDate)}</td>
-                      <td className="p-3 text-muted-foreground">{entry.departureAddress || '—'}</td>
-                      <td className="p-3 text-muted-foreground">{entry.arrivalAddress || '—'}</td>
-                      <td className="p-3 text-right tabular-nums">{entry.distanceKm.toFixed(1)} km</td>
-                      <td className="p-3 text-right tabular-nums">{money(entry.ratePerKm)}</td>
-                      <td className="p-3 text-right tabular-nums font-medium">{money(entry.lineTotal)}</td>
+                      <td className="p-3 whitespace-nowrap hidden md:table-cell">{formatDate(entry.travelDate)}</td>
+                      <td className="p-3 text-muted-foreground max-w-[200px] truncate">{entry.departureAddress || '—'}</td>
+                      <td className="p-3 text-muted-foreground max-w-[200px] truncate">{entry.arrivalAddress || '—'}</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap">{entry.distanceKm.toFixed(1)} km</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap hidden md:table-cell">{money(entry.ratePerKm)}</td>
+                      <td className="p-3 text-right tabular-nums whitespace-nowrap font-medium">{money(entry.lineTotal)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -368,13 +368,13 @@ function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath:
             <tr className="border-b bg-muted/50">
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thNumber')}</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thStatus')}</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thClient')}</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thDevice')}</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thProblem')}</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thTechnician')}</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thPriority')}</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thReception')}</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thAge')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{t('wo.dashboard.thClient')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{t('wo.dashboard.thDevice')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{t('wo.dashboard.thProblem')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{t('wo.dashboard.thTechnician')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{t('wo.dashboard.thPriority')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">{t('wo.dashboard.thReception')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">{t('wo.dashboard.thAge')}</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -388,21 +388,21 @@ function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath:
                 <td className="px-4 py-3">
                   <StatusBadge status={wo.status} type="workorder" />
                 </td>
-                <td className="px-4 py-3 max-w-[150px] truncate">{wo.customerName}</td>
-                <td className="px-4 py-3 text-muted-foreground">
+                <td className="px-4 py-3 hidden md:table-cell max-w-[150px] min-w-0 truncate">{wo.customerName}</td>
+                <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                   {wo.deviceBrand} {wo.deviceModel}
                 </td>
-                <td className="px-4 py-3 max-w-[200px] truncate text-muted-foreground">{wo.reportedIssue}</td>
-                <td className="px-4 py-3 text-muted-foreground">
+                <td className="px-4 py-3 max-w-[200px] truncate text-muted-foreground hidden lg:table-cell">{wo.reportedIssue}</td>
+                <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
                   {wo.technician ? `${wo.technician.firstName} ${wo.technician.lastName?.charAt(0)}.` : '—'}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 hidden md:table-cell">
                   <StatusBadge status={wo.priority} type="priority" />
                 </td>
-                <td className="px-4 py-3 text-muted-foreground text-xs">
+                <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
                   {new Date(wo.intakeDate).toLocaleDateString('fr-CA')}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 hidden md:table-cell">
                   <AgeBadge wo={wo} />
                 </td>
               </tr>

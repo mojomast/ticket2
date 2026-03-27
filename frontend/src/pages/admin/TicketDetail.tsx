@@ -6,6 +6,7 @@ import StatusBadge from '../../components/shared/StatusBadge';
 import MessageThread from '../../components/shared/MessageThread';
 import AttachmentSection from '../../components/shared/AttachmentSection';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { useToast } from '../../hooks/use-toast';
 import { formatDateTime, formatCurrency } from '../../lib/utils';
 import { useTranslation } from '../../lib/i18n/hook';
@@ -244,6 +245,7 @@ function ProposalsSection({
   const [counterStart, setCounterStart] = useState('');
   const [counterEnd, setCounterEnd] = useState('');
   const [counterMessage, setCounterMessage] = useState('');
+  const [counterErrors, setCounterErrors] = useState<Record<string, string>>({});
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [rejectMessage, setRejectMessage] = useState('');
 
@@ -307,10 +309,12 @@ function ProposalsSection({
 
   function handleCounterSubmit(e: React.FormEvent, parentId: string) {
     e.preventDefault();
-    if (!counterDate || !counterStart || !counterEnd) {
-      toast.error(t('admin.ticketDetail.counterFieldsRequired'));
-      return;
-    }
+    const errs: Record<string, string> = {};
+    if (!counterDate) errs.counterDate = t('validation.dateRequired');
+    if (!counterStart) errs.counterStart = t('validation.required');
+    if (!counterEnd) errs.counterEnd = t('validation.required');
+    setCounterErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     const proposedStart = `${counterDate}T${counterStart}:00`;
     const proposedEnd = `${counterDate}T${counterEnd}:00`;
     counterProposeMutation.mutate({
@@ -506,31 +510,31 @@ function ProposalsSection({
                           <input
                             type="date"
                             value={counterDate}
-                            onChange={(e) => setCounterDate(e.target.value)}
+                            onChange={(e) => { setCounterDate(e.target.value); setCounterErrors((prev) => { const { counterDate: _, ...rest } = prev; return rest; }); }}
                             min={new Date().toISOString().split('T')[0]}
-                            required
-                            className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            className={`flex h-8 w-full rounded-md border ${counterErrors.counterDate ? 'border-destructive' : 'border-input'} bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}
                           />
+                          {counterErrors.counterDate && <p className="text-xs text-destructive mt-0.5">{counterErrors.counterDate}</p>}
                         </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">{t('admin.ticketDetail.counterStart')}</Label>
                           <Input
                             type="time"
                             value={counterStart}
-                            onChange={(e) => setCounterStart(e.target.value)}
-                            required
-                            className="h-8 text-xs"
+                            onChange={(e) => { setCounterStart(e.target.value); setCounterErrors((prev) => { const { counterStart: _, ...rest } = prev; return rest; }); }}
+                            className={`h-8 text-xs ${counterErrors.counterStart ? 'border-destructive' : ''}`}
                           />
+                          {counterErrors.counterStart && <p className="text-xs text-destructive mt-0.5">{counterErrors.counterStart}</p>}
                         </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">{t('admin.ticketDetail.counterEnd')}</Label>
                           <Input
                             type="time"
                             value={counterEnd}
-                            onChange={(e) => setCounterEnd(e.target.value)}
-                            required
-                            className="h-8 text-xs"
+                            onChange={(e) => { setCounterEnd(e.target.value); setCounterErrors((prev) => { const { counterEnd: _, ...rest } = prev; return rest; }); }}
+                            className={`h-8 text-xs ${counterErrors.counterEnd ? 'border-destructive' : ''}`}
                           />
+                          {counterErrors.counterEnd && <p className="text-xs text-destructive mt-0.5">{counterErrors.counterEnd}</p>}
                         </div>
                       </div>
                       <div>
@@ -614,16 +618,19 @@ export default function AdminTicketDetail() {
   const [quotedPrice, setQuotedPrice] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
   const [quoteDuration, setQuoteDuration] = useState('');
+  const [quoteErrors, setQuoteErrors] = useState<Record<string, string>>({});
 
   // ─── Blocker form state ───
   const [showBlockerForm, setShowBlockerForm] = useState(false);
   const [blockerReason, setBlockerReason] = useState('');
+  const [blockerErrors, setBlockerErrors] = useState<Record<string, string>>({});
 
   // ─── Appointment form state ───
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | null>(null);
   const [appointmentNotes, setAppointmentNotes] = useState('');
+  const [appointmentToCancel, setAppointmentToCancel] = useState<string | null>(null);
 
   // ─── Queries ───
 
@@ -770,19 +777,13 @@ export default function AdminTicketDetail() {
 
   function handleQuoteSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
     const price = parseFloat(quotedPrice);
-    if (isNaN(price) || price <= 0) {
-      toast.error(t('admin.ticketDetail.quotePriceError'));
-      return;
-    }
-    if (!quoteDescription.trim()) {
-      toast.error(t('admin.ticketDetail.quoteDescRequired'));
-      return;
-    }
-    if (!quoteDuration.trim()) {
-      toast.error(t('admin.ticketDetail.quoteDurationRequired'));
-      return;
-    }
+    if (isNaN(price) || price <= 0) errs.quotedPrice = t('admin.ticketDetail.quotePriceError');
+    if (!quoteDescription.trim()) errs.quoteDescription = t('admin.ticketDetail.quoteDescRequired');
+    if (!quoteDuration.trim()) errs.quoteDuration = t('admin.ticketDetail.quoteDurationRequired');
+    setQuoteErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     quoteMutation.mutate({
       quotedPrice: price,
       quoteDescription: quoteDescription.trim(),
@@ -792,10 +793,10 @@ export default function AdminTicketDetail() {
 
   function handleAddBlocker(e: React.FormEvent) {
     e.preventDefault();
-    if (!blockerReason.trim()) {
-      toast.error(t('admin.ticketDetail.blockerReasonRequired'));
-      return;
-    }
+    const errs: Record<string, string> = {};
+    if (!blockerReason.trim()) errs.blockerReason = t('admin.ticketDetail.blockerReasonRequired');
+    setBlockerErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addBlockerMutation.mutate(blockerReason.trim());
   }
 
@@ -988,7 +989,7 @@ export default function AdminTicketDetail() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => cancelAppointmentMutation.mutate(apt.id)}
+                              onClick={() => setAppointmentToCancel(apt.id)}
                               disabled={cancelAppointmentMutation.isPending}
                               className="border-red-300 text-red-700 hover:bg-red-50"
                             >
@@ -1291,10 +1292,11 @@ export default function AdminTicketDetail() {
                         step="0.01"
                         min="0"
                         value={quotedPrice}
-                        onChange={(e) => setQuotedPrice(e.target.value)}
+                        onChange={(e) => { setQuotedPrice(e.target.value); setQuoteErrors((prev) => { const { quotedPrice: _, ...rest } = prev; return rest; }); }}
                         placeholder="0.00"
-                        required
+                        className={quoteErrors.quotedPrice ? 'border-destructive' : ''}
                       />
+                      {quoteErrors.quotedPrice && <p className="text-sm text-destructive mt-1">{quoteErrors.quotedPrice}</p>}
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">
@@ -1302,12 +1304,12 @@ export default function AdminTicketDetail() {
                       </Label>
                       <Textarea
                         value={quoteDescription}
-                        onChange={(e) => setQuoteDescription(e.target.value)}
+                        onChange={(e) => { setQuoteDescription(e.target.value); setQuoteErrors((prev) => { const { quoteDescription: _, ...rest } = prev; return rest; }); }}
                         placeholder={t('admin.ticketDetail.quoteDescPlaceholder')}
-                        required
                         rows={3}
-                        className="resize-none"
+                        className={`resize-none ${quoteErrors.quoteDescription ? 'border-destructive' : ''}`}
                       />
+                      {quoteErrors.quoteDescription && <p className="text-sm text-destructive mt-1">{quoteErrors.quoteDescription}</p>}
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">
@@ -1316,10 +1318,11 @@ export default function AdminTicketDetail() {
                       <Input
                         type="text"
                         value={quoteDuration}
-                        onChange={(e) => setQuoteDuration(e.target.value)}
+                        onChange={(e) => { setQuoteDuration(e.target.value); setQuoteErrors((prev) => { const { quoteDuration: _, ...rest } = prev; return rest; }); }}
                         placeholder={t('admin.ticketDetail.quoteDurationPlaceholder')}
-                        required
+                        className={quoteErrors.quoteDuration ? 'border-destructive' : ''}
                       />
+                      {quoteErrors.quoteDuration && <p className="text-sm text-destructive mt-1">{quoteErrors.quoteDuration}</p>}
                     </div>
                     <div className="flex gap-2">
                       <HelpTooltip content={t('admin.ticketDetail.quoteSendTooltip')} side="top">
@@ -1395,12 +1398,12 @@ export default function AdminTicketDetail() {
                     <form onSubmit={handleAddBlocker} className="space-y-2">
                       <Textarea
                         value={blockerReason}
-                        onChange={(e) => setBlockerReason(e.target.value)}
+                        onChange={(e) => { setBlockerReason(e.target.value); setBlockerErrors((prev) => { const { blockerReason: _, ...rest } = prev; return rest; }); }}
                         placeholder={t('admin.ticketDetail.blockerPlaceholder')}
-                        required
                         rows={3}
-                        className="resize-none"
+                        className={`resize-none ${blockerErrors.blockerReason ? 'border-destructive' : ''}`}
                       />
+                      {blockerErrors.blockerReason && <p className="text-sm text-destructive mt-1">{blockerErrors.blockerReason}</p>}
                       <div className="flex gap-2">
                         <HelpTooltip content={t('admin.ticketDetail.confirmBlockerTooltip')} side="top">
                           <Button
@@ -1436,6 +1439,22 @@ export default function AdminTicketDetail() {
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!appointmentToCancel}
+        onOpenChange={(open) => {
+          if (!open) setAppointmentToCancel(null);
+        }}
+        title={t('appointment.cancelConfirmTitle')}
+        description={t('appointment.cancelConfirmDescription')}
+        confirmLabel={t('admin.ticketDetail.cancelAppt')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          if (appointmentToCancel) {
+            cancelAppointmentMutation.mutate(appointmentToCancel);
+          }
+        }}
+      />
     </div>
   );
 }

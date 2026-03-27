@@ -157,6 +157,7 @@ export default function FileViewer({
                     onClick={() => setZoom((z) => Math.max(z - 0.25, 0.25))}
                     className="rounded-md p-1.5 hover:bg-accent transition-colors"
                     title={t('fileViewer.zoomOut')}
+                    aria-label={t('fileViewer.zoomOut')}
                   >
                     <ZoomOut className="h-4 w-4" />
                   </button>
@@ -167,6 +168,7 @@ export default function FileViewer({
                     onClick={() => setZoom((z) => Math.min(z + 0.25, 5))}
                     className="rounded-md p-1.5 hover:bg-accent transition-colors"
                     title={t('fileViewer.zoomIn')}
+                    aria-label={t('fileViewer.zoomIn')}
                   >
                     <ZoomIn className="h-4 w-4" />
                   </button>
@@ -174,6 +176,7 @@ export default function FileViewer({
                     onClick={() => setRotation((r) => (r + 90) % 360)}
                     className="rounded-md p-1.5 hover:bg-accent transition-colors"
                     title={t('fileViewer.rotate')}
+                    aria-label={t('fileViewer.rotate')}
                   >
                     <RotateCw className="h-4 w-4" />
                   </button>
@@ -185,6 +188,7 @@ export default function FileViewer({
                 href={downloadUrl}
                 className="rounded-md p-1.5 hover:bg-accent transition-colors"
                 title={t('attachment.download')}
+                aria-label={t('common.download')}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -202,6 +206,7 @@ export default function FileViewer({
               onClick={() => goTo(currentIndex - 1)}
               className="absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 border shadow-md p-2 hover:bg-background transition-colors"
               title={t('fileViewer.previous')}
+              aria-label={t('fileViewer.previous')}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -211,6 +216,7 @@ export default function FileViewer({
               onClick={() => goTo(currentIndex + 1)}
               className="absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-background/80 border shadow-md p-2 hover:bg-background transition-colors"
               title={t('fileViewer.next')}
+              aria-label={t('fileViewer.next')}
             >
               <ChevronRight className="h-5 w-5" />
             </button>

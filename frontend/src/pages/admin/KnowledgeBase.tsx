@@ -222,14 +222,15 @@ export default function KnowledgeBase() {
         <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <div className="bg-card border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-3 text-sm font-medium">{t('kb.titleField')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('kb.category')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('kb.visibility')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('kb.author')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('kb.updated')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('kb.category')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('kb.visibility')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden lg:table-cell">{t('kb.author')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('kb.updated')}</th>
                 <th className="text-right p-3 text-sm font-medium">{t('kb.actions')}</th>
               </tr>
             </thead>
@@ -239,20 +240,20 @@ export default function KnowledgeBase() {
                   key={article.id}
                   className="hover:bg-muted/30 transition-colors"
                 >
-                  <td className="p-3 text-sm">
+                  <td className="p-3 text-sm min-w-0">
                     <button
                       onClick={() => navigate(`/admin/base-connaissances/${article.id}`)}
-                      className="text-left font-medium text-primary hover:underline"
+                      className="text-left font-medium text-primary hover:underline truncate block max-w-[200px] md:max-w-none"
                     >
                       {article.title}
                     </button>
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 hidden md:table-cell">
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                       {t(`label.kbCategory.${article.category}`) || article.category}
                     </Badge>
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 hidden md:table-cell">
                     <Badge
                       variant="secondary"
                       className={
@@ -264,10 +265,10 @@ export default function KnowledgeBase() {
                       {article.visibility === 'PUBLIC' ? t('kb.public') : t('kb.internal')}
                     </Badge>
                   </td>
-                  <td className="p-3 text-sm">
+                  <td className="p-3 text-sm hidden lg:table-cell">
                     {article.author.firstName} {article.author.lastName}
                   </td>
-                  <td className="p-3 text-sm text-muted-foreground">
+                  <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">
                     {formatDateTime(article.updatedAt)}
                   </td>
                   <td className="p-3 text-right">
@@ -319,6 +320,7 @@ export default function KnowledgeBase() {
               ))}
             </tbody>
           </table>
+          </div>
           {articles.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">{t('kb.noArticles')}</div>
           )}

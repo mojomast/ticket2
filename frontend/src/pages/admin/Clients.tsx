@@ -75,6 +75,7 @@ export default function AdminClients() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [form, setForm] = useState<ClientFormData>(EMPTY_FORM);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // ── Query (paginated) ──
   const { data, isLoading } = useQuery({
@@ -143,6 +144,7 @@ export default function AdminClients() {
     setDialogMode('closed');
     setEditingUser(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
   }, []);
 
   const openCreate = useCallback(() => {
@@ -170,13 +172,38 @@ export default function AdminClients() {
     (field: keyof ClientFormData) =>
       (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
+        setFormErrors((prev) => { const { [field]: _, ...rest } = prev; return rest; });
       },
     [],
   );
 
+  function validateClientForm(): boolean {
+    const errs: Record<string, string> = {};
+    if (!form.firstName.trim()) errs.firstName = t('validation.firstNameRequired');
+    if (!form.lastName.trim()) errs.lastName = t('validation.lastNameRequired');
+    if (!form.email.trim()) {
+      errs.email = t('validation.emailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errs.email = t('validation.emailInvalid');
+    }
+    if (dialogMode === 'create') {
+      if (!form.password) {
+        errs.password = t('validation.passwordRequired');
+      } else if (form.password.length < 8) {
+        errs.password = t('validation.passwordMinLength');
+      }
+    } else if (form.password && form.password.length < 8) {
+      errs.password = t('validation.passwordMinLength');
+    }
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
+
+      if (!validateClientForm()) return;
 
       if (dialogMode === 'create') {
         const payload: Record<string, unknown> = {
@@ -245,14 +272,15 @@ export default function AdminClients() {
         <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <div className="bg-card border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-3 text-sm font-medium">{t('admin.clients.name')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.email')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.phone')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.type')}</th>
-                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.company')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('admin.clients.email')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden lg:table-cell">{t('admin.clients.phone')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden lg:table-cell">{t('admin.clients.type')}</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">{t('admin.clients.company')}</th>
                 <th className="text-left p-3 text-sm font-medium">{t('admin.clients.statusHeader')}</th>
                 <th className="text-right p-3 text-sm font-medium">{t('admin.clients.actionsHeader')}</th>
               </tr>
@@ -264,17 +292,17 @@ export default function AdminClients() {
                   onClick={() => openEdit(user)}
                   className="hover:bg-muted/30 cursor-pointer transition-colors"
                 >
-                  <td className="p-3 text-sm">
+                  <td className="p-3 text-sm min-w-0 truncate max-w-[180px]">
                     {user.firstName} {user.lastName}
                   </td>
-                  <td className="p-3 text-sm">{user.email}</td>
-                  <td className="p-3 text-sm">{user.phone || '–'}</td>
-                  <td className="p-3 text-sm">
+                  <td className="p-3 text-sm hidden md:table-cell min-w-0 truncate max-w-[200px]">{user.email}</td>
+                  <td className="p-3 text-sm hidden lg:table-cell">{user.phone || '–'}</td>
+                  <td className="p-3 text-sm hidden lg:table-cell">
                     {user.customerType
                       ? t(`label.customerType.${user.customerType}`) || user.customerType
                       : '–'}
                   </td>
-                  <td className="p-3 text-sm">{user.companyName || '–'}</td>
+                  <td className="p-3 text-sm hidden md:table-cell">{user.companyName || '–'}</td>
                   <td className="p-3">
                     <Badge
                       variant="secondary"
@@ -380,6 +408,7 @@ export default function AdminClients() {
               ))}
             </tbody>
           </table>
+          </div>
           {users.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">{t('admin.clients.noClients')}</div>
           )}
@@ -429,19 +458,21 @@ export default function AdminClients() {
                 <Label>{t('admin.clients.firstName')}</Label>
                 <Input
                   type="text"
-                  required
                   value={form.firstName}
                   onChange={handleFieldChange('firstName')}
+                  className={formErrors.firstName ? 'border-destructive' : ''}
                 />
+                {formErrors.firstName && <p className="text-sm text-destructive mt-1">{formErrors.firstName}</p>}
               </div>
               <div className="space-y-1">
                 <Label>{t('admin.clients.lastName')}</Label>
                 <Input
                   type="text"
-                  required
                   value={form.lastName}
                   onChange={handleFieldChange('lastName')}
+                  className={formErrors.lastName ? 'border-destructive' : ''}
                 />
+                {formErrors.lastName && <p className="text-sm text-destructive mt-1">{formErrors.lastName}</p>}
               </div>
             </div>
 
@@ -450,10 +481,11 @@ export default function AdminClients() {
               <Label>{t('admin.clients.email')}</Label>
               <Input
                 type="email"
-                required
                 value={form.email}
                 onChange={handleFieldChange('email')}
+                className={formErrors.email ? 'border-destructive' : ''}
               />
+              {formErrors.email && <p className="text-sm text-destructive mt-1">{formErrors.email}</p>}
             </div>
 
             {/* Phone */}
@@ -515,11 +547,11 @@ export default function AdminClients() {
               </Label>
               <Input
                 type="password"
-                required={dialogMode === 'create'}
                 value={form.password}
                 onChange={handleFieldChange('password')}
-                minLength={dialogMode === 'create' ? 8 : undefined}
+                className={formErrors.password ? 'border-destructive' : ''}
               />
+              {formErrors.password && <p className="text-sm text-destructive mt-1">{formErrors.password}</p>}
             </div>
 
             {/* Actions */}

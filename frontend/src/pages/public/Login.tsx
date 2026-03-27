@@ -13,7 +13,7 @@ export default function Login() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [errors, setErrors] = useState<Record<string, string>>({});
   // If already authenticated, redirect to the appropriate dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -29,6 +29,23 @@ export default function Login() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Client-side validation
+    const newErrors: Record<string, string> = {};
+    if (!email.trim()) {
+      newErrors.email = t('validation.emailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = t('validation.emailInvalid');
+    }
+    if (!password) {
+      newErrors.password = t('validation.passwordRequired');
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+
     try {
       const user = await login({ email, password });
       navigateByRole(user.role);
@@ -67,20 +84,22 @@ export default function Login() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => { setEmail(e.target.value); setErrors((prev) => { const { email: _, ...rest } = prev; return rest; }); }}
+                className={`w-full rounded-md border ${errors.email ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring`}
                 required
               />
+              {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{t('auth.password')}</label>
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => { setPassword(e.target.value); setErrors((prev) => { const { password: _, ...rest } = prev; return rest; }); }}
+                className={`w-full rounded-md border ${errors.password ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring`}
                 required
               />
+              {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
             </div>
 
             {loginError && (

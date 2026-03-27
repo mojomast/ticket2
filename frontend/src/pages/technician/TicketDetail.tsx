@@ -5,6 +5,7 @@ import { api, type Ticket, type AppointmentProposal } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import MessageThread from '../../components/shared/MessageThread';
 import AttachmentSection from '../../components/shared/AttachmentSection';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import { formatDateTime, formatCurrency } from '../../lib/utils';
@@ -178,16 +179,19 @@ export default function TechTicketDetail() {
   const [quotedPrice, setQuotedPrice] = useState('');
   const [quoteDescription, setQuoteDescription] = useState('');
   const [quoteDuration, setQuoteDuration] = useState('');
+  const [quoteErrors, setQuoteErrors] = useState<Record<string, string>>({});
 
   // ─── Blocker form state ───
   const [showBlockerForm, setShowBlockerForm] = useState(false);
   const [blockerReason, setBlockerReason] = useState('');
+  const [blockerErrors, setBlockerErrors] = useState<Record<string, string>>({});
 
   // ─── Appointment form state ───
   const [showApptForm, setShowApptForm] = useState(false);
   const [apptDate, setApptDate] = useState('');
   const [apptSelectedSlot, setApptSelectedSlot] = useState<{ start: string; end: string } | null>(null);
   const [apptNotes, setApptNotes] = useState('');
+  const [appointmentToCancel, setAppointmentToCancel] = useState<string | null>(null);
 
   // ─── Proposal interaction state ───
   const [rejectingProposalId, setRejectingProposalId] = useState<string | null>(null);
@@ -427,19 +431,13 @@ export default function TechTicketDetail() {
   // ─── Handlers ───
   const handleQuoteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errs: Record<string, string> = {};
     const price = parseFloat(quotedPrice);
-    if (isNaN(price) || price <= 0) {
-      toast.error(t('tech.ticketDetail.quotePriceError'));
-      return;
-    }
-    if (!quoteDescription.trim()) {
-      toast.error(t('tech.ticketDetail.quoteDescRequired'));
-      return;
-    }
-    if (!quoteDuration.trim()) {
-      toast.error(t('tech.ticketDetail.quoteDurationRequired'));
-      return;
-    }
+    if (isNaN(price) || price <= 0) errs.quotedPrice = t('tech.ticketDetail.quotePriceError');
+    if (!quoteDescription.trim()) errs.quoteDescription = t('tech.ticketDetail.quoteDescRequired');
+    if (!quoteDuration.trim()) errs.quoteDuration = t('tech.ticketDetail.quoteDurationRequired');
+    setQuoteErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     quoteMutation.mutate({
       quotedPrice: price,
       quoteDescription: quoteDescription.trim(),
@@ -449,10 +447,10 @@ export default function TechTicketDetail() {
 
   const handleAddBlocker = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!blockerReason.trim()) {
-      toast.error(t('tech.ticketDetail.blockerReasonRequired'));
-      return;
-    }
+    const errs: Record<string, string> = {};
+    if (!blockerReason.trim()) errs.blockerReason = t('tech.ticketDetail.blockerReasonRequired');
+    setBlockerErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addBlockerMutation.mutate(blockerReason.trim());
   };
 
@@ -572,10 +570,15 @@ export default function TechTicketDetail() {
           )}
 
           {/* ─── Appointment Proposals Section ─── */}
-          {proposals.length > 0 && (
-            <Card>
-              <CardContent className="pt-6 space-y-4">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
               <h3 className="font-semibold">{t('tech.ticketDetail.proposals')}</h3>
+
+              {proposals.length === 0 && (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  {t('tech.ticketDetail.noProposals')}
+                </div>
+              )}
 
               {/* Pending proposals first — these require action */}
               {pendingProposals.length > 0 && (
@@ -863,9 +866,8 @@ export default function TechTicketDetail() {
                   ))}
                 </div>
               )}
-              </CardContent>
-            </Card>
-          )}
+            </CardContent>
+          </Card>
           {/* ─── Appointments Section ─── */}
           {canScheduleAppointment && (
             <Card>
@@ -936,7 +938,7 @@ export default function TechTicketDetail() {
                             <Button
                               size="sm"
                               variant="secondary"
-                              onClick={() => cancelApptMutation.mutate(appt.id)}
+                              onClick={() => setAppointmentToCancel(appt.id)}
                               disabled={isMutating}
                               className="text-xs bg-red-100 text-red-700 hover:bg-red-200"
                             >
@@ -1187,31 +1189,33 @@ export default function TechTicketDetail() {
                         step="0.01"
                         min="0"
                         value={quotedPrice}
-                        onChange={(e) => setQuotedPrice(e.target.value)}
+                        onChange={(e) => { setQuotedPrice(e.target.value); setQuoteErrors((prev) => { const { quotedPrice: _, ...rest } = prev; return rest; }); }}
                         placeholder="150.00"
-                        required
+                        className={quoteErrors.quotedPrice ? 'border-destructive' : ''}
                       />
+                      {quoteErrors.quotedPrice && <p className="text-sm text-destructive mt-1">{quoteErrors.quotedPrice}</p>}
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.quoteDescLabel')}</Label>
                       <Textarea
                         value={quoteDescription}
-                        onChange={(e) => setQuoteDescription(e.target.value)}
+                        onChange={(e) => { setQuoteDescription(e.target.value); setQuoteErrors((prev) => { const { quoteDescription: _, ...rest } = prev; return rest; }); }}
                         placeholder={t('tech.ticketDetail.quoteDescPlaceholder')}
                         rows={3}
-                        className="resize-none"
-                        required
+                        className={`resize-none ${quoteErrors.quoteDescription ? 'border-destructive' : ''}`}
                       />
+                      {quoteErrors.quoteDescription && <p className="text-sm text-destructive mt-1">{quoteErrors.quoteDescription}</p>}
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.quoteDurationLabel')}</Label>
                       <Input
                         type="text"
                         value={quoteDuration}
-                        onChange={(e) => setQuoteDuration(e.target.value)}
+                        onChange={(e) => { setQuoteDuration(e.target.value); setQuoteErrors((prev) => { const { quoteDuration: _, ...rest } = prev; return rest; }); }}
                         placeholder={t('tech.ticketDetail.quoteDurationPlaceholder')}
-                        required
+                        className={quoteErrors.quoteDuration ? 'border-destructive' : ''}
                       />
+                      {quoteErrors.quoteDuration && <p className="text-sm text-destructive mt-1">{quoteErrors.quoteDuration}</p>}
                     </div>
                     <div className="flex gap-2">
                       <HelpTooltip content={t('tech.ticketDetail.quoteSendTooltip')} side="top">
@@ -1283,12 +1287,12 @@ export default function TechTicketDetail() {
                       <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.blockerReasonLabel')}</Label>
                       <Textarea
                         value={blockerReason}
-                        onChange={(e) => setBlockerReason(e.target.value)}
+                        onChange={(e) => { setBlockerReason(e.target.value); setBlockerErrors((prev) => { const { blockerReason: _, ...rest } = prev; return rest; }); }}
                         placeholder={t('tech.ticketDetail.blockerReasonPlaceholder')}
                         rows={3}
-                        className="resize-none"
-                        required
+                        className={`resize-none ${blockerErrors.blockerReason ? 'border-destructive' : ''}`}
                       />
+                      {blockerErrors.blockerReason && <p className="text-sm text-destructive mt-1">{blockerErrors.blockerReason}</p>}
                     </div>
                     <div className="flex gap-2">
                       <HelpTooltip content={t('tech.ticketDetail.addBlockerTooltip')} side="top">
@@ -1317,6 +1321,22 @@ export default function TechTicketDetail() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!appointmentToCancel}
+        onOpenChange={(open) => {
+          if (!open) setAppointmentToCancel(null);
+        }}
+        title={t('appointment.cancelConfirmTitle')}
+        description={t('appointment.cancelConfirmDescription')}
+        confirmLabel={t('tech.ticketDetail.cancelAppt')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          if (appointmentToCancel) {
+            cancelApptMutation.mutate(appointmentToCancel);
+          }
+        }}
+      />
     </div>
   );
 }

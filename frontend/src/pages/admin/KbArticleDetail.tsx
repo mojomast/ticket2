@@ -496,6 +496,7 @@ export default function KbArticleDetail() {
                                 disabled={unlinkMutation.isPending}
                                 className="flex-shrink-0 h-auto px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
                                 title={t('kb.detail.unlink')}
+                                aria-label={t('kb.detail.unlink')}
                               >
                                 &times;
                               </Button>

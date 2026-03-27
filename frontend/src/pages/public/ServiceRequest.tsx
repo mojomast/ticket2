@@ -21,6 +21,7 @@ export default function ServiceRequest() {
   const [serviceCategory, setServiceCategory] = useState('REPARATION');
   const [serviceMode, setServiceMode] = useState('SUR_ROUTE');
   const [priority, setPriority] = useState('NORMALE');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Mutation to create the ticket via the public service request endpoint
   const mutation = useMutation({
@@ -46,6 +47,24 @@ export default function ServiceRequest() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation
+    const newErrors: Record<string, string> = {};
+    if (!firstName.trim()) newErrors.firstName = t('validation.firstNameRequired');
+    if (!lastName.trim()) newErrors.lastName = t('validation.lastNameRequired');
+    if (!email.trim()) {
+      newErrors.email = t('validation.emailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = t('validation.emailInvalid');
+    }
+    if (!title.trim()) newErrors.title = t('validation.titleRequired');
+    if (!description.trim()) newErrors.description = t('validation.descriptionRequired');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+
     mutation.mutate();
   };
 
@@ -99,9 +118,10 @@ export default function ServiceRequest() {
                 type="text"
                 required
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                onChange={(e) => { setFirstName(e.target.value); setErrors((prev) => { const { firstName: _, ...rest } = prev; return rest; }); }}
+                className={`w-full rounded-md border ${errors.firstName ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
               />
+              {errors.firstName && <p className="text-sm text-destructive mt-1">{errors.firstName}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{t('serviceRequest.lastName')}</label>
@@ -109,9 +129,10 @@ export default function ServiceRequest() {
                 type="text"
                 required
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                onChange={(e) => { setLastName(e.target.value); setErrors((prev) => { const { lastName: _, ...rest } = prev; return rest; }); }}
+                className={`w-full rounded-md border ${errors.lastName ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
               />
+              {errors.lastName && <p className="text-sm text-destructive mt-1">{errors.lastName}</p>}
             </div>
           </div>
 
@@ -121,9 +142,10 @@ export default function ServiceRequest() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              onChange={(e) => { setEmail(e.target.value); setErrors((prev) => { const { email: _, ...rest } = prev; return rest; }); }}
+              className={`w-full rounded-md border ${errors.email ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
             />
+            {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
           </div>
 
           <div>
@@ -142,9 +164,10 @@ export default function ServiceRequest() {
               type="text"
               required
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              onChange={(e) => { setTitle(e.target.value); setErrors((prev) => { const { title: _, ...rest } = prev; return rest; }); }}
+              className={`w-full rounded-md border ${errors.title ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
             />
+            {errors.title && <p className="text-sm text-destructive mt-1">{errors.title}</p>}
           </div>
 
           <div>
@@ -153,9 +176,10 @@ export default function ServiceRequest() {
               required
               rows={4}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+              onChange={(e) => { setDescription(e.target.value); setErrors((prev) => { const { description: _, ...rest } = prev; return rest; }); }}
+              className={`w-full rounded-md border ${errors.description ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm resize-none`}
             />
+            {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

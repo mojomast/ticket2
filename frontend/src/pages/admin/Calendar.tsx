@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type Appointment, type Ticket, type User } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
 import { APPOINTMENT_STATUS_COLORS } from '../../lib/constants';
@@ -132,6 +133,7 @@ export default function AdminCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<AppointmentFormData>({ ...EMPTY_FORM });
+  const [cancelAppointmentId, setCancelAppointmentId] = useState<string | null>(null);
 
   // ── Compute date range for API query ────────────────────────────
   const { dateFrom, dateTo } = useMemo(() => {
@@ -341,7 +343,7 @@ export default function AdminCalendar() {
   }
 
   function handleCancel(appointmentId: string) {
-    cancelMutation.mutate(appointmentId);
+    setCancelAppointmentId(appointmentId);
   }
 
   function handleSlotClick(slot: { start: string; end: string; available: boolean }) {
@@ -520,6 +522,22 @@ export default function AdminCalendar() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={!!cancelAppointmentId}
+        onOpenChange={(open) => {
+          if (!open) setCancelAppointmentId(null);
+        }}
+        title={t('appointment.cancelConfirmTitle')}
+        description={t('appointment.cancelConfirmDescription')}
+        confirmLabel={t('appointment.cancel')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => {
+          if (cancelAppointmentId) {
+            cancelMutation.mutate(cancelAppointmentId);
+          }
+        }}
+      />
     </div>
   );
 }

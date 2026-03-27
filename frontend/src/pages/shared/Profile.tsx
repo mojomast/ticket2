@@ -23,6 +23,9 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
 
+  // ---------- Profile form errors ----------
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+
   // ---------- Query ----------
   const { data: profile, isLoading, isError } = useQuery<User>({
     queryKey: ['users', 'profile'],
@@ -69,6 +72,15 @@ export default function Profile() {
       toast.error(err.message || t('profile.passwordError'));
     },
   });
+
+  // ---------- Profile validation ----------
+  function validateProfileForm(): boolean {
+    const errs: Record<string, string> = {};
+    if (!firstName.trim()) errs.firstName = t('validation.firstNameRequired');
+    if (!lastName.trim()) errs.lastName = t('validation.lastNameRequired');
+    setProfileErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
 
   // ---------- Password validation ----------
   function validatePasswordForm(): boolean {
@@ -150,10 +162,11 @@ export default function Profile() {
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => { setFirstName(e.target.value); setProfileErrors((prev) => { const { firstName: _, ...rest } = prev; return rest; }); }}
               placeholder={t('profile.firstName')}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className={`w-full rounded-md border ${profileErrors.firstName ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
             />
+            {profileErrors.firstName && <p className="text-sm text-destructive mt-1">{profileErrors.firstName}</p>}
           </div>
 
           {/* Last name */}
@@ -162,10 +175,11 @@ export default function Profile() {
             <input
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => { setLastName(e.target.value); setProfileErrors((prev) => { const { lastName: _, ...rest } = prev; return rest; }); }}
               placeholder={t('profile.lastName')}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className={`w-full rounded-md border ${profileErrors.lastName ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
             />
+            {profileErrors.lastName && <p className="text-sm text-destructive mt-1">{profileErrors.lastName}</p>}
           </div>
 
           {/* Email (read-only) */}
@@ -198,7 +212,7 @@ export default function Profile() {
           {/* Save button */}
           <HelpTooltip content={t('profile.saveTooltip')} side="right">
             <button
-              onClick={() => saveMutation.mutate()}
+              onClick={() => { if (validateProfileForm()) saveMutation.mutate(); }}
               disabled={saveMutation.isPending}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
             >
@@ -219,9 +233,9 @@ export default function Profile() {
             <input
               type="password"
               value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              onChange={(e) => { setCurrentPassword(e.target.value); setPasswordErrors((prev) => { const { currentPassword: _, ...rest } = prev; return rest; }); }}
               placeholder={t('profile.currentPasswordPlaceholder')}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className={`w-full rounded-md border ${passwordErrors.currentPassword ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
             />
             {passwordErrors.currentPassword && (
               <p className="text-destructive text-xs mt-1">{passwordErrors.currentPassword}</p>
@@ -234,9 +248,9 @@ export default function Profile() {
             <input
               type="password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e) => { setNewPassword(e.target.value); setPasswordErrors((prev) => { const { newPassword: _, ...rest } = prev; return rest; }); }}
               placeholder={t('profile.newPasswordPlaceholder')}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className={`w-full rounded-md border ${passwordErrors.newPassword ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
             />
             {passwordErrors.newPassword && (
               <p className="text-destructive text-xs mt-1">{passwordErrors.newPassword}</p>
@@ -249,9 +263,9 @@ export default function Profile() {
             <input
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => { setConfirmPassword(e.target.value); setPasswordErrors((prev) => { const { confirmPassword: _, ...rest } = prev; return rest; }); }}
               placeholder={t('profile.confirmPasswordPlaceholder')}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className={`w-full rounded-md border ${passwordErrors.confirmPassword ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm`}
             />
             {passwordErrors.confirmPassword && (
               <p className="text-destructive text-xs mt-1">{passwordErrors.confirmPassword}</p>

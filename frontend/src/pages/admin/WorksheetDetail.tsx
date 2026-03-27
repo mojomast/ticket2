@@ -127,6 +127,13 @@ export default function AdminWorksheetDetail() {
   const [editFollowUpScheduledDate, setEditFollowUpScheduledDate] = useState('');
   const [editFollowUpNotes, setEditFollowUpNotes] = useState('');
 
+  // ─── Inline validation errors ───
+  const [laborErrors, setLaborErrors] = useState<Record<string, string>>({});
+  const [partErrors, setPartErrors] = useState<Record<string, string>>({});
+  const [travelErrors, setTravelErrors] = useState<Record<string, string>>({});
+  const [noteErrors, setNoteErrors] = useState<Record<string, string>>({});
+  const [followUpErrors, setFollowUpErrors] = useState<Record<string, string>>({});
+
   // ─── Worksheet config (admin-defined defaults) ───
   const { data: wsConfigData } = useQuery({
     queryKey: ['config', 'worksheet_config'],
@@ -360,6 +367,7 @@ export default function AdminWorksheetDetail() {
     setLaborBreakMinutes('0');
     setLaborHourlyRate(String(wsConfig.defaultHourlyRate));
     setShowLaborForm(false);
+    setLaborErrors({});
   }
 
   function resetPartForm() {
@@ -371,6 +379,7 @@ export default function AdminWorksheetDetail() {
     setPartUnitPrice('0');
     setPartWarrantyMonths('');
     setShowPartForm(false);
+    setPartErrors({});
   }
 
   function resetTravelForm() {
@@ -380,12 +389,14 @@ export default function AdminWorksheetDetail() {
     setTravelRatePerKm(String(wsConfig.defaultRatePerKm));
     setTravelDate('');
     setShowTravelForm(false);
+    setTravelErrors({});
   }
 
   function resetNoteForm() {
     setNoteType('INTERNE');
     setNoteContent('');
     setShowNoteForm(false);
+    setNoteErrors({});
   }
 
   function resetFollowUpForm() {
@@ -393,6 +404,7 @@ export default function AdminWorksheetDetail() {
     setFollowUpScheduledDate('');
     setFollowUpNotes('');
     setShowFollowUpForm(false);
+    setFollowUpErrors({});
   }
 
   // ─── Edit start helpers ───
@@ -439,13 +451,19 @@ export default function AdminWorksheetDetail() {
 
   function handleAddLabor(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!laborStartTime) errs.startTime = t('validation.dateRequired');
+    const rate = parseFloat(laborHourlyRate);
+    if (isNaN(rate) || rate < 0) errs.hourlyRate = t('validation.hoursInvalid');
+    setLaborErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addLaborMutation.mutate({
       laborType,
       description: laborDescription || undefined,
-      startTime: laborStartTime ? new Date(laborStartTime).toISOString() : new Date().toISOString(),
+      startTime: new Date(laborStartTime).toISOString(),
       endTime: laborEndTime ? new Date(laborEndTime).toISOString() : undefined,
       breakMinutes: parseInt(laborBreakMinutes) || 0,
-      hourlyRate: parseFloat(laborHourlyRate),
+      hourlyRate: rate,
     });
   }
 
@@ -465,13 +483,21 @@ export default function AdminWorksheetDetail() {
 
   function handleAddPart(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!partName.trim()) errs.partName = t('validation.partNameRequired');
+    const qty = parseInt(partQuantity);
+    if (isNaN(qty) || qty < 1) errs.quantity = t('validation.quantityInvalid');
+    const price = parseFloat(partUnitPrice);
+    if (isNaN(price) || price < 0) errs.unitPrice = t('validation.unitPriceInvalid');
+    setPartErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addPartMutation.mutate({
       partName,
       partNumber: partNumber || undefined,
       supplier: partSupplier || undefined,
       supplierCost: parseFloat(partSupplierCost) || 0,
-      quantity: parseInt(partQuantity) || 1,
-      unitPrice: parseFloat(partUnitPrice) || 0,
+      quantity: qty,
+      unitPrice: price,
       warrantyMonths: partWarrantyMonths ? parseInt(partWarrantyMonths) : undefined,
     });
   }
@@ -493,10 +519,15 @@ export default function AdminWorksheetDetail() {
 
   function handleAddTravel(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    const distance = parseFloat(travelDistanceKm);
+    if (!travelDistanceKm || isNaN(distance) || distance <= 0) errs.distanceKm = t('validation.distanceInvalid');
+    setTravelErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addTravelMutation.mutate({
       departureAddress: travelDeparture || undefined,
       arrivalAddress: travelArrival || undefined,
-      distanceKm: parseFloat(travelDistanceKm) || 0,
+      distanceKm: distance,
       ratePerKm: parseFloat(travelRatePerKm) || 0,
       travelDate: travelDate ? new Date(travelDate).toISOString() : new Date().toISOString(),
     });
@@ -517,14 +548,22 @@ export default function AdminWorksheetDetail() {
 
   function handleAddNote(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!noteContent.trim()) errs.noteContent = t('validation.noteRequired');
+    setNoteErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addNoteMutation.mutate({ noteType, content: noteContent });
   }
 
   function handleAddFollowUp(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!followUpScheduledDate) errs.scheduledDate = t('validation.followUpDateRequired');
+    setFollowUpErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addFollowUpMutation.mutate({
       followUpType,
-      scheduledDate: followUpScheduledDate ? new Date(followUpScheduledDate).toISOString() : undefined,
+      scheduledDate: new Date(followUpScheduledDate).toISOString(),
       notes: followUpNotes || undefined,
     });
   }
@@ -906,7 +945,8 @@ export default function AdminWorksheetDetail() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.startTime')}</label>
-                    <input type="datetime-local" value={laborStartTime} onChange={(e) => setLaborStartTime(e.target.value)} required className={inputCls} />
+                    <input type="datetime-local" value={laborStartTime} onChange={(e) => { setLaborStartTime(e.target.value); setLaborErrors((prev) => { const { startTime: _, ...rest } = prev; return rest; }); }} className={`${inputCls} ${laborErrors.startTime ? '!border-destructive' : ''}`} />
+                    {laborErrors.startTime && <p className="text-xs text-destructive mt-0.5">{laborErrors.startTime}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.endTime')}</label>
@@ -918,13 +958,14 @@ export default function AdminWorksheetDetail() {
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.hourlyRate')}</label>
-                    <input type="number" step="0.01" value={laborHourlyRate} onChange={(e) => setLaborHourlyRate(e.target.value)} className={inputCls} />
+                    <input type="number" step="0.01" value={laborHourlyRate} onChange={(e) => { setLaborHourlyRate(e.target.value); setLaborErrors((prev) => { const { hourlyRate: _, ...rest } = prev; return rest; }); }} className={`${inputCls} ${laborErrors.hourlyRate ? '!border-destructive' : ''}`} />
+                    {laborErrors.hourlyRate && <p className="text-xs text-destructive mt-0.5">{laborErrors.hourlyRate}</p>}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button type="submit" size="sm" disabled={addLaborMutation.isPending}>
                     <Save className="h-4 w-4 mr-1" />
-                    {t('common.save')}
+                    {addLaborMutation.isPending ? t('common.saving') : t('common.save')}
                   </Button>
                   <Button type="button" variant="ghost" size="sm" onClick={resetLaborForm}>
                     <X className="h-4 w-4 mr-1" />
@@ -937,16 +978,16 @@ export default function AdminWorksheetDetail() {
 
           {ws.laborEntries.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-3 font-medium">{t('worksheet.laborType')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.description')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.startTime')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.endTime')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.breakMinutes')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.description')}</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">{t('worksheet.startTime')}</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">{t('worksheet.endTime')}</th>
+                    <th className="text-right p-3 font-medium hidden lg:table-cell">{t('worksheet.breakMinutes')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.billableHours')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.hourlyRate')}</th>
+                    <th className="text-right p-3 font-medium hidden md:table-cell">{t('worksheet.hourlyRate')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.lineTotal')}</th>
                     {editable && <th className="text-right p-3 font-medium">{t('worksheet.adminActions')}</th>}
                   </tr>
@@ -963,29 +1004,29 @@ export default function AdminWorksheetDetail() {
                             ))}
                           </select>
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 hidden md:table-cell">
                           <input type="text" value={editLaborDescription} onChange={(e) => setEditLaborDescription(e.target.value)} className={inputCls} />
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 hidden lg:table-cell">
                           <input type="datetime-local" value={editLaborStartTime} onChange={(e) => setEditLaborStartTime(e.target.value)} className={inputCls} />
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 hidden lg:table-cell">
                           <input type="datetime-local" value={editLaborEndTime} onChange={(e) => setEditLaborEndTime(e.target.value)} className={inputCls} />
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 hidden lg:table-cell">
                           <input type="number" min="0" value={editLaborBreakMinutes} onChange={(e) => setEditLaborBreakMinutes(e.target.value)} className={inputCls + ' text-right'} />
                         </td>
                         <td className="p-2 text-center text-muted-foreground text-xs">—</td>
-                        <td className="p-2">
+                        <td className="p-2 hidden md:table-cell">
                           <input type="number" step="0.01" value={editLaborHourlyRate} onChange={(e) => setEditLaborHourlyRate(e.target.value)} className={inputCls + ' text-right'} />
                         </td>
                         <td className="p-2 text-center text-muted-foreground text-xs">—</td>
                         <td className="p-2">
                           <div className="flex gap-1 justify-end">
-                            <Button size="sm" variant="ghost" onClick={() => handleUpdateLabor(entry.id)} disabled={updateLaborMutation.isPending}>
+                            <Button size="sm" variant="ghost" onClick={() => handleUpdateLabor(entry.id)} disabled={updateLaborMutation.isPending} aria-label={t('common.save')}>
                               <Save className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingLaborId(null)}>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingLaborId(null)} aria-label={t('common.cancel')}>
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
@@ -994,28 +1035,28 @@ export default function AdminWorksheetDetail() {
                     ) : (
                       /* Display row */
                       <tr key={entry.id} className="hover:bg-muted/30">
-                        <td className="p-3">
+                        <td className="p-3 whitespace-nowrap">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                             {t(`label.laborType.${entry.laborType}`) || entry.laborType}
                           </span>
                         </td>
-                        <td className="p-3 text-muted-foreground max-w-xs truncate">
+                        <td className="p-3 text-muted-foreground max-w-xs truncate hidden md:table-cell">
                           {entry.description || '—'}
                         </td>
-                        <td className="p-3 whitespace-nowrap">{formatDateTime(entry.startTime)}</td>
-                        <td className="p-3 whitespace-nowrap">
+                        <td className="p-3 whitespace-nowrap hidden lg:table-cell">{formatDateTime(entry.startTime)}</td>
+                        <td className="p-3 whitespace-nowrap hidden lg:table-cell">
                           {entry.endTime ? formatDateTime(entry.endTime) : '—'}
                         </td>
-                        <td className="p-3 text-right tabular-nums">{entry.breakMinutes} min</td>
+                        <td className="p-3 text-right tabular-nums hidden lg:table-cell">{entry.breakMinutes} min</td>
                         <td className="p-3 text-right tabular-nums">
                           {entry.billableHours != null ? entry.billableHours.toFixed(2) : '—'}
                         </td>
-                        <td className="p-3 text-right tabular-nums">{money(entry.hourlyRate)}</td>
+                        <td className="p-3 text-right tabular-nums hidden md:table-cell">{money(entry.hourlyRate)}</td>
                         <td className="p-3 text-right tabular-nums font-medium">{money(entry.lineTotal)}</td>
                         {editable && (
                           <td className="p-3">
                             <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="ghost" onClick={() => startEditLabor(entry)} title={t('common.edit')}>
+                              <Button size="sm" variant="ghost" onClick={() => startEditLabor(entry)} title={t('common.edit')} aria-label={t('common.edit')}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
@@ -1029,6 +1070,7 @@ export default function AdminWorksheetDetail() {
                                 }}
                                 disabled={deleteLaborMutation.isPending}
                                 title={t('common.delete')}
+                                aria-label={t('common.delete')}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1071,7 +1113,8 @@ export default function AdminWorksheetDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.partName')}</label>
-                    <input type="text" value={partName} onChange={(e) => setPartName(e.target.value)} required className={inputCls} />
+                    <input type="text" value={partName} onChange={(e) => { setPartName(e.target.value); setPartErrors((prev) => { const { partName: _, ...rest } = prev; return rest; }); }} className={`${inputCls} ${partErrors.partName ? '!border-destructive' : ''}`} />
+                    {partErrors.partName && <p className="text-xs text-destructive mt-0.5">{partErrors.partName}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.partNumber')}</label>
@@ -1089,11 +1132,13 @@ export default function AdminWorksheetDetail() {
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.quantity')}</label>
-                    <input type="number" min="1" value={partQuantity} onChange={(e) => setPartQuantity(e.target.value)} className={inputCls} />
+                    <input type="number" min="1" value={partQuantity} onChange={(e) => { setPartQuantity(e.target.value); setPartErrors((prev) => { const { quantity: _, ...rest } = prev; return rest; }); }} className={`${inputCls} ${partErrors.quantity ? '!border-destructive' : ''}`} />
+                    {partErrors.quantity && <p className="text-xs text-destructive mt-0.5">{partErrors.quantity}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.unitPrice')}</label>
-                    <input type="number" step="0.01" value={partUnitPrice} onChange={(e) => setPartUnitPrice(e.target.value)} className={inputCls} />
+                    <input type="number" step="0.01" value={partUnitPrice} onChange={(e) => { setPartUnitPrice(e.target.value); setPartErrors((prev) => { const { unitPrice: _, ...rest } = prev; return rest; }); }} className={`${inputCls} ${partErrors.unitPrice ? '!border-destructive' : ''}`} />
+                    {partErrors.unitPrice && <p className="text-xs text-destructive mt-0.5">{partErrors.unitPrice}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.warrantyMonths')}</label>
@@ -1103,7 +1148,7 @@ export default function AdminWorksheetDetail() {
                 <div className="flex gap-2">
                   <Button type="submit" size="sm" disabled={addPartMutation.isPending}>
                     <Save className="h-4 w-4 mr-1" />
-                    {t('common.save')}
+                    {addPartMutation.isPending ? t('common.saving') : t('common.save')}
                   </Button>
                   <Button type="button" variant="ghost" size="sm" onClick={resetPartForm}>
                     <X className="h-4 w-4 mr-1" />
@@ -1116,18 +1161,18 @@ export default function AdminWorksheetDetail() {
 
           {ws.parts.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[860px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-3 font-medium">{t('worksheet.partName')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.partNumber')}</th>
-                    <th className="text-left p-3 font-medium">{t('worksheet.supplier')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.partNumber')}</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">{t('worksheet.supplier')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.quantity')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.supplierCost')}</th>
+                    <th className="text-right p-3 font-medium hidden lg:table-cell">{t('worksheet.supplierCost')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.unitPrice')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.margin')}</th>
+                    <th className="text-right p-3 font-medium hidden lg:table-cell">{t('worksheet.margin')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.lineTotal')}</th>
-                    <th className="text-center p-3 font-medium">{t('worksheet.warrantyMonths')}</th>
+                    <th className="text-center p-3 font-medium hidden md:table-cell">{t('worksheet.warrantyMonths')}</th>
                     {editable && <th className="text-right p-3 font-medium">{t('worksheet.adminActions')}</th>}
                   </tr>
                 </thead>
@@ -1144,32 +1189,32 @@ export default function AdminWorksheetDetail() {
                           <td className="p-2">
                             <input type="text" value={editPartName} onChange={(e) => setEditPartName(e.target.value)} className={inputCls} />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 hidden md:table-cell">
                             <input type="text" value={editPartNumber} onChange={(e) => setEditPartNumber(e.target.value)} className={inputCls} />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 hidden lg:table-cell">
                             <input type="text" value={editPartSupplier} onChange={(e) => setEditPartSupplier(e.target.value)} className={inputCls} />
                           </td>
                           <td className="p-2">
                             <input type="number" min="1" value={editPartQuantity} onChange={(e) => setEditPartQuantity(e.target.value)} className={inputCls + ' text-right'} />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 hidden lg:table-cell">
                             <input type="number" step="0.01" value={editPartSupplierCost} onChange={(e) => setEditPartSupplierCost(e.target.value)} className={inputCls + ' text-right'} />
                           </td>
                           <td className="p-2">
                             <input type="number" step="0.01" value={editPartUnitPrice} onChange={(e) => setEditPartUnitPrice(e.target.value)} className={inputCls + ' text-right'} />
                           </td>
+                          <td className="p-2 text-center text-muted-foreground text-xs hidden lg:table-cell">—</td>
                           <td className="p-2 text-center text-muted-foreground text-xs">—</td>
-                          <td className="p-2 text-center text-muted-foreground text-xs">—</td>
-                          <td className="p-2">
+                          <td className="p-2 hidden md:table-cell">
                             <input type="number" min="0" value={editPartWarrantyMonths} onChange={(e) => setEditPartWarrantyMonths(e.target.value)} className={inputCls + ' text-center'} />
                           </td>
                           <td className="p-2">
                             <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="ghost" onClick={() => handleUpdatePart(part.id)} disabled={updatePartMutation.isPending}>
+                              <Button size="sm" variant="ghost" onClick={() => handleUpdatePart(part.id)} disabled={updatePartMutation.isPending} aria-label={t('common.save')}>
                                 <Save className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingPartId(null)}>
+                              <Button size="sm" variant="ghost" onClick={() => setEditingPartId(null)} aria-label={t('common.cancel')}>
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
@@ -1178,27 +1223,27 @@ export default function AdminWorksheetDetail() {
                       );
                     }
 
-                    return (
+                      return (
                       <tr key={part.id} className="hover:bg-muted/30">
-                        <td className="p-3 font-medium">{part.partName}</td>
-                        <td className="p-3 font-mono text-xs text-muted-foreground">
+                        <td className="p-3 font-medium min-w-0 truncate max-w-[180px]">{part.partName}</td>
+                        <td className="p-3 font-mono text-xs text-muted-foreground hidden md:table-cell">
                           {part.partNumber || '—'}
                         </td>
-                        <td className="p-3 text-muted-foreground">{part.supplier || '—'}</td>
-                        <td className="p-3 text-right tabular-nums">{part.quantity}</td>
-                        <td className="p-3 text-right tabular-nums">{money(part.supplierCost)}</td>
-                        <td className="p-3 text-right tabular-nums">{money(part.unitPrice)}</td>
-                        <td className="p-3 text-right tabular-nums">
+                        <td className="p-3 text-muted-foreground hidden lg:table-cell max-w-[180px] truncate">{part.supplier || '—'}</td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap">{part.quantity}</td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap hidden lg:table-cell">{money(part.supplierCost)}</td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap">{money(part.unitPrice)}</td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap hidden lg:table-cell">
                           {marginPct !== '—' ? `${marginPct}%` : '—'}
                         </td>
-                        <td className="p-3 text-right tabular-nums font-medium">{money(part.lineTotal)}</td>
-                        <td className="p-3 text-center text-muted-foreground">
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap font-medium">{money(part.lineTotal)}</td>
+                        <td className="p-3 text-center text-muted-foreground hidden md:table-cell">
                           {part.warrantyMonths != null ? `${part.warrantyMonths} ${t('worksheet.warrantyMonthsShort')}` : '—'}
                         </td>
                         {editable && (
                           <td className="p-3">
                             <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="ghost" onClick={() => startEditPart(part)} title={t('common.edit')}>
+                              <Button size="sm" variant="ghost" onClick={() => startEditPart(part)} title={t('common.edit')} aria-label={t('common.edit')}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
@@ -1212,6 +1257,7 @@ export default function AdminWorksheetDetail() {
                                 }}
                                 disabled={deletePartMutation.isPending}
                                 title={t('common.delete')}
+                                aria-label={t('common.delete')}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1264,7 +1310,8 @@ export default function AdminWorksheetDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.distanceKm')}</label>
-                    <input type="number" step="0.1" value={travelDistanceKm} onChange={(e) => setTravelDistanceKm(e.target.value)} required className={inputCls} />
+                    <input type="number" step="0.1" value={travelDistanceKm} onChange={(e) => { setTravelDistanceKm(e.target.value); setTravelErrors((prev) => { const { distanceKm: _, ...rest } = prev; return rest; }); }} className={`${inputCls} ${travelErrors.distanceKm ? '!border-destructive' : ''}`} />
+                    {travelErrors.distanceKm && <p className="text-xs text-destructive mt-0.5">{travelErrors.distanceKm}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.ratePerKm')}</label>
@@ -1278,7 +1325,7 @@ export default function AdminWorksheetDetail() {
                 <div className="flex gap-2">
                   <Button type="submit" size="sm" disabled={addTravelMutation.isPending}>
                     <Save className="h-4 w-4 mr-1" />
-                    {t('common.save')}
+                    {addTravelMutation.isPending ? t('common.saving') : t('common.save')}
                   </Button>
                   <Button type="button" variant="ghost" size="sm" onClick={resetTravelForm}>
                     <X className="h-4 w-4 mr-1" />
@@ -1291,14 +1338,14 @@ export default function AdminWorksheetDetail() {
 
           {ws.travelEntries.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left p-3 font-medium">{t('worksheet.travelDate')}</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">{t('worksheet.travelDate')}</th>
                     <th className="text-left p-3 font-medium">{t('worksheet.departureAddress')}</th>
                     <th className="text-left p-3 font-medium">{t('worksheet.arrivalAddress')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.distanceKm')}</th>
-                    <th className="text-right p-3 font-medium">{t('worksheet.ratePerKm')}</th>
+                    <th className="text-right p-3 font-medium hidden md:table-cell">{t('worksheet.ratePerKm')}</th>
                     <th className="text-right p-3 font-medium">{t('worksheet.lineTotal')}</th>
                     {editable && <th className="text-right p-3 font-medium">{t('worksheet.adminActions')}</th>}
                   </tr>
@@ -1307,7 +1354,7 @@ export default function AdminWorksheetDetail() {
                   {ws.travelEntries.map((entry: TravelEntry) => (
                     editingTravelId === entry.id ? (
                       <tr key={entry.id} className="bg-muted/20">
-                        <td className="p-2">
+                        <td className="p-2 hidden md:table-cell">
                           <input type="datetime-local" value={editTravelDate} onChange={(e) => setEditTravelDate(e.target.value)} className={inputCls} />
                         </td>
                         <td className="p-2">
@@ -1319,16 +1366,16 @@ export default function AdminWorksheetDetail() {
                         <td className="p-2">
                           <input type="number" step="0.1" value={editTravelDistanceKm} onChange={(e) => setEditTravelDistanceKm(e.target.value)} className={inputCls + ' text-right'} />
                         </td>
-                        <td className="p-2">
+                        <td className="p-2 hidden md:table-cell">
                           <input type="number" step="0.01" value={editTravelRatePerKm} onChange={(e) => setEditTravelRatePerKm(e.target.value)} className={inputCls + ' text-right'} />
                         </td>
                         <td className="p-2 text-center text-muted-foreground text-xs">—</td>
                         <td className="p-2">
                           <div className="flex gap-1 justify-end">
-                            <Button size="sm" variant="ghost" onClick={() => handleUpdateTravel(entry.id)} disabled={updateTravelMutation.isPending}>
+                            <Button size="sm" variant="ghost" onClick={() => handleUpdateTravel(entry.id)} disabled={updateTravelMutation.isPending} aria-label={t('common.save')}>
                               <Save className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingTravelId(null)}>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingTravelId(null)} aria-label={t('common.cancel')}>
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
@@ -1336,16 +1383,16 @@ export default function AdminWorksheetDetail() {
                       </tr>
                     ) : (
                       <tr key={entry.id} className="hover:bg-muted/30">
-                        <td className="p-3 whitespace-nowrap">{formatDate(entry.travelDate)}</td>
-                        <td className="p-3 text-muted-foreground">{entry.departureAddress || '—'}</td>
-                        <td className="p-3 text-muted-foreground">{entry.arrivalAddress || '—'}</td>
-                        <td className="p-3 text-right tabular-nums">{entry.distanceKm.toFixed(1)} km</td>
-                        <td className="p-3 text-right tabular-nums">{money(entry.ratePerKm)}</td>
-                        <td className="p-3 text-right tabular-nums font-medium">{money(entry.lineTotal)}</td>
+                        <td className="p-3 whitespace-nowrap hidden md:table-cell">{formatDate(entry.travelDate)}</td>
+                        <td className="p-3 text-muted-foreground max-w-[220px] truncate">{entry.departureAddress || '—'}</td>
+                        <td className="p-3 text-muted-foreground max-w-[220px] truncate">{entry.arrivalAddress || '—'}</td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap">{entry.distanceKm.toFixed(1)} km</td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap hidden md:table-cell">{money(entry.ratePerKm)}</td>
+                        <td className="p-3 text-right tabular-nums whitespace-nowrap font-medium">{money(entry.lineTotal)}</td>
                         {editable && (
                           <td className="p-3">
                             <div className="flex gap-1 justify-end">
-                              <Button size="sm" variant="ghost" onClick={() => startEditTravel(entry)} title={t('common.edit')}>
+                              <Button size="sm" variant="ghost" onClick={() => startEditTravel(entry)} title={t('common.edit')} aria-label={t('common.edit')}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
@@ -1359,6 +1406,7 @@ export default function AdminWorksheetDetail() {
                                 }}
                                 disabled={deleteTravelMutation.isPending}
                                 title={t('common.delete')}
+                                aria-label={t('common.delete')}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1410,16 +1458,16 @@ export default function AdminWorksheetDetail() {
                   <label className="text-xs font-medium">{t('worksheet.noteContent')}</label>
                   <textarea
                     value={noteContent}
-                    onChange={(e) => setNoteContent(e.target.value)}
-                    required
-                    className={textareaCls + ' min-h-[80px]'}
+                    onChange={(e) => { setNoteContent(e.target.value); setNoteErrors((prev) => { const { noteContent: _, ...rest } = prev; return rest; }); }}
+                    className={`${textareaCls} min-h-[80px] ${noteErrors.noteContent ? '!border-destructive' : ''}`}
                     placeholder={t('worksheet.noteContent')}
                   />
+                  {noteErrors.noteContent && <p className="text-xs text-destructive mt-0.5">{noteErrors.noteContent}</p>}
                 </div>
                 <div className="flex gap-2">
                   <Button type="submit" size="sm" disabled={addNoteMutation.isPending}>
                     <Save className="h-4 w-4 mr-1" />
-                    {t('common.save')}
+                    {addNoteMutation.isPending ? t('common.saving') : t('common.save')}
                   </Button>
                   <Button type="button" variant="ghost" size="sm" onClick={resetNoteForm}>
                     <X className="h-4 w-4 mr-1" />
@@ -1458,6 +1506,7 @@ export default function AdminWorksheetDetail() {
                       }}
                       disabled={deleteNoteMutation.isPending}
                       title={t('common.delete')}
+                      aria-label={t('common.delete')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -1504,7 +1553,8 @@ export default function AdminWorksheetDetail() {
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.scheduledDate')}</label>
-                    <input type="datetime-local" value={followUpScheduledDate} onChange={(e) => setFollowUpScheduledDate(e.target.value)} required className={inputCls} />
+                    <input type="datetime-local" value={followUpScheduledDate} onChange={(e) => { setFollowUpScheduledDate(e.target.value); setFollowUpErrors((prev) => { const { scheduledDate: _, ...rest } = prev; return rest; }); }} className={`${inputCls} ${followUpErrors.scheduledDate ? '!border-destructive' : ''}`} />
+                    {followUpErrors.scheduledDate && <p className="text-xs text-destructive mt-0.5">{followUpErrors.scheduledDate}</p>}
                   </div>
                 </div>
                 <div>
@@ -1519,7 +1569,7 @@ export default function AdminWorksheetDetail() {
                 <div className="flex gap-2">
                   <Button type="submit" size="sm" disabled={addFollowUpMutation.isPending}>
                     <Save className="h-4 w-4 mr-1" />
-                    {t('common.save')}
+                    {addFollowUpMutation.isPending ? t('common.saving') : t('common.save')}
                   </Button>
                   <Button type="button" variant="ghost" size="sm" onClick={resetFollowUpForm}>
                     <X className="h-4 w-4 mr-1" />
@@ -1556,7 +1606,7 @@ export default function AdminWorksheetDetail() {
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleUpdateFollowUp(fu.id)} disabled={updateFollowUpMutation.isPending}>
                       <Save className="h-4 w-4 mr-1" />
-                      {t('common.save')}
+                      {updateFollowUpMutation.isPending ? t('common.saving') : t('common.save')}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditingFollowUpId(null)}>
                       <X className="h-4 w-4 mr-1" />
@@ -1609,7 +1659,7 @@ export default function AdminWorksheetDetail() {
                       >
                         {fu.completed ? '↩' : '✓'} {t('worksheet.markComplete')}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => startEditFollowUp(fu)} title={t('common.edit')}>
+                      <Button size="sm" variant="ghost" onClick={() => startEditFollowUp(fu)} title={t('common.edit')} aria-label={t('common.edit')}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
@@ -1623,6 +1673,7 @@ export default function AdminWorksheetDetail() {
                         }}
                         disabled={deleteFollowUpMutation.isPending}
                         title={t('common.delete')}
+                        aria-label={t('common.delete')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

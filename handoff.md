@@ -1,10 +1,10 @@
 # Handoff — Valitek v2
 
-## Completed: Docs, help system, and i18n update pass
-## Next Task: UI polish (empty states, accessibility, responsive tables, confirmation dialogs)
-## Context: All builds pass (tsc + vite). Ready to commit.
+## Completed: UI polish pass after docs/help update
+## Next Task: Follow-up polish sweep if we want broader coverage on remaining table/list pages
+## Context: Docs/help update is committed; this pass focused on frontend UX safety and accessibility
 
-## What Was Done (This Session — 3 phases)
+## What Was Done (This Session — 4 phases)
 
 ### Phase 1: Session 9 Features (commit `18098fc`)
 1. **Admin Worksheet Config UI** — Settings page card for worksheet defaults (tax rates, thresholds, require-signature, auto-submit); tech WorksheetDetail reads config on creation
@@ -32,6 +32,15 @@
 - **TicketDetail pages** (admin, tech, portal): HelpTooltip strings converted to t() keys
 - **i18n catalogs** (fr.ts + en.ts): ~40 new keys for Profile + TicketDetail tooltips
 
+### Phase 4: UI Polish Pass (this commit)
+- **Inline form validation** added to high-impact forms: login, public service request, profile, settings, work order intake, admin clients, admin/tech ticket detail dialogs, admin/tech worksheet child-entry forms
+- **Responsive table improvements** added for worksheet detail tables and backups list: mobile overflow wrappers, minimum widths, truncation, and hidden low-priority columns on smaller breakpoints
+- **Accessibility pass** added `aria-label` coverage for icon-only controls in worksheet editing, KB unlink actions, client note pinning, work order accessory removal, calendar navigation, and related UI affordances
+- **Reusable confirmations** added with new shared `frontend/src/components/shared/ConfirmDialog.tsx` and shadcn/Radix `frontend/src/components/ui/alert-dialog.tsx`
+- **Destructive actions now gated** for appointment cancel flows (admin, tech, portal), portal proposal cancellation, and demo reset
+- **Button consistency** tightened for destructive actions and loading labels (`common.saving`, `common.deleting`) in portal ticket detail, admin client detail, and admin worksheet detail
+- **Empty states** added for sparse appointment/proposal sections in customer and technician ticket detail pages
+
 ## Known Issues NOT Fixed (documented for future)
 - `Float` for currency fields should be `Decimal` — requires schema migration + code changes across entire app
 - `WorkOrder.devicePassword` stored in plaintext — needs encryption implementation
@@ -40,16 +49,13 @@
 - Notification table grows unbounded — needs TTL/purge mechanism
 - Ticket number generation race condition — needs DB sequence or advisory lock
 
-## Suggested Next Steps (UI Polish from audit)
-- Empty states on tables/lists — add "no data" messages
-- Some forms missing client-side validation feedback
-- Responsive table issues on mobile
-- Accessibility gaps (aria-labels on icon-only buttons)
-- Missing confirmation dialogs on some destructive actions
-- Inconsistent button styles across similar actions
-- ~53 hardcoded French HelpTooltip strings remaining in TicketDetail pages (partially addressed)
+## Suggested Next Steps
+- Expand the empty-state sweep to more admin list pages (`Tickets`, `Worksheets`, `KnowledgeBase`, `Clients`) where some views may still rely on blank tables
+- Do a broader accessibility audit for focus management and keyboard order beyond `aria-label` coverage
+- Apply the confirmation-dialog pattern to more delete flows if we want stronger guardrails across all CRUD pages
+- Review remaining hardcoded HelpTooltip French strings outside the already-updated TicketDetail/Profile work
 
-## Files Modified (this commit — Phase 3)
+## Files Modified (latest pass)
 ```
 GETTING_STARTED.md                              # Added "FUTURE PLANS" banners
 MODULARITY_SPEC.md                              # Added "PLANNED" banner
@@ -66,6 +72,19 @@ frontend/src/pages/admin/TicketDetail.tsx        # HelpTooltip i18n wiring
 frontend/src/pages/technician/TicketDetail.tsx   # HelpTooltip i18n wiring
 frontend/src/pages/portal/TicketDetail.tsx       # HelpTooltip i18n wiring
 frontend/src/pages/shared/Profile.tsx            # i18n wiring for remaining strings
+frontend/src/components/shared/ConfirmDialog.tsx # NEW — reusable destructive-action confirmation dialog
+frontend/src/components/ui/alert-dialog.tsx      # NEW — shadcn/Radix alert dialog primitive
+frontend/src/pages/public/Login.tsx              # Inline validation feedback
+frontend/src/pages/public/ServiceRequest.tsx     # Inline validation feedback
+frontend/src/pages/workorders/WorkOrderIntake.tsx # Inline validation + accessory aria-labels
+frontend/src/pages/admin/WorksheetDetail.tsx     # Inline validation, mobile table polish, aria-labels, save-state button consistency
+frontend/src/pages/technician/WorksheetDetail.tsx # Inline validation feedback
+frontend/src/pages/admin/Calendar.tsx            # Appointment cancel confirmation dialog
+frontend/src/pages/admin/Backups.tsx             # Mobile table polish
+frontend/src/pages/portal/WorksheetDetail.tsx    # Mobile worksheet table polish
+frontend/src/components/shared/DemoBanner.tsx    # Demo reset confirmation dialog
+frontend/src/lib/i18n/locales/fr.ts              # Added validation/confirm/empty-state/a11y/loading keys
+frontend/src/lib/i18n/locales/en.ts              # Matching English keys
 handoff.md                                       # This file
 ```
 

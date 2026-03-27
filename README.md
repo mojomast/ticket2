@@ -95,6 +95,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Message threads with internal (staff-only) messages, edit window (5 min), admin-only delete
 - File attachments on tickets (drag-and-drop upload, download, delete) with 10MB limit and MIME validation
 - Database backup/restore (admin) with transactional restore and confirmation dialog
+- UI polish pass: inline form validation feedback, empty states for sparse views, responsive worksheet/backups tables, aria-label coverage for icon-only controls, reusable confirmation dialogs for destructive actions
 - Audit logging for ticket, work order, and user changes
 - Full French/English internationalization (~1400 translation keys) wired into all 38 pages
 - Demo mode with persona selector (dropdown for customers) and data reset (admin-only)
@@ -294,6 +295,7 @@ ticket2/
         │   ├── shared/
         │   │   ├── AppSidebar.tsx      # Role-based sidebar navigation
         │   │   ├── AttachmentSection.tsx # Drag-drop file upload/download/delete
+        │   │   ├── ConfirmDialog.tsx   # Reusable confirmation dialog for destructive actions
         │   │   ├── DemoBanner.tsx      # Demo mode banner + persona selector
         │   │   ├── FileViewer.tsx      # File preview component
         │   │   ├── HelpSidebar.tsx     # Contextual help slide-out panel
@@ -302,7 +304,7 @@ ticket2/
         │   │   ├── NotificationBell.tsx # In-app notification dropdown
         │   │   ├── SignaturePad.tsx    # Signature capture component
         │   │   └── StatusBadge.tsx     # Status badge (ticket/appointment/workorder)
-        │   └── ui/                     # shadcn/ui primitives (18 components)
+        │   └── ui/                     # shadcn/ui primitives (incl. AlertDialog)
         └── pages/
             ├── public/
             │   ├── Landing.tsx         # Landing page
@@ -979,6 +981,7 @@ All routes use French-language paths. Components are lazy-loaded.
 - **API client** (`src/api/client.ts`): Typed `request<T>()` function reads `json.data` from response envelope. Namespaced API calls (`api.tickets.list()`, `api.workorders.create()`, `api.worksheets.get()`, etc.)
 - **Auth hook** (`src/hooks/use-auth.ts`): Single `useAuth()` hook returns `{ user, isLoading, isAuthenticated, logout }`
 - **Constants** (`src/lib/constants.ts`): All status labels, colors, and priority mappings in one file
+- **UI guardrails**: High-traffic forms now show inline validation errors; destructive actions use a shared `ConfirmDialog`; icon-only controls include `aria-label`s; wide worksheet/backups tables keep mobile overflow wrappers
 - **StatusBadge** (`src/components/shared/StatusBadge.tsx`): Supports `type="ticket"`, `type="appointment"`, `type="workorder"`
 - **SignaturePad** (`src/components/shared/SignaturePad.tsx`): Canvas-based signature capture component
 - **TanStack Query keys**: `['tickets']`, `['workorders']`, `['worksheets']`, `['kb-articles']`, `['customer-notes']`, `['notifications']`, etc.

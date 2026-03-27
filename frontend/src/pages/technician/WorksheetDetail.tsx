@@ -127,6 +127,13 @@ export default function TechWorksheetDetail() {
   const [followUpScheduledDate, setFollowUpScheduledDate] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
 
+  // ─── Inline validation errors ───
+  const [laborErrors, setLaborErrors] = useState<Record<string, string>>({});
+  const [partErrors, setPartErrors] = useState<Record<string, string>>({});
+  const [travelErrors, setTravelErrors] = useState<Record<string, string>>({});
+  const [noteErrors, setNoteErrors] = useState<Record<string, string>>({});
+  const [followUpErrors, setFollowUpErrors] = useState<Record<string, string>>({});
+
   // ─── Part edit state ───
   const [editingPartId, setEditingPartId] = useState<string | null>(null);
   const [editPartName, setEditPartName] = useState('');
@@ -348,6 +355,7 @@ export default function TechWorksheetDetail() {
     setLaborBreakMinutes('0');
     setLaborHourlyRate(String(wsConfig.defaultHourlyRate));
     setShowLaborForm(false);
+    setLaborErrors({});
   }
 
   function resetPartForm() {
@@ -359,6 +367,7 @@ export default function TechWorksheetDetail() {
     setPartUnitPrice('0');
     setPartWarrantyMonths('');
     setShowPartForm(false);
+    setPartErrors({});
   }
 
   function resetTravelForm() {
@@ -369,12 +378,14 @@ export default function TechWorksheetDetail() {
     setTravelDate('');
     setTravelTimeMinutes('');
     setShowTravelForm(false);
+    setTravelErrors({});
   }
 
   function resetNoteForm() {
     setNoteType('INTERNE');
     setNoteContent('');
     setShowNoteForm(false);
+    setNoteErrors({});
   }
 
   function resetFollowUpForm() {
@@ -382,19 +393,28 @@ export default function TechWorksheetDetail() {
     setFollowUpScheduledDate('');
     setFollowUpNotes('');
     setShowFollowUpForm(false);
+    setFollowUpErrors({});
   }
 
   // ─── Form submit handlers ───
 
   function handleAddLabor(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    const rate = parseFloat(laborHourlyRate);
+    if (isNaN(rate) || rate < 0) errs.hourlyRate = t('validation.hoursInvalid');
+    if (laborMode === 'manual') {
+      if (!laborStartTime) errs.startTime = t('validation.dateRequired');
+      if (!laborEndTime) errs.endTime = t('validation.dateRequired');
+    }
+    setLaborErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     const payload: Record<string, unknown> = {
       laborType,
       description: laborDescription || undefined,
       startTime: laborStartTime ? new Date(laborStartTime).toISOString() : new Date().toISOString(),
-      hourlyRate: parseFloat(laborHourlyRate),
+      hourlyRate: rate,
     };
-    // In manual mode, include endTime and breakMinutes
     if (laborMode === 'manual') {
       if (laborEndTime) {
         payload.endTime = new Date(laborEndTime).toISOString();
@@ -409,13 +429,21 @@ export default function TechWorksheetDetail() {
 
   function handleAddPart(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!partName.trim()) errs.partName = t('validation.partNameRequired');
+    const qty = parseInt(partQuantity);
+    if (isNaN(qty) || qty < 1) errs.quantity = t('validation.quantityInvalid');
+    const price = parseFloat(partUnitPrice);
+    if (isNaN(price) || price < 0) errs.unitPrice = t('validation.unitPriceInvalid');
+    setPartErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addPartMutation.mutate({
       partName,
       partNumber: partNumber || undefined,
       supplier: partSupplier || undefined,
       supplierCost: parseFloat(partSupplierCost) || 0,
-      quantity: parseInt(partQuantity) || 1,
-      unitPrice: parseFloat(partUnitPrice) || 0,
+      quantity: qty,
+      unitPrice: price,
       warrantyMonths: partWarrantyMonths ? parseInt(partWarrantyMonths) : undefined,
     });
   }
@@ -448,7 +476,11 @@ export default function TechWorksheetDetail() {
 
   function handleAddTravel(e: React.FormEvent) {
     e.preventDefault();
-    const distance = parseFloat(travelDistanceKm) || 0;
+    const errs: Record<string, string> = {};
+    const distance = parseFloat(travelDistanceKm);
+    if (!travelDistanceKm || isNaN(distance) || distance <= 0) errs.distanceKm = t('validation.distanceInvalid');
+    setTravelErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     let rate = parseFloat(travelRatePerKm) || 0;
 
     // For hourly mode: billing = (travelTimeMinutes / 60) * travelHourlyRate
@@ -475,11 +507,19 @@ export default function TechWorksheetDetail() {
 
   function handleAddNote(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!noteContent.trim()) errs.noteContent = t('validation.noteRequired');
+    setNoteErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addNoteMutation.mutate({ noteType, content: noteContent });
   }
 
   function handleAddFollowUp(e: React.FormEvent) {
     e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!followUpScheduledDate) errs.scheduledDate = t('validation.followUpDateRequired');
+    setFollowUpErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     addFollowUpMutation.mutate({
       followUpType,
       scheduledDate: followUpScheduledDate ? new Date(followUpScheduledDate).toISOString() : undefined,
@@ -768,20 +808,20 @@ export default function TechWorksheetDetail() {
                             <input
                               type="datetime-local"
                               value={laborStartTime}
-                              onChange={(e) => setLaborStartTime(e.target.value)}
-                              required
-                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                              onChange={(e) => { setLaborStartTime(e.target.value); setLaborErrors((prev) => { const { startTime: _, ...rest } = prev; return rest; }); }}
+                              className={`flex h-9 w-full rounded-md border ${laborErrors.startTime ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                             />
+                            {laborErrors.startTime && <p className="text-xs text-destructive mt-0.5">{laborErrors.startTime}</p>}
                           </div>
                           <div>
                             <label className="text-xs font-medium">{t('worksheet.laborEndTime')}</label>
                             <input
                               type="datetime-local"
                               value={laborEndTime}
-                              onChange={(e) => setLaborEndTime(e.target.value)}
-                              required
-                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                              onChange={(e) => { setLaborEndTime(e.target.value); setLaborErrors((prev) => { const { endTime: _, ...rest } = prev; return rest; }); }}
+                              className={`flex h-9 w-full rounded-md border ${laborErrors.endTime ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                             />
+                            {laborErrors.endTime && <p className="text-xs text-destructive mt-0.5">{laborErrors.endTime}</p>}
                           </div>
                           <div>
                             <label className="text-xs font-medium">{t('worksheet.laborBreakMin')}</label>
@@ -814,9 +854,10 @@ export default function TechWorksheetDetail() {
                           type="number"
                           step="0.01"
                           value={laborHourlyRate}
-                          onChange={(e) => setLaborHourlyRate(e.target.value)}
-                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          onChange={(e) => { setLaborHourlyRate(e.target.value); setLaborErrors((prev) => { const { hourlyRate: _, ...rest } = prev; return rest; }); }}
+                          className={`flex h-9 w-full rounded-md border ${laborErrors.hourlyRate ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                         />
+                        {laborErrors.hourlyRate && <p className="text-xs text-destructive mt-0.5">{laborErrors.hourlyRate}</p>}
                       </div>
                       <div className="flex gap-2">
                         <Button type="submit" size="sm" disabled={addLaborMutation.isPending}>
@@ -990,10 +1031,10 @@ export default function TechWorksheetDetail() {
                         <input
                           type="text"
                           value={partName}
-                          onChange={(e) => setPartName(e.target.value)}
-                          required
-                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          onChange={(e) => { setPartName(e.target.value); setPartErrors((prev) => { const { partName: _, ...rest } = prev; return rest; }); }}
+                          className={`flex h-9 w-full rounded-md border ${partErrors.partName ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                         />
+                        {partErrors.partName && <p className="text-xs text-destructive mt-0.5">{partErrors.partName}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -1032,9 +1073,10 @@ export default function TechWorksheetDetail() {
                             type="number"
                             min="1"
                             value={partQuantity}
-                            onChange={(e) => setPartQuantity(e.target.value)}
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                            onChange={(e) => { setPartQuantity(e.target.value); setPartErrors((prev) => { const { quantity: _, ...rest } = prev; return rest; }); }}
+                            className={`flex h-9 w-full rounded-md border ${partErrors.quantity ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                           />
+                          {partErrors.quantity && <p className="text-xs text-destructive mt-0.5">{partErrors.quantity}</p>}
                         </div>
                         <div>
                           <label className="text-xs font-medium">{t('worksheet.unitPrice')}</label>
@@ -1042,9 +1084,10 @@ export default function TechWorksheetDetail() {
                             type="number"
                             step="0.01"
                             value={partUnitPrice}
-                            onChange={(e) => setPartUnitPrice(e.target.value)}
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                            onChange={(e) => { setPartUnitPrice(e.target.value); setPartErrors((prev) => { const { unitPrice: _, ...rest } = prev; return rest; }); }}
+                            className={`flex h-9 w-full rounded-md border ${partErrors.unitPrice ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                           />
+                          {partErrors.unitPrice && <p className="text-xs text-destructive mt-0.5">{partErrors.unitPrice}</p>}
                         </div>
                       </div>
                       <div>
@@ -1157,10 +1200,10 @@ export default function TechWorksheetDetail() {
                           type="number"
                           step="0.1"
                           value={travelDistanceKm}
-                          onChange={(e) => setTravelDistanceKm(e.target.value)}
-                          required
-                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          onChange={(e) => { setTravelDistanceKm(e.target.value); setTravelErrors((prev) => { const { distanceKm: _, ...rest } = prev; return rest; }); }}
+                          className={`flex h-9 w-full rounded-md border ${travelErrors.distanceKm ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                         />
+                        {travelErrors.distanceKm && <p className="text-xs text-destructive mt-0.5">{travelErrors.distanceKm}</p>}
                       </div>
 
                       {/* Per-km mode: show rate per km */}
@@ -1303,11 +1346,11 @@ export default function TechWorksheetDetail() {
                     <label className="text-xs font-medium">{t('worksheet.noteContent')}</label>
                     <textarea
                       value={noteContent}
-                      onChange={(e) => setNoteContent(e.target.value)}
-                      required
-                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                      onChange={(e) => { setNoteContent(e.target.value); setNoteErrors((prev) => { const { noteContent: _, ...rest } = prev; return rest; }); }}
+                      className={`flex w-full rounded-md border ${noteErrors.noteContent ? 'border-destructive' : 'border-input'} bg-background px-3 py-2 text-sm min-h-[80px]`}
                       placeholder={t('worksheet.noteContent')}
                     />
+                    {noteErrors.noteContent && <p className="text-xs text-destructive mt-0.5">{noteErrors.noteContent}</p>}
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit" size="sm" disabled={addNoteMutation.isPending}>
@@ -1405,10 +1448,10 @@ export default function TechWorksheetDetail() {
                     <input
                       type="datetime-local"
                       value={followUpScheduledDate}
-                      onChange={(e) => setFollowUpScheduledDate(e.target.value)}
-                      required
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                      onChange={(e) => { setFollowUpScheduledDate(e.target.value); setFollowUpErrors((prev) => { const { scheduledDate: _, ...rest } = prev; return rest; }); }}
+                      className={`flex h-9 w-full rounded-md border ${followUpErrors.scheduledDate ? 'border-destructive' : 'border-input'} bg-background px-3 py-1 text-sm`}
                     />
+                    {followUpErrors.scheduledDate && <p className="text-xs text-destructive mt-0.5">{followUpErrors.scheduledDate}</p>}
                   </div>
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.followUpNotes')}</label>
