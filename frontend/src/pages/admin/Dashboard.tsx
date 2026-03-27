@@ -40,10 +40,10 @@ export default function AdminDashboard() {
   const { t } = useTranslation();
   const today = useMemo(() => getTodayRange(), []);
 
-  // Fetch all tickets (up to 200) to compute accurate stats
+  // Fetch all tickets (up to 100) to compute accurate stats
   const { data: tickets = [] } = useQuery<Ticket[]>({
-    queryKey: ['tickets', { limit: 200 }],
-    queryFn: () => api.tickets.list({ limit: 200 }),
+    queryKey: ['tickets', { limit: 100 }],
+    queryFn: () => api.tickets.list({ limit: 100 }),
   });
 
   // Fetch today's appointments

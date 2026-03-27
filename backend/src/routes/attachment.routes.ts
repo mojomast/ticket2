@@ -3,47 +3,9 @@ import { stream } from 'hono/streaming';
 import { createReadStream, existsSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { Readable } from 'node:stream';
-import { AppError } from '../lib/errors.js';
 import * as attachmentService from '../services/attachment.service.js';
 
 const app = new Hono();
-
-// ─── POST /api/tickets/:ticketId/attachments — upload file to a ticket ───
-
-app.post('/tickets/:ticketId/attachments', async (c) => {
-  const session = c.get('session');
-  const ticketId = c.req.param('ticketId');
-
-  const body = await c.req.parseBody();
-  const file = body['file'];
-
-  if (!(file instanceof File)) {
-    throw AppError.badRequest('Fichier requis');
-  }
-
-  const attachment = await attachmentService.uploadAttachment(
-    file,
-    session.user.id,
-    ticketId,
-  );
-
-  return c.json({ data: attachment, error: null }, 201);
-});
-
-// ─── GET /api/tickets/:ticketId/attachments — list attachments for a ticket ───
-
-app.get('/tickets/:ticketId/attachments', async (c) => {
-  const session = c.get('session');
-  const ticketId = c.req.param('ticketId');
-
-  const attachments = await attachmentService.getAttachmentsByTicket(
-    ticketId,
-    session.user.id,
-    session.user.role,
-  );
-
-  return c.json({ data: attachments, error: null });
-});
 
 // ─── GET /api/attachments/:id/download — download a specific attachment ───
 
@@ -52,7 +14,7 @@ app.get('/attachments/:id/download', async (c) => {
   const filePath = attachmentService.getAttachmentFilePath(attachment.storagePath);
 
   if (!existsSync(filePath)) {
-    throw AppError.notFound('Fichier introuvable sur le serveur');
+    throw new Error('Fichier introuvable sur le serveur');
   }
 
   const fileStat = await stat(filePath);

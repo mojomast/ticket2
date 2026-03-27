@@ -129,3 +129,37 @@ Rebuilt the technician Schedule page (`frontend/src/pages/technician/Schedule.ts
 - `frontend/src/pages/technician/Schedule.tsx` — complete rewrite (263 to ~490 lines)
 - `frontend/src/lib/i18n/locales/fr.ts` — 15 new keys (tech.schedule.viewMonth/Week/Day, prevMonth/nextMonth, prevWeek/nextWeek, mon-sun, appointmentsCount)
 - `frontend/src/lib/i18n/locales/en.ts` — matching 15 new English keys
+
+### Session 2 (continued) — Bug Fixes + Email/SMS Settings
+
+#### Fix: Admin Dashboard 400 Bad Request
+- `frontend/src/pages/admin/Dashboard.tsx` — changed `limit: 200` to `limit: 100` (backend Zod max is 100)
+- `frontend/src/pages/admin/Calendar.tsx` — same fix
+
+#### Fix: Attachment Upload 404 Not Found
+- Root cause: Hono route shadowing — `app.route('/api/tickets', ticketRoutes)` captured all `/api/tickets/*` requests, preventing `app.route('/api', attachmentRoutes)` from handling `/api/tickets/:id/attachments`
+- Fix: Moved ticket-scoped attachment routes (POST/GET `/:id/attachments`) into `ticket.routes.ts`
+- `attachment.routes.ts` now only contains standalone routes (`/attachments/:id/download`, `/attachments/:id`)
+- Files modified: `backend/src/routes/ticket.routes.ts`, `backend/src/routes/attachment.routes.ts`
+
+#### Feature: Email/SMS Configuration in Admin Settings
+- **Backend**: `email.service.ts` and `sms.service.ts` now read config from `SystemConfig` DB table first (keys: `email_config`, `sms_config`), falling back to process.env
+- **Backend**: `config.routes.ts` now masks sensitive fields (clientSecret, password) in GET responses — shows last 4 chars with bullet mask
+- **Backend**: PUT `/:key` for sensitive configs merges masked fields with existing DB values, so saving masked secrets doesn't overwrite them
+- **Frontend**: `Settings.tsx` expanded with two new config cards:
+  - **Email (Microsoft 365)**: Tenant ID, Client ID, Client Secret (password input), Sender Email
+  - **SMS (VoIP.ms)**: API Username, API Password (password input), DID Number
+- Both cards show configured/not-configured status badge
+- 24 new i18n keys added to both fr.ts and en.ts (now 1053 keys each)
+
+#### Files Modified
+- `frontend/src/pages/admin/Dashboard.tsx` — limit fix
+- `frontend/src/pages/admin/Calendar.tsx` — limit fix
+- `frontend/src/pages/admin/Settings.tsx` — email/SMS config forms added
+- `frontend/src/lib/i18n/locales/fr.ts` — 24 new settings.* keys
+- `frontend/src/lib/i18n/locales/en.ts` — matching 24 English keys
+- `backend/src/routes/ticket.routes.ts` — added attachment POST/GET routes
+- `backend/src/routes/attachment.routes.ts` — removed ticket-scoped routes (standalone only)
+- `backend/src/routes/config.routes.ts` — secret masking + merge logic
+- `backend/src/services/email.service.ts` — DB config lookup with env fallback
+- `backend/src/services/sms.service.ts` — DB config lookup with env fallback

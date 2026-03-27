@@ -124,7 +124,7 @@ export default function AdminCalendar() {
 
   const { data: tickets } = useQuery({
     queryKey: ['tickets', 'open-for-calendar'],
-    queryFn: () => api.tickets.list({ limit: 200 }),
+    queryFn: () => api.tickets.list({ limit: 100 }),
     enabled: showForm,
   });
 
