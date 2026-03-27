@@ -2,6 +2,8 @@
 
 ## What Was Completed
 
+### Session 1 — 5 Audit Gaps
+
 All 5 audit gaps from the comprehensive code review have been fully implemented and verified:
 
 ### 1. Email/SMS Notifications
@@ -37,7 +39,7 @@ All 5 audit gaps from the comprehensive code review have been fully implemented 
 
 ## Build Verification
 - `tsc --noEmit` passes on both backend and frontend (zero errors)
-- `vite build` succeeds (1716 modules, 4.29s)
+- `vite build` succeeds (2542 modules)
 
 ## Key Technical Notes
 
@@ -80,3 +82,50 @@ Both gracefully degrade when env vars are missing.
 - `src/lib/i18n/provider.tsx` — DELETED (dead code)
 - All 31 page files in pages/ — i18n wired with useTranslation()
 - `src/pages/shared/Profile.tsx` — password change card added
+
+### Session 2 — Calendar Schedule Rebuild
+
+Rebuilt the technician Schedule page (`frontend/src/pages/technician/Schedule.tsx`) from a simple day-only appointment list into a full calendar with three view modes:
+
+#### Month View
+- 6-row grid calendar (Mon-Sun columns) showing the full month
+- Days outside the current month are dimmed
+- Each day cell shows appointment dots with status colors and start times
+- Shows up to 3 appointments per cell with "+N" overflow indicator
+- Today is highlighted with a primary-color circle
+- Clicking any day drills into Day view
+
+#### Week View
+- 7-column layout (Mon-Sun) with hourly rows (8:00-18:00)
+- Appointment blocks are color-coded by status (from APPOINTMENT_STATUS_COLORS)
+- Blocks show start time and ticket title, link to ticket detail
+- Today's column is highlighted
+- Scrollable timeline (max 600px height)
+- Clicking a day header drills into Day view
+
+#### Day View
+- Hourly timeline (8:00-18:00) with full appointment cards
+- Each card shows: ticket title (linked), time range with duration in minutes, notes, status badge
+- Preserves all action buttons: Start, Complete, Cancel (permission-gated)
+- Hours without appointments are dimmed for visual clarity
+- Empty state shows centered calendar icon with "no appointments" message
+- Summary bar shows total appointment count
+
+#### View Switcher and Navigation
+- Tab-style view switcher with icons (LayoutGrid, CalendarDays, Clock from lucide-react)
+- Navigation adapts to current view: prev/next month, week, or day
+- Today button, date picker
+- Period label shows current month/week range/day in French via date-fns locale
+
+#### Technical Details
+- Uses date-fns 4.x for all date manipulation (startOfMonth, endOfMonth, startOfWeek, eachDayOfInterval, etc.)
+- Uses date-fns/locale/fr for French day/month names in navigation labels
+- API query range adjusts per view mode (full month grid, Mon-Sun week, single day)
+- Single useQuery call with from/to params, limit: 100
+- All strings use t() from useTranslation() hook
+- 15 new i18n keys added to both fr.ts and en.ts (now 1029 keys each)
+
+#### Files Modified (Session 2)
+- `frontend/src/pages/technician/Schedule.tsx` — complete rewrite (263 to ~490 lines)
+- `frontend/src/lib/i18n/locales/fr.ts` — 15 new keys (tech.schedule.viewMonth/Week/Day, prevMonth/nextMonth, prevWeek/nextWeek, mon-sun, appointmentsCount)
+- `frontend/src/lib/i18n/locales/en.ts` — matching 15 new English keys
