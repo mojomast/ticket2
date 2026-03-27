@@ -63,6 +63,7 @@ export default function AdminTickets() {
 
   const tickets = data?.data ?? [];
   const totalPages = data?.pagination?.totalPages ?? 1;
+  const hasActiveFilters = Boolean(search || filters.status || filters.priority);
 
   // Fetch customers for the create-ticket dropdown
   const { data: customers = [] } = useQuery({
@@ -296,31 +297,36 @@ export default function AdminTickets() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {tickets.map((ticket: any) => (
-                <tr key={ticket.id} className="hover:bg-muted/30">
-                  <td className="p-3">
-                    <Link to={`/admin/billets/${ticket.id}`} className="text-sm font-mono text-primary hover:underline">
-                      {ticket.ticketNumber}
-                    </Link>
+              {tickets.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    {hasActiveFilters ? t('admin.tickets.emptyFiltered') : t('admin.tickets.empty')}
                   </td>
-                  <td className="p-3 text-sm min-w-0 truncate max-w-[200px]">{ticket.title}</td>
-                  <td className="p-3 text-sm hidden md:table-cell">
-                    {ticket.customer?.firstName} {ticket.customer?.lastName}
-                  </td>
-                  <td className="p-3 text-sm hidden md:table-cell">
-                    {ticket.technician ? `${ticket.technician.firstName} ${ticket.technician.lastName}` : '-'}
-                  </td>
-                  <td className="p-3"><StatusBadge status={ticket.status} /></td>
-                  <td className="p-3 hidden lg:table-cell"><StatusBadge status={ticket.priority} type="priority" /></td>
-                  <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{formatDate(ticket.createdAt)}</td>
                 </tr>
-              ))}
+              ) : (
+                tickets.map((ticket: any) => (
+                  <tr key={ticket.id} className="hover:bg-muted/30">
+                    <td className="p-3">
+                      <Link to={`/admin/billets/${ticket.id}`} className="text-sm font-mono text-primary hover:underline">
+                        {ticket.ticketNumber}
+                      </Link>
+                    </td>
+                    <td className="p-3 text-sm min-w-0 truncate max-w-[200px]">{ticket.title}</td>
+                    <td className="p-3 text-sm hidden md:table-cell">
+                      {ticket.customer?.firstName} {ticket.customer?.lastName}
+                    </td>
+                    <td className="p-3 text-sm hidden md:table-cell">
+                      {ticket.technician ? `${ticket.technician.firstName} ${ticket.technician.lastName}` : '-'}
+                    </td>
+                    <td className="p-3"><StatusBadge status={ticket.status} /></td>
+                    <td className="p-3 hidden lg:table-cell"><StatusBadge status={ticket.priority} type="priority" /></td>
+                    <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{formatDate(ticket.createdAt)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           </div>
-          {tickets.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">{t('ticket.noTickets')}</div>
-          )}
         </div>
       )}
 

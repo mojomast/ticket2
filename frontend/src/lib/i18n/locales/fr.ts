@@ -229,6 +229,8 @@ export const fr: Record<string, string> = {
   'admin.tickets.createTooltip': 'Créer le billet pour ce client',
   'admin.tickets.viewAllTooltip': 'Afficher la liste complète de tous les billets',
   'admin.tickets.calendarTooltip': 'Ouvrir le calendrier complet des rendez-vous',
+  'admin.tickets.empty': 'Aucun billet n’a encore été créé.',
+  'admin.tickets.emptyFiltered': 'Aucun billet ne correspond à la recherche ou aux filtres actuels.',
 
   // ─── Kanban ───
   'kanban.title': 'Kanban',
@@ -716,6 +718,8 @@ export const fr: Record<string, string> = {
   'admin.clients.viewDetailTooltip': 'Voir le détail et l\'historique de ce client',
   'admin.clients.deleteTooltip': 'Supprimer définitivement ce client',
   'admin.clients.noClients': 'Aucun client',
+  'admin.clients.empty': 'Aucun client n’a encore été ajouté.',
+  'admin.clients.emptyFiltered': 'Aucun client ne correspond à la recherche actuelle.',
   'admin.clients.createdSuccess': 'Client créé avec succès',
   'admin.clients.createError': 'Erreur lors de la création du client',
   'admin.clients.updatedSuccess': 'Client mis à jour',
@@ -1435,6 +1439,8 @@ export const fr: Record<string, string> = {
   'kb.createdSuccess': 'Article créé avec succès',
   'kb.deletedSuccess': 'Article supprimé avec succès',
   'kb.noArticles': 'Aucun article trouvé',
+  'kb.empty': 'Aucun article de la base de connaissances n’a encore été créé.',
+  'kb.emptyFiltered': 'Aucun article ne correspond à la recherche ou aux filtres actuels.',
   'kb.internal': 'Interne',
   'kb.public': 'Public',
 
@@ -1477,6 +1483,8 @@ export const fr: Record<string, string> = {
   'worksheet.title': 'Feuille de travail',
   'worksheet.allStatuses': 'Tous les statuts',
   'worksheet.noWorksheets': 'Aucune feuille de travail',
+  'worksheet.empty': 'Aucune feuille de travail n’a encore été créée.',
+  'worksheet.emptyFiltered': 'Aucune feuille de travail ne correspond à la recherche ou aux filtres actuels.',
   'worksheet.backToList': 'Retour à la liste',
   'worksheet.workOrder': 'Bon de travail',
   'worksheet.customer': 'Client',

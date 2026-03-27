@@ -24,6 +24,7 @@ export default function AdminWorksheets() {
 
   const worksheets = data?.data ?? [];
   const totalPages = data?.pagination?.totalPages ?? 1;
+  const hasActiveFilters = Boolean(status || search);
 
   // Reset to page 1 when status filter changes
   const handleStatusChange = (newStatus: string) => {
@@ -79,66 +80,68 @@ export default function AdminWorksheets() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {worksheets.map((ws: any) => (
-                    <tr key={ws.id} className="hover:bg-muted/30">
-                      {/* WO# / Ticket# / Standalone */}
-                      <td className="p-3">
-                        <Link
-                          to={`/admin/feuilles-travail/${ws.id}`}
-                          className="font-mono text-primary hover:underline"
-                        >
-                          {ws.workOrder?.orderNumber || ws.ticket?.ticketNumber || t('worksheet.unscheduledCall')}
-                        </Link>
-                      </td>
-
-                      {/* Client */}
-                      <td className="p-3 hidden md:table-cell">
-                        {ws.workOrder?.customerName || (ws.ticket?.customer ? `${ws.ticket.customer.firstName} ${ws.ticket.customer.lastName}` : '—')}
-                      </td>
-
-                      {/* Technician */}
-                      <td className="p-3 hidden lg:table-cell">
-                        {ws.technician
-                          ? `${ws.technician.firstName} ${ws.technician.lastName}`
-                          : '—'}
-                      </td>
-
-                      {/* Device / Ticket title */}
-                      <td className="p-3 text-muted-foreground hidden md:table-cell min-w-0 truncate max-w-[180px]">
-                        {ws.workOrder
-                          ? `${ws.workOrder.deviceBrand ?? ''} ${ws.workOrder.deviceModel ?? ''}`
-                          : ws.ticket?.title ?? '—'}
-                      </td>
-
-                      {/* Status badge */}
-                      <td className="p-3">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${WS_STATUS_COLORS[ws.status]?.bg || 'bg-gray-100'} ${WS_STATUS_COLORS[ws.status]?.text || 'text-gray-700'}`}
-                        >
-                          {t(`label.wsStatus.${ws.status}`) || ws.status}
-                        </span>
-                      </td>
-
-                      {/* Total */}
-                      <td className="p-3 text-right tabular-nums">
-                        {Number(ws.grandTotal ?? 0).toFixed(2)}&nbsp;$
-                      </td>
-
-                      {/* Date */}
-                      <td className="p-3 text-muted-foreground hidden md:table-cell">
-                        {formatDate(ws.createdAt)}
+                  {worksheets.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                        {hasActiveFilters ? t('worksheet.emptyFiltered') : t('worksheet.empty')}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    worksheets.map((ws: any) => (
+                      <tr key={ws.id} className="hover:bg-muted/30">
+                        {/* WO# / Ticket# / Standalone */}
+                        <td className="p-3">
+                          <Link
+                            to={`/admin/feuilles-travail/${ws.id}`}
+                            className="font-mono text-primary hover:underline"
+                          >
+                            {ws.workOrder?.orderNumber || ws.ticket?.ticketNumber || t('worksheet.unscheduledCall')}
+                          </Link>
+                        </td>
+
+                        {/* Client */}
+                        <td className="p-3 hidden md:table-cell">
+                          {ws.workOrder?.customerName || (ws.ticket?.customer ? `${ws.ticket.customer.firstName} ${ws.ticket.customer.lastName}` : '—')}
+                        </td>
+
+                        {/* Technician */}
+                        <td className="p-3 hidden lg:table-cell">
+                          {ws.technician
+                            ? `${ws.technician.firstName} ${ws.technician.lastName}`
+                            : '—'}
+                        </td>
+
+                        {/* Device / Ticket title */}
+                        <td className="p-3 text-muted-foreground hidden md:table-cell min-w-0 truncate max-w-[180px]">
+                          {ws.workOrder
+                            ? `${ws.workOrder.deviceBrand ?? ''} ${ws.workOrder.deviceModel ?? ''}`
+                            : ws.ticket?.title ?? '—'}
+                        </td>
+
+                        {/* Status badge */}
+                        <td className="p-3">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${WS_STATUS_COLORS[ws.status]?.bg || 'bg-gray-100'} ${WS_STATUS_COLORS[ws.status]?.text || 'text-gray-700'}`}
+                          >
+                            {t(`label.wsStatus.${ws.status}`) || ws.status}
+                          </span>
+                        </td>
+
+                        {/* Total */}
+                        <td className="p-3 text-right tabular-nums">
+                          {Number(ws.grandTotal ?? 0).toFixed(2)}&nbsp;$
+                        </td>
+
+                        {/* Date */}
+                        <td className="p-3 text-muted-foreground hidden md:table-cell">
+                          {formatDate(ws.createdAt)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
-
-            {worksheets.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">
-                {t('worksheet.noWorksheets')}
-              </div>
-            )}
           </CardContent>
         </Card>
       )}

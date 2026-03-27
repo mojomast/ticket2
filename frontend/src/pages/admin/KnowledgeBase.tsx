@@ -90,6 +90,7 @@ export default function KnowledgeBase() {
 
   const articles: KbArticle[] = data?.data ?? [];
   const totalPages = data?.pagination?.totalPages ?? 1;
+  const hasActiveFilters = Boolean(debouncedSearch || categoryFilter || visibilityFilter);
 
   // ── Mutations ──
 
@@ -235,95 +236,100 @@ export default function KnowledgeBase() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {articles.map((article) => (
-                <tr
-                  key={article.id}
-                  className="hover:bg-muted/30 transition-colors"
-                >
-                  <td className="p-3 text-sm min-w-0">
-                    <button
-                      onClick={() => navigate(`/admin/base-connaissances/${article.id}`)}
-                      className="text-left font-medium text-primary hover:underline truncate block max-w-[200px] md:max-w-none"
-                    >
-                      {article.title}
-                    </button>
+              {articles.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                    {hasActiveFilters ? t('kb.emptyFiltered') : t('kb.empty')}
                   </td>
-                  <td className="p-3 hidden md:table-cell">
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                      {t(`label.kbCategory.${article.category}`) || article.category}
-                    </Badge>
-                  </td>
-                  <td className="p-3 hidden md:table-cell">
-                    <Badge
-                      variant="secondary"
-                      className={
-                        article.visibility === 'PUBLIC'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }
-                    >
-                      {article.visibility === 'PUBLIC' ? t('kb.public') : t('kb.internal')}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-sm hidden lg:table-cell">
-                    {article.author.firstName} {article.author.lastName}
-                  </td>
-                  <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">
-                    {formatDateTime(article.updatedAt)}
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {/* Edit */}
-                      <Button
-                        variant="secondary"
-                        size="sm"
+                </tr>
+              ) : (
+                articles.map((article) => (
+                  <tr
+                    key={article.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
+                    <td className="p-3 text-sm min-w-0">
+                      <button
                         onClick={() => navigate(`/admin/base-connaissances/${article.id}`)}
-                        className="h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
+                        className="text-left font-medium text-primary hover:underline truncate block max-w-[200px] md:max-w-none"
                       >
-                        {t('common.edit')}
-                      </Button>
-
-                      {/* Delete */}
-                      {deleteConfirmId === article.id ? (
-                        <span className="flex items-center gap-1">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteMutation.mutate(article.id)}
-                            disabled={deleteMutation.isPending}
-                            className="h-7"
-                          >
-                            {deleteMutation.isPending ? '...' : t('common.confirm')}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteConfirmId(null)}
-                            className="h-7"
-                          >
-                            {t('common.cancel')}
-                          </Button>
-                        </span>
-                      ) : (
+                        {article.title}
+                      </button>
+                    </td>
+                    <td className="p-3 hidden md:table-cell">
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        {t(`label.kbCategory.${article.category}`) || article.category}
+                      </Badge>
+                    </td>
+                    <td className="p-3 hidden md:table-cell">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          article.visibility === 'PUBLIC'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }
+                      >
+                        {article.visibility === 'PUBLIC' ? t('kb.public') : t('kb.internal')}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-sm hidden lg:table-cell">
+                      {article.author.firstName} {article.author.lastName}
+                    </td>
+                    <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">
+                      {formatDateTime(article.updatedAt)}
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Edit */}
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => setDeleteConfirmId(article.id)}
-                          className="h-7 bg-red-100 text-red-800 hover:bg-red-200"
+                          onClick={() => navigate(`/admin/base-connaissances/${article.id}`)}
+                          className="h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
                         >
-                          {t('common.delete')}
+                          {t('common.edit')}
                         </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+                        {/* Delete */}
+                        {deleteConfirmId === article.id ? (
+                          <span className="flex items-center gap-1">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteMutation.mutate(article.id)}
+                              disabled={deleteMutation.isPending}
+                              className="h-7"
+                            >
+                              {deleteMutation.isPending ? '...' : t('common.confirm')}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteConfirmId(null)}
+                              className="h-7"
+                            >
+                              {t('common.cancel')}
+                            </Button>
+                          </span>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setDeleteConfirmId(article.id)}
+                            className="h-7 bg-red-100 text-red-800 hover:bg-red-200"
+                          >
+                            {t('common.delete')}
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           </div>
-          {articles.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">{t('kb.noArticles')}</div>
-          )}
         </div>
       )}
 

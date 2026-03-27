@@ -85,6 +85,7 @@ export default function AdminClients() {
 
   const users: User[] = data?.data ?? [];
   const totalPages = data?.pagination?.totalPages ?? 1;
+  const hasActiveFilters = Boolean(debouncedSearch);
 
   // ── Mutations ──
 
@@ -286,132 +287,137 @@ export default function AdminClients() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {users.map((user) => (
-                <tr
-                  key={user.id}
-                  onClick={() => openEdit(user)}
-                  className="hover:bg-muted/30 cursor-pointer transition-colors"
-                >
-                  <td className="p-3 text-sm min-w-0 truncate max-w-[180px]">
-                    {user.firstName} {user.lastName}
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    {hasActiveFilters ? t('admin.clients.emptyFiltered') : t('admin.clients.empty')}
                   </td>
-                  <td className="p-3 text-sm hidden md:table-cell min-w-0 truncate max-w-[200px]">{user.email}</td>
-                  <td className="p-3 text-sm hidden lg:table-cell">{user.phone || '–'}</td>
-                  <td className="p-3 text-sm hidden lg:table-cell">
-                    {user.customerType
-                      ? t(`label.customerType.${user.customerType}`) || user.customerType
-                      : '–'}
-                  </td>
-                  <td className="p-3 text-sm hidden md:table-cell">{user.companyName || '–'}</td>
-                  <td className="p-3">
-                    <Badge
-                      variant="secondary"
-                      className={
-                        user.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }
-                    >
-                      {user.isActive ? t('admin.clients.active') : t('admin.clients.inactive')}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-right">
-                    <div
-                      className="flex items-center justify-end gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {/* Toggle active */}
-                      <HelpTooltip content={user.isActive ? t('admin.clients.deactivateTooltip') : t('admin.clients.activateTooltip')} side="bottom">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() =>
-                            toggleActiveMutation.mutate({
-                              id: user.id,
-                              isActive: !user.isActive,
-                            })
-                          }
-                          disabled={toggleActiveMutation.isPending}
-                          title={user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
-                          className={`h-7 ${
-                            user.isActive
-                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                              : 'bg-green-100 text-green-800 hover:bg-green-200'
-                          }`}
-                        >
-                          {user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
-                        </Button>
-                      </HelpTooltip>
-
-                      {/* View detail */}
-                      <HelpTooltip content={t('admin.clients.viewDetailTooltip')} side="bottom">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => navigate(`/admin/clients/${user.id}`)}
-                          className="h-7 bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
-                        >
-                          {t('admin.clients.viewDetail')}
-                        </Button>
-                      </HelpTooltip>
-
-                      {/* Edit */}
-                      <HelpTooltip content={t('admin.clients.editTooltip')} side="bottom">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => openEdit(user)}
-                          title={t('common.edit')}
-                          className="h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
-                        >
-                          {t('common.edit')}
-                        </Button>
-                      </HelpTooltip>
-
-                      {/* Delete */}
-                      {deleteConfirmId === user.id ? (
-                        <span className="flex items-center gap-1">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteMutation.mutate(user.id)}
-                            disabled={deleteMutation.isPending}
-                            className="h-7"
-                          >
-                            {deleteMutation.isPending ? '...' : t('common.confirm')}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteConfirmId(null)}
-                            className="h-7"
-                          >
-                            {t('common.cancel')}
-                          </Button>
-                        </span>
-                      ) : (
-                        <HelpTooltip content={t('admin.clients.deleteTooltip')} side="bottom">
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <tr
+                    key={user.id}
+                    onClick={() => openEdit(user)}
+                    className="hover:bg-muted/30 cursor-pointer transition-colors"
+                  >
+                    <td className="p-3 text-sm min-w-0 truncate max-w-[180px]">
+                      {user.firstName} {user.lastName}
+                    </td>
+                    <td className="p-3 text-sm hidden md:table-cell min-w-0 truncate max-w-[200px]">{user.email}</td>
+                    <td className="p-3 text-sm hidden lg:table-cell">{user.phone || '–'}</td>
+                    <td className="p-3 text-sm hidden lg:table-cell">
+                      {user.customerType
+                        ? t(`label.customerType.${user.customerType}`) || user.customerType
+                        : '–'}
+                    </td>
+                    <td className="p-3 text-sm hidden md:table-cell">{user.companyName || '–'}</td>
+                    <td className="p-3">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          user.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }
+                      >
+                        {user.isActive ? t('admin.clients.active') : t('admin.clients.inactive')}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div
+                        className="flex items-center justify-end gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Toggle active */}
+                        <HelpTooltip content={user.isActive ? t('admin.clients.deactivateTooltip') : t('admin.clients.activateTooltip')} side="bottom">
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => setDeleteConfirmId(user.id)}
-                            title={t('common.delete')}
-                            className="h-7 bg-red-100 text-red-800 hover:bg-red-200"
+                            onClick={() =>
+                              toggleActiveMutation.mutate({
+                                id: user.id,
+                                isActive: !user.isActive,
+                              })
+                            }
+                            disabled={toggleActiveMutation.isPending}
+                            title={user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
+                            className={`h-7 ${
+                              user.isActive
+                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                : 'bg-green-100 text-green-800 hover:bg-green-200'
+                            }`}
                           >
-                            {t('common.delete')}
+                            {user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
                           </Button>
                         </HelpTooltip>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+                        {/* View detail */}
+                        <HelpTooltip content={t('admin.clients.viewDetailTooltip')} side="bottom">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => navigate(`/admin/clients/${user.id}`)}
+                            className="h-7 bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
+                          >
+                            {t('admin.clients.viewDetail')}
+                          </Button>
+                        </HelpTooltip>
+
+                        {/* Edit */}
+                        <HelpTooltip content={t('admin.clients.editTooltip')} side="bottom">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => openEdit(user)}
+                            title={t('common.edit')}
+                            className="h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
+                          >
+                            {t('common.edit')}
+                          </Button>
+                        </HelpTooltip>
+
+                        {/* Delete */}
+                        {deleteConfirmId === user.id ? (
+                          <span className="flex items-center gap-1">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteMutation.mutate(user.id)}
+                              disabled={deleteMutation.isPending}
+                              className="h-7"
+                            >
+                              {deleteMutation.isPending ? '...' : t('common.confirm')}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteConfirmId(null)}
+                              className="h-7"
+                            >
+                              {t('common.cancel')}
+                            </Button>
+                          </span>
+                        ) : (
+                          <HelpTooltip content={t('admin.clients.deleteTooltip')} side="bottom">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setDeleteConfirmId(user.id)}
+                              title={t('common.delete')}
+                              className="h-7 bg-red-100 text-red-800 hover:bg-red-200"
+                            >
+                              {t('common.delete')}
+                            </Button>
+                          </HelpTooltip>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           </div>
-          {users.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">{t('admin.clients.noClients')}</div>
-          )}
         </div>
       )}
 

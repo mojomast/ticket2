@@ -40,6 +40,7 @@
 - **Destructive actions now gated** for appointment cancel flows (admin, tech, portal), portal proposal cancellation, and demo reset
 - **Button consistency** tightened for destructive actions and loading labels (`common.saving`, `common.deleting`) in portal ticket detail, admin client detail, and admin worksheet detail
 - **Empty states** added for sparse appointment/proposal sections in customer and technician ticket detail pages
+- **Admin list empty states follow-up** added context-aware empty rows/messages for admin tickets, worksheets, knowledge base, and clients lists, including separate filtered/search-empty messaging
 
 ## Known Issues NOT Fixed (documented for future)
 - `Float` for currency fields should be `Decimal` — requires schema migration + code changes across entire app
@@ -50,7 +51,7 @@
 - Ticket number generation race condition — needs DB sequence or advisory lock
 
 ## Suggested Next Steps
-- Expand the empty-state sweep to more admin list pages (`Tickets`, `Worksheets`, `KnowledgeBase`, `Clients`) where some views may still rely on blank tables
+- Expand the empty-state sweep to remaining non-admin list pages and any smaller secondary admin lists not covered yet
 - Do a broader accessibility audit for focus management and keyboard order beyond `aria-label` coverage
 - Apply the confirmation-dialog pattern to more delete flows if we want stronger guardrails across all CRUD pages
 - Review remaining hardcoded HelpTooltip French strings outside the already-updated TicketDetail/Profile work

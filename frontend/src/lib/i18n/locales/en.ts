@@ -229,6 +229,8 @@ export const en: Record<string, string> = {
   'admin.tickets.createTooltip': 'Create the ticket for this client',
   'admin.tickets.viewAllTooltip': 'Show the full list of all tickets',
   'admin.tickets.calendarTooltip': 'Open the full appointment calendar',
+  'admin.tickets.empty': 'No tickets have been created yet.',
+  'admin.tickets.emptyFiltered': 'No tickets match the current search or filters.',
 
   // ─── Kanban ───
   'kanban.title': 'Kanban',
@@ -716,6 +718,8 @@ export const en: Record<string, string> = {
   'admin.clients.viewDetailTooltip': 'View this client\'s details and history',
   'admin.clients.deleteTooltip': 'Permanently delete this client',
   'admin.clients.noClients': 'No clients',
+  'admin.clients.empty': 'No clients have been added yet.',
+  'admin.clients.emptyFiltered': 'No clients match the current search.',
   'admin.clients.createdSuccess': 'Client created successfully',
   'admin.clients.createError': 'Error creating client',
   'admin.clients.updatedSuccess': 'Client updated',
@@ -1435,6 +1439,8 @@ export const en: Record<string, string> = {
   'kb.createdSuccess': 'Article created successfully',
   'kb.deletedSuccess': 'Article deleted successfully',
   'kb.noArticles': 'No articles found',
+  'kb.empty': 'No knowledge base articles have been created yet.',
+  'kb.emptyFiltered': 'No articles match the current search or filters.',
   'kb.internal': 'Internal',
   'kb.public': 'Public',
 
@@ -1477,6 +1483,8 @@ export const en: Record<string, string> = {
   'worksheet.title': 'Worksheet',
   'worksheet.allStatuses': 'All statuses',
   'worksheet.noWorksheets': 'No worksheets',
+  'worksheet.empty': 'No worksheets have been created yet.',
+  'worksheet.emptyFiltered': 'No worksheets match the current search or filters.',
   'worksheet.backToList': 'Back to list',
   'worksheet.workOrder': 'Work Order',
   'worksheet.customer': 'Customer',
