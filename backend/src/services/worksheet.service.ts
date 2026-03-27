@@ -40,6 +40,20 @@ const WORKSHEET_LIST_INCLUDE = {
       deviceModel: true,
     },
   },
+  ticket: {
+    select: {
+      id: true,
+      ticketNumber: true,
+      title: true,
+      customer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+  },
 };
 
 const WORKSHEET_DETAIL_INCLUDE = {
@@ -50,6 +64,24 @@ const WORKSHEET_DETAIL_INCLUDE = {
     include: {
       customer: {
         select: { ...USER_SELECT, customerType: true, companyName: true, address: true, phone: true },
+      },
+    },
+  },
+  ticket: {
+    select: {
+      id: true,
+      ticketNumber: true,
+      title: true,
+      status: true,
+      customerId: true,
+      customer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+        },
       },
     },
   },
@@ -179,19 +211,36 @@ async function getHighValueThreshold(): Promise<number> {
 
 export async function createWorksheet(data: CreateWorksheetInput, technicianId: string, role: UserRole) {
   if (role === 'CUSTOMER') {
-    throw AppError.forbidden('Seuls les administrateurs et techniciens peuvent creer une feuille de travail');
+    throw AppError.forbidden('Seuls les administrateurs et techniciens peuvent créer une feuille de travail');
   }
 
-  // Verify work order exists and is not deleted
-  const workOrder = await prisma.workOrder.findFirst({
-    where: { id: data.workOrderId, deletedAt: null },
-    select: { id: true, orderNumber: true },
-  });
-  if (!workOrder) throw AppError.notFound('Bon de travail introuvable');
+  let workOrderId: string | null = null;
+  let ticketId: string | null = null;
+
+  // If workOrderId provided, verify it exists
+  if (data.workOrderId) {
+    const workOrder = await prisma.workOrder.findFirst({
+      where: { id: data.workOrderId, deletedAt: null },
+      select: { id: true, orderNumber: true },
+    });
+    if (!workOrder) throw AppError.notFound('Bon de travail introuvable');
+    workOrderId = data.workOrderId;
+  }
+
+  // If ticketId provided, verify it exists
+  if (data.ticketId) {
+    const ticket = await prisma.ticket.findFirst({
+      where: { id: data.ticketId, deletedAt: null },
+      select: { id: true, ticketNumber: true },
+    });
+    if (!ticket) throw AppError.notFound('Billet introuvable');
+    ticketId = data.ticketId;
+  }
 
   const worksheet = await prisma.worksheet.create({
     data: {
-      workOrderId: data.workOrderId,
+      workOrderId,
+      ticketId,
       technicianId,
       status: 'BROUILLON',
     },
@@ -204,7 +253,7 @@ export async function createWorksheet(data: CreateWorksheetInput, technicianId: 
     entityId: worksheet.id,
     action: 'CREATED',
     userId: technicianId,
-    newValue: { workOrderId: data.workOrderId, orderNumber: workOrder.orderNumber },
+    newValue: { workOrderId, ticketId },
   }).catch(() => {});
 
   return worksheet;
@@ -213,9 +262,12 @@ export async function createWorksheet(data: CreateWorksheetInput, technicianId: 
 export async function getWorksheetById(id: string, userId: string, role: UserRole) {
   const ws = await findWorksheetOrThrow(id);
 
-  // Access control: CUSTOMER can only view worksheets for their own work orders
-  if (role === 'CUSTOMER' && ws.workOrder.customerId !== userId) {
-    throw AppError.forbidden('Acces refuse');
+  // Access control: CUSTOMER can only view worksheets for their own work orders or tickets
+  if (role === 'CUSTOMER') {
+    const isOwner =
+      (ws.workOrder && ws.workOrder.customerId === userId) ||
+      (ws.ticket && ws.ticket.customerId === userId);
+    if (!isOwner) throw AppError.forbidden('Accès refusé');
   }
 
   return ws;
@@ -231,7 +283,10 @@ export async function listWorksheets(query: WorksheetListQuery, userId: string, 
   if (role === 'TECHNICIAN') {
     where.technicianId = userId;
   } else if (role === 'CUSTOMER') {
-    where.workOrder = { customerId: userId, deletedAt: null };
+    where.OR = [
+      { workOrder: { customerId: userId, deletedAt: null } },
+      { ticket: { customerId: userId, deletedAt: null } },
+    ];
   }
   // ADMIN sees all
 
@@ -244,6 +299,8 @@ export async function listWorksheets(query: WorksheetListQuery, userId: string, 
       OR: [
         { workOrder: { orderNumber: { contains: query.search, mode: 'insensitive' } } },
         { workOrder: { customerName: { contains: query.search, mode: 'insensitive' } } },
+        { ticket: { ticketNumber: { contains: query.search, mode: 'insensitive' } } },
+        { ticket: { title: { contains: query.search, mode: 'insensitive' } } },
       ],
     });
   }
@@ -397,6 +454,9 @@ export async function changeStatus(
 
   // ─── On Submission: notify admins + email + high-value check ───
   if (newStatus === 'SOUMISE') {
+    // Derive a reference label for notifications
+    const refLabel = updated.workOrder?.orderNumber ?? updated.ticket?.ticketNumber ?? ws.id.slice(0, 8);
+
     // Notify all admins about submission
     prisma.user.findMany({
       where: { role: 'ADMIN', isActive: true, deletedAt: null },
@@ -408,7 +468,7 @@ export async function changeStatus(
           userId: adminId,
           type: 'WORKSHEET_SUBMITTED' as const,
           title: 'Feuille de travail soumise',
-          message: `La feuille de travail pour le bon ${updated.workOrder.orderNumber} a ete soumise pour revision`,
+          message: `La feuille de travail pour ${refLabel} a ete soumise pour revision`,
         }));
         prisma.notification.createMany({ data: notifications }).catch(() => {});
       }
@@ -418,8 +478,8 @@ export async function changeStatus(
         if (admin.email) {
           sendEmail({
             to: admin.email,
-            subject: `Feuille de travail soumise — ${updated.workOrder.orderNumber}`,
-            body: `Bonjour ${admin.firstName},\n\nUne feuille de travail pour le bon de travail ${updated.workOrder.orderNumber} a été soumise et attend votre révision.\n\nMontant total: ${updated.grandTotal}$`,
+            subject: `Feuille de travail soumise — ${refLabel}`,
+            body: `Bonjour ${admin.firstName},\n\nUne feuille de travail pour ${refLabel} a été soumise et attend votre révision.\n\nMontant total: ${updated.grandTotal}$`,
           }).catch(err => logger.error({ err }, 'Failed to send worksheet submission email'));
         }
       }
@@ -437,7 +497,7 @@ export async function changeStatus(
             userId: a.id,
             type: 'WORKSHEET_HIGH_VALUE' as const,
             title: 'Feuille de travail à valeur élevée',
-            message: `La feuille de travail pour le bon ${updated.workOrder.orderNumber} dépasse le seuil (${updated.grandTotal}$ > ${threshold}$)`,
+            message: `La feuille de travail pour ${refLabel} dépasse le seuil (${updated.grandTotal}$ > ${threshold}$)`,
           }));
           if (notifications.length > 0) {
             prisma.notification.createMany({ data: notifications }).catch(() => {});
@@ -449,11 +509,12 @@ export async function changeStatus(
 
   // ─── On Approval: notify technician ───
   if (newStatus === 'APPROUVEE') {
+    const approvalRef = updated.workOrder?.orderNumber ?? updated.ticket?.ticketNumber ?? ws.id.slice(0, 8);
     notificationService.notify({
       userId: ws.technicianId,
       type: 'WORKSHEET_APPROVED',
       title: 'Feuille de travail approuvee',
-      message: `Votre feuille de travail pour le bon ${updated.workOrder.orderNumber} a ete approuvee`,
+      message: `Votre feuille de travail pour ${approvalRef} a ete approuvee`,
     }).catch(() => {});
   }
 
@@ -997,6 +1058,7 @@ export async function createKbFromNote(worksheetId: string, noteId: string, user
     where: { id: worksheetId, deletedAt: null },
     include: {
       workOrder: { select: { id: true, orderNumber: true, deviceBrand: true, deviceModel: true, reportedIssue: true } },
+      ticket: { select: { id: true, ticketNumber: true, title: true } },
     },
   });
   if (!ws) throw AppError.notFound('Feuille de travail introuvable');
@@ -1011,10 +1073,22 @@ export async function createKbFromNote(worksheetId: string, noteId: string, user
     throw AppError.badRequest('Seules les notes de type diagnostic ou procedure peuvent etre converties en article KB');
   }
 
-  // Auto-generate title from WO info
-  const wo = ws.workOrder;
   const categoryLabel = note.noteType === 'DIAGNOSTIC_FINDING' ? 'Diagnostic' : 'Procedure';
-  const title = `${categoryLabel} — ${wo.deviceBrand} ${wo.deviceModel} — ${wo.reportedIssue}`.substring(0, 200);
+
+  // Auto-generate title and tags based on available context (WO, ticket, or standalone)
+  let title: string;
+  let tags: string[];
+  if (ws.workOrder) {
+    const wo = ws.workOrder;
+    title = `${categoryLabel} — ${wo.deviceBrand} ${wo.deviceModel} — ${wo.reportedIssue}`.substring(0, 200);
+    tags = [wo.deviceBrand, wo.deviceModel, wo.orderNumber];
+  } else if (ws.ticket) {
+    title = `${categoryLabel} — ${ws.ticket.title}`.substring(0, 200);
+    tags = [ws.ticket.ticketNumber];
+  } else {
+    title = `${categoryLabel} — Feuille ${ws.id.slice(0, 8)}`.substring(0, 200);
+    tags = [];
+  }
 
   // Map note type to KB category
   const kbCategory = note.noteType === 'DIAGNOSTIC_FINDING' ? 'MATERIEL' : 'PROCEDURE';
@@ -1025,21 +1099,32 @@ export async function createKbFromNote(worksheetId: string, noteId: string, user
       title,
       content: note.content,
       category: kbCategory,
-      tags: [wo.deviceBrand, wo.deviceModel, wo.orderNumber],
+      tags,
       visibility: 'INTERNAL',
     },
     userId,
   );
 
-  // Link the article to the work order
-  await kbService.linkArticle(
-    {
-      articleId: article.id,
-      entityType: 'WORKORDER',
-      entityId: wo.id,
-    },
-    userId,
-  );
+  // Link the article to the work order or ticket if available
+  if (ws.workOrder) {
+    await kbService.linkArticle(
+      {
+        articleId: article.id,
+        entityType: 'WORKORDER',
+        entityId: ws.workOrder.id,
+      },
+      userId,
+    );
+  } else if (ws.ticket) {
+    await kbService.linkArticle(
+      {
+        articleId: article.id,
+        entityType: 'TICKET',
+        entityId: ws.ticket.id,
+      },
+      userId,
+    );
+  }
 
   // Fire-and-forget audit log
   createAuditLog({

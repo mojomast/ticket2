@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type Ticket, type AppointmentProposal } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
@@ -20,6 +20,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { useTranslation } from '../../lib/i18n/hook';
 
 // Technician-allowed status transitions (from → to[])
 const TECH_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -172,6 +173,8 @@ export default function TechTicketDetail() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // ─── Quote form state ───
   const [showQuoteForm, setShowQuoteForm] = useState(false);
@@ -380,15 +383,25 @@ export default function TechTicketDetail() {
     onError: () => toast.error("Erreur lors de l'envoi de la contre-proposition"),
   });
 
+  // ─── Worksheet mutation ───
+  const createWorksheetMutation = useMutation({
+    mutationFn: () => api.worksheets.create({ ticketId: id }),
+    onSuccess: (ws) => {
+      toast.success(t('worksheet.created'));
+      navigate(`/technicien/feuilles-travail/${ws.id}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   // ─── Loading / Not found ───
   if (isLoading) return <div className="text-center py-8">Chargement...</div>;
   if (!ticket) return <div className="text-center py-8">Billet introuvable</div>;
 
-  const t: Ticket = ticket;
+  const tk: Ticket = ticket;
 
   // Determine available status transitions for the current status
   // Filter TERMINEE → FERMEE: only if tech has can_close_tickets permission
-  const rawAllowed = TECH_STATUS_TRANSITIONS[t.status] ?? [];
+  const rawAllowed = TECH_STATUS_TRANSITIONS[tk.status] ?? [];
   const canCloseTickets = !!user?.permissions?.can_close_tickets;
   const canAcceptTickets = !!user?.permissions?.can_accept_tickets;
   const allowedStatuses = rawAllowed.filter((s) => {
@@ -396,7 +409,7 @@ export default function TechTicketDetail() {
     return true;
   });
   const canSendQuotes = !!user?.permissions?.can_send_quotes;
-  const isAssignedToMe = !!t.technicianId && t.technicianId === user?.id;
+  const isAssignedToMe = !!tk.technicianId && tk.technicianId === user?.id;
   const isMutating =
     acceptMutation.isPending ||
     statusMutation.isPending ||
@@ -408,10 +421,11 @@ export default function TechTicketDetail() {
     apptStatusMutation.isPending ||
     acceptProposalMutation.isPending ||
     rejectProposalMutation.isPending ||
-    counterProposeMutation.isPending;
+    counterProposeMutation.isPending ||
+    createWorksheetMutation.isPending;
 
   const canScheduleAppointment =
-    isAssignedToMe && SCHEDULABLE_STATUSES.includes(t.status);
+    isAssignedToMe && SCHEDULABLE_STATUSES.includes(tk.status);
 
   // ─── Handlers ───
   const handleQuoteSubmit = (e: React.FormEvent) => {
@@ -486,12 +500,12 @@ export default function TechTicketDetail() {
         <Link to="/technicien/billets" className="text-sm text-muted-foreground hover:text-foreground">
           &larr; Retour
         </Link>
-        <h1 className="text-2xl font-bold">{t.ticketNumber}</h1>
-        <StatusBadge status={t.status} />
-        <StatusBadge status={t.priority} type="priority" />
+        <h1 className="text-2xl font-bold">{tk.ticketNumber}</h1>
+        <StatusBadge status={tk.status} />
+        <StatusBadge status={tk.priority} type="priority" />
 
         {/* Accept button — only when no technician assigned and tech has can_accept_tickets permission */}
-        {!t.technicianId && canAcceptTickets && (
+        {!tk.technicianId && canAcceptTickets && (
           <HelpTooltip content="Prendre en charge ce billet et devenir le technicien assigné" side="bottom">
             <Button
               onClick={() => acceptMutation.mutate()}
@@ -510,35 +524,35 @@ export default function TechTicketDetail() {
           {/* Description */}
           <Card>
             <CardContent className="pt-6">
-              <h2 className="font-semibold mb-2">{t.title}</h2>
-              <p className="text-sm whitespace-pre-wrap">{t.description}</p>
+              <h2 className="font-semibold mb-2">{tk.title}</h2>
+              <p className="text-sm whitespace-pre-wrap">{tk.description}</p>
             </CardContent>
           </Card>
 
           {/* Existing quote display */}
-          {t.quotedPrice != null && (
+          {tk.quotedPrice != null && (
             <Card>
               <CardContent className="pt-6">
                 <h3 className="font-semibold mb-3">Devis</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Prix:</span>{' '}
-                  <span className="font-medium">{formatCurrency(t.quotedPrice)}</span>
+                  <span className="font-medium">{formatCurrency(tk.quotedPrice)}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Durée:</span>{' '}
-                  <span className="font-medium">{t.quoteDuration ?? '—'}</span>
+                  <span className="font-medium">{tk.quoteDuration ?? '—'}</span>
                 </div>
                 <div className="sm:col-span-3">
                   <span className="text-muted-foreground">Description:</span>{' '}
-                  <span>{t.quoteDescription ?? '—'}</span>
+                  <span>{tk.quoteDescription ?? '—'}</span>
                 </div>
               </div>
               </CardContent>
             </Card>
           )}
           {/* Blocker display */}
-          {t.blockerReason && (
+                {tk.blockerReason && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-semibold text-red-800">Blocage</h3>
@@ -556,7 +570,7 @@ export default function TechTicketDetail() {
                   </HelpTooltip>
                 )}
               </div>
-              <p className="text-sm text-red-700">{t.blockerReason}</p>
+              <p className="text-sm text-red-700">{tk.blockerReason}</p>
             </div>
           )}
 
@@ -1068,17 +1082,17 @@ export default function TechTicketDetail() {
             <CardContent className="text-sm space-y-2">
               <div>
                 <span className="text-muted-foreground">Catégorie:</span>{' '}
-                {SERVICE_CATEGORY_LABELS[t.serviceCategory] || t.serviceCategory}
+                {SERVICE_CATEGORY_LABELS[tk.serviceCategory] || tk.serviceCategory}
               </div>
               <div>
                 <span className="text-muted-foreground">Mode:</span>{' '}
-                {SERVICE_MODE_LABELS[t.serviceMode] || t.serviceMode}
+                {SERVICE_MODE_LABELS[tk.serviceMode] || tk.serviceMode}
               </div>
               <div>
-                <span className="text-muted-foreground">Créé:</span> {formatDateTime(t.createdAt)}
+                <span className="text-muted-foreground">Créé:</span> {formatDateTime(tk.createdAt)}
               </div>
               <div>
-                <span className="text-muted-foreground">Modifié:</span> {formatDateTime(t.updatedAt)}
+                <span className="text-muted-foreground">Modifié:</span> {formatDateTime(tk.updatedAt)}
               </div>
             </CardContent>
           </Card>
@@ -1089,13 +1103,13 @@ export default function TechTicketDetail() {
               <CardTitle className="text-sm">Client</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              <p className="text-sm">{t.customer?.firstName} {t.customer?.lastName}</p>
-              <p className="text-xs text-muted-foreground">{t.customer?.email}</p>
-              {t.customer?.phone && (
-                <p className="text-xs text-muted-foreground">{t.customer.phone}</p>
+              <p className="text-sm">{tk.customer?.firstName} {tk.customer?.lastName}</p>
+              <p className="text-xs text-muted-foreground">{tk.customer?.email}</p>
+              {tk.customer?.phone && (
+                <p className="text-xs text-muted-foreground">{tk.customer.phone}</p>
               )}
-              {t.customer?.companyName && (
-                <p className="text-xs text-muted-foreground">{t.customer.companyName}</p>
+              {tk.customer?.companyName && (
+                <p className="text-xs text-muted-foreground">{tk.customer.companyName}</p>
               )}
             </CardContent>
           </Card>
@@ -1133,6 +1147,19 @@ export default function TechTicketDetail() {
             </Card>
           )}
 
+          {/* Start Worksheet — create a new worksheet from this ticket */}
+          <Card>
+            <CardContent className="pt-6">
+              <Button
+                className="w-full"
+                onClick={() => createWorksheetMutation.mutate()}
+                disabled={createWorksheetMutation.isPending}
+              >
+                {createWorksheetMutation.isPending ? t('common.loading') : t('worksheet.startWorksheet')}
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Send Quote form — only if technician has can_send_quotes permission */}
           {isAssignedToMe && canSendQuotes && (
             <Card>
@@ -1147,7 +1174,7 @@ export default function TechTicketDetail() {
                         onClick={() => setShowQuoteForm(true)}
                         className="text-xs p-0 h-auto"
                       >
-                        {t.quotedPrice != null ? 'Modifier' : 'Envoyer un devis'}
+                        {tk.quotedPrice != null ? 'Modifier' : 'Envoyer un devis'}
                       </Button>
                     </HelpTooltip>
                   )}
@@ -1220,7 +1247,7 @@ export default function TechTicketDetail() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">Blocage</CardTitle>
-                  {!t.blockerReason && !showBlockerForm && (
+                  {!tk.blockerReason && !showBlockerForm && (
                     <HelpTooltip content="Signaler un obstacle empêchant la résolution du billet" side="left">
                       <Button
                         variant="link"
@@ -1232,7 +1259,7 @@ export default function TechTicketDetail() {
                       </Button>
                     </HelpTooltip>
                   )}
-                  {t.blockerReason && !showBlockerForm && (
+                  {tk.blockerReason && !showBlockerForm && (
                     <HelpTooltip content="Retirer le blocage actif sur ce billet" side="left">
                       <Button
                         variant="link"
@@ -1248,7 +1275,7 @@ export default function TechTicketDetail() {
                 </div>
               </CardHeader>
               <CardContent>
-                {t.blockerReason && (
+          {tk.blockerReason && (
                   <p className="text-xs text-muted-foreground">
                     Blocage actif — voir ci-dessus pour les détails.
                   </p>

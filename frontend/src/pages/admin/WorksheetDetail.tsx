@@ -151,7 +151,7 @@ export default function AdminWorksheetDetail() {
           </span>
 
           <h1 className="text-2xl font-bold">
-            {ws.workOrder.orderNumber}
+            {ws.workOrder?.orderNumber || ws.ticket?.ticketNumber || t('worksheet.unscheduledCall')}
           </h1>
         </div>
 
@@ -248,39 +248,72 @@ export default function AdminWorksheetDetail() {
           </CardContent>
         </Card>
 
-        {/* Right: Work order info */}
+        {/* Right: Work order / Ticket / Standalone info */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">{t('worksheet.woInfo')}</CardTitle>
+            <CardTitle className="text-lg">
+              {ws.workOrder
+                ? t('worksheet.woInfo')
+                : ws.ticket
+                  ? t('worksheet.ticketInfo')
+                  : t('worksheet.referenceLabel')}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('worksheet.workOrder')}</span>
-              <Link
-                to={`/admin/bons-travail/${ws.workOrder.id}`}
-                className="font-mono text-primary hover:underline"
-              >
-                {ws.workOrder.orderNumber}
-              </Link>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('worksheet.customer')}</span>
-              <span>{ws.workOrder.customerName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('worksheet.device')}</span>
-              <span>{ws.workOrder.deviceBrand} {ws.workOrder.deviceModel}</span>
-            </div>
-            {ws.workOrder.deviceSerial && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('common.serial')}</span>
-                <span className="font-mono text-xs">{ws.workOrder.deviceSerial}</span>
-              </div>
+            {ws.workOrder ? (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('worksheet.workOrder')}</span>
+                  <Link
+                    to={`/admin/bons-travail/${ws.workOrder.id}`}
+                    className="font-mono text-primary hover:underline"
+                  >
+                    {ws.workOrder.orderNumber}
+                  </Link>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('worksheet.customer')}</span>
+                  <span>{ws.workOrder.customerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('worksheet.device')}</span>
+                  <span>{ws.workOrder.deviceBrand} {ws.workOrder.deviceModel}</span>
+                </div>
+                {ws.workOrder.deviceSerial && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('common.serial')}</span>
+                    <span className="font-mono text-xs">{ws.workOrder.deviceSerial}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-start">
+                  <span className="text-muted-foreground shrink-0">{t('worksheet.issue')}</span>
+                  <span className="text-right ml-4">{ws.workOrder.reportedIssue}</span>
+                </div>
+              </>
+            ) : ws.ticket ? (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{t('worksheet.ticketRef')}</span>
+                  <span className="font-mono">{ws.ticket.ticketNumber}</span>
+                </div>
+                {ws.ticket.title && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-muted-foreground shrink-0">{t('worksheet.issue')}</span>
+                    <span className="text-right ml-4">{ws.ticket.title}</span>
+                  </div>
+                )}
+                {ws.ticket.customer && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">{t('worksheet.customer')}</span>
+                    <span>{ws.ticket.customer.firstName} {ws.ticket.customer.lastName}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-muted-foreground italic">
+                {t('worksheet.unscheduledCall')}
+              </p>
             )}
-            <div className="flex justify-between items-start">
-              <span className="text-muted-foreground shrink-0">{t('worksheet.issue')}</span>
-              <span className="text-right ml-4">{ws.workOrder.reportedIssue}</span>
-            </div>
           </CardContent>
         </Card>
       </div>

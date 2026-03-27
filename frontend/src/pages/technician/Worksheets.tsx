@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { formatDate } from '../../lib/utils';
 import { WS_STATUS_LABELS, WS_STATUS_COLORS } from '../../lib/constants';
 import { useTranslation } from '../../lib/i18n/hook';
+import { useToast } from '../../hooks/use-toast';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 
@@ -12,6 +13,8 @@ const PAGE_LIMIT = 25;
 
 export default function TechWorksheets() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const toast = useToast();
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
 
@@ -23,6 +26,16 @@ export default function TechWorksheets() {
   const worksheets = data?.data ?? [];
   const totalPages = data?.pagination?.totalPages ?? 1;
 
+  // ─── Create standalone worksheet mutation ───
+  const createMutation = useMutation({
+    mutationFn: () => api.worksheets.create({}),
+    onSuccess: (ws) => {
+      toast.success(t('worksheet.created'));
+      navigate(`/technicien/feuilles-travail/${ws.id}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   // Reset to page 1 when status filter changes
   const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
@@ -31,7 +44,15 @@ export default function TechWorksheets() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t('worksheet.title')}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t('worksheet.title')}</h1>
+        <Button
+          onClick={() => createMutation.mutate()}
+          disabled={createMutation.isPending}
+        >
+          {createMutation.isPending ? t('common.loading') : t('worksheet.newWorksheet')}
+        </Button>
+      </div>
 
       <select
         onChange={(e) => handleStatusChange(e.target.value)}
@@ -57,14 +78,16 @@ export default function TechWorksheets() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-mono text-muted-foreground">
-                      {ws.workOrder?.orderNumber}
+                      {ws.workOrder?.orderNumber || ws.ticket?.ticketNumber || t('worksheet.unscheduledCall')}
                     </span>
                     <span className="text-sm font-medium">
-                      {ws.workOrder?.customerName}
+                      {ws.workOrder?.customerName || (ws.ticket?.customer ? `${ws.ticket.customer.firstName} ${ws.ticket.customer.lastName}` : '')}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {ws.workOrder?.deviceBrand} {ws.workOrder?.deviceModel}
+                    {ws.workOrder
+                      ? `${ws.workOrder.deviceBrand ?? ''} ${ws.workOrder.deviceModel ?? ''}`
+                      : ws.ticket?.title ?? ''}
                     {' — '}
                     {formatDate(ws.createdAt)}
                   </p>

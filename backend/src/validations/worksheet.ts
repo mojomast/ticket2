@@ -21,7 +21,8 @@ const followUpTypeEnum = z.enum([
 // ─── Create Worksheet ───
 
 export const createWorksheetSchema = z.object({
-  workOrderId: z.string().uuid('L\'identifiant du bon de travail doit être un UUID valide'),
+  workOrderId: z.string().uuid('L\'identifiant du bon de travail doit être un UUID valide').optional(),
+  ticketId: z.string().uuid('L\'identifiant du billet doit être un UUID valide').optional(),
 });
 
 export type CreateWorksheetInput = z.infer<typeof createWorksheetSchema>;

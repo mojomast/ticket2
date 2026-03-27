@@ -361,12 +361,22 @@ export interface WorksheetListItem {
   submittedAt: string | null;
   approvedAt: string | null;
   technician: WorksheetUser;
-  workOrder: {
+  workOrder?: {
+    id: string;
     orderNumber: string;
-    status: string;
     customerName: string;
-    deviceBrand: string;
-    deviceModel: string;
+    deviceBrand?: string;
+    deviceModel?: string;
+  };
+  ticket?: {
+    id: string;
+    ticketNumber: string;
+    title: string;
+    customer?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    };
   };
 }
 
@@ -441,7 +451,8 @@ export interface FollowUp {
 }
 
 export interface Worksheet extends WorksheetListItem {
-  workOrderId: string;
+  workOrderId?: string | null;
+  ticketId?: string | null;
   technicianId: string;
   reviewedAt: string | null;
   reviewedById: string | null;
@@ -453,29 +464,32 @@ export interface Worksheet extends WorksheetListItem {
   deletedAt: string | null;
   reviewedBy: WorksheetUser | null;
   approvedBy: WorksheetUser | null;
-  workOrder: {
+  workOrder?: {
     id: string;
     orderNumber: string;
     status: string;
     customerName: string;
-    customerPhone: string;
-    customerEmail: string | null;
-    deviceBrand: string;
-    deviceModel: string;
-    deviceSerial: string | null;
-    deviceType: string;
-    reportedIssue: string;
-    customer: {
+    customerPhone?: string;
+    customerEmail?: string | null;
+    reportedIssue?: string;
+    deviceType?: string;
+    deviceBrand?: string;
+    deviceModel?: string;
+    deviceSerial?: string | null;
+  };
+  ticket?: {
+    id: string;
+    ticketNumber: string;
+    title: string;
+    status: string;
+    customerId: string;
+    customer?: {
       id: string;
       firstName: string;
       lastName: string;
-      email: string;
-      role: string;
-      customerType: string | null;
-      companyName: string | null;
-      address: string | null;
-      phone: string | null;
-    } | null;
+      email?: string;
+      phone?: string;
+    };
   };
   laborEntries: LaborEntry[];
   parts: PartUsed[];
@@ -758,7 +772,7 @@ export const api = {
     list: (params?: Record<string, unknown>) =>
       requestPaginated<WorksheetListItem>(`/api/worksheets${params ? `?${qs(params)}` : ''}`),
     get: (id: string) => request<Worksheet>(`/api/worksheets/${id}`),
-    create: (data: { workOrderId: string }) =>
+    create: (data: { workOrderId?: string; ticketId?: string }) =>
       request<Worksheet>('/api/worksheets', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: { summary?: string }) =>
       request<Worksheet>(`/api/worksheets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

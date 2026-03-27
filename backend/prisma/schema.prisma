@@ -269,6 +269,7 @@ model Ticket {
   messages      Message[]
   notifications Notification[]
   attachments   Attachment[]
+  worksheets    Worksheet[]
 
   @@index([status, createdAt])
   @@index([customerId])
@@ -584,7 +585,8 @@ model CustomerNote {
 
 model Worksheet {
   id              String          @id @default(uuid())
-  workOrderId     String
+  workOrderId     String?
+  ticketId        String?
   technicianId    String
   status          WorksheetStatus @default(BROUILLON)
 
@@ -615,7 +617,8 @@ model Worksheet {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  workOrder       WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  workOrder       WorkOrder?      @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  ticket          Ticket?         @relation(fields: [ticketId], references: [id], onDelete: Restrict)
   technician      User            @relation("WorksheetTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
   reviewedBy      User?           @relation("WorksheetReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   approvedBy      User?           @relation("WorksheetApprover", fields: [approvedById], references: [id], onDelete: SetNull)
@@ -627,6 +630,7 @@ model Worksheet {
   followUps       FollowUp[]
 
   @@index([workOrderId])
+  @@index([ticketId])
   @@index([technicianId])
   @@index([status, createdAt])
   @@index([deletedAt])

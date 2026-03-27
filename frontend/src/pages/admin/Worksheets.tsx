@@ -80,19 +80,19 @@ export default function AdminWorksheets() {
                 <tbody className="divide-y">
                   {worksheets.map((ws: any) => (
                     <tr key={ws.id} className="hover:bg-muted/30">
-                      {/* WO# */}
+                      {/* WO# / Ticket# / Standalone */}
                       <td className="p-3">
                         <Link
                           to={`/admin/feuilles-travail/${ws.id}`}
                           className="font-mono text-primary hover:underline"
                         >
-                          {ws.workOrder?.orderNumber}
+                          {ws.workOrder?.orderNumber || ws.ticket?.ticketNumber || t('worksheet.unscheduledCall')}
                         </Link>
                       </td>
 
                       {/* Client */}
                       <td className="p-3">
-                        {ws.workOrder?.customerName}
+                        {ws.workOrder?.customerName || (ws.ticket?.customer ? `${ws.ticket.customer.firstName} ${ws.ticket.customer.lastName}` : '—')}
                       </td>
 
                       {/* Technician */}
@@ -102,9 +102,11 @@ export default function AdminWorksheets() {
                           : '—'}
                       </td>
 
-                      {/* Device */}
+                      {/* Device / Ticket title */}
                       <td className="p-3 text-muted-foreground">
-                        {ws.workOrder?.deviceBrand} {ws.workOrder?.deviceModel}
+                        {ws.workOrder
+                          ? `${ws.workOrder.deviceBrand ?? ''} ${ws.workOrder.deviceModel ?? ''}`
+                          : ws.ticket?.title ?? '—'}
                       </td>
 
                       {/* Status badge */}

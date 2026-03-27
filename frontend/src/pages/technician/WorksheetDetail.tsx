@@ -456,28 +456,53 @@ export default function TechWorksheetDetail() {
         </span>
       </div>
 
-      {/* Work Order + Customer info */}
+      {/* Work Order / Ticket / Standalone info */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">{t('worksheet.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
-          <p>
-            <span className="font-medium">{t('worksheet.workOrder')}:</span>{' '}
-            <Link to={`/technicien/bons-travail/${wo.id}`} className="text-primary underline">
-              {wo.orderNumber}
-            </Link>
-          </p>
-          <p>
-            <span className="font-medium">{t('worksheet.customer')}:</span> {wo.customerName}
-          </p>
-          <p>
-            <span className="font-medium">{t('worksheet.device')}:</span>{' '}
-            {wo.deviceBrand} {wo.deviceModel} {wo.deviceSerial ? `(${wo.deviceSerial})` : ''}
-          </p>
-          <p>
-            <span className="font-medium">{t('worksheet.issue')}:</span> {wo.reportedIssue}
-          </p>
+          {wo ? (
+            <>
+              <p>
+                <span className="font-medium">{t('worksheet.workOrder')}:</span>{' '}
+                <Link to={`/technicien/bons-travail/${wo.id}`} className="text-primary underline">
+                  {wo.orderNumber}
+                </Link>
+              </p>
+              <p>
+                <span className="font-medium">{t('worksheet.customer')}:</span> {wo.customerName}
+              </p>
+              <p>
+                <span className="font-medium">{t('worksheet.device')}:</span>{' '}
+                {wo.deviceBrand} {wo.deviceModel} {wo.deviceSerial ? `(${wo.deviceSerial})` : ''}
+              </p>
+              <p>
+                <span className="font-medium">{t('worksheet.issue')}:</span> {wo.reportedIssue}
+              </p>
+            </>
+          ) : worksheet.ticket ? (
+            <>
+              <p>
+                <span className="font-medium">{t('worksheet.ticketRef')}:</span>{' '}
+                {worksheet.ticket.ticketNumber}
+              </p>
+              {worksheet.ticket.title && (
+                <p>
+                  <span className="font-medium">{t('worksheet.issue')}:</span> {worksheet.ticket.title}
+                </p>
+              )}
+              {worksheet.ticket.customer && (
+                <p>
+                  <span className="font-medium">{t('worksheet.customer')}:</span> {worksheet.ticket.customer.firstName} {worksheet.ticket.customer.lastName}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-muted-foreground italic">
+              {t('worksheet.unscheduledCall')}
+            </p>
+          )}
         </CardContent>
       </Card>
 

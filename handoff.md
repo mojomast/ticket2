@@ -1,66 +1,59 @@
 # Handoff — Valitek v2
 
-## Last Completed: Worksheet Code Review Fixes
-## Commit: `ff3723b`
+## Last Completed: Flexible Worksheet Creation (from ticket, WO, or standalone)
+## Commit: (pending)
 ## Branch: main
 
 ## Session Summary
 
-Fixed all 9 bugs identified during the worksheet feature code review (1 high, 5 medium, 3 low priority).
+Extended the worksheet system to allow technicians to start a worksheet from three entry points:
+1. **From a ticket** — "Start Worksheet" button on tech ticket detail page
+2. **From a work order** — "Start Worksheet" button on WO detail page (admin + tech)
+3. **From nothing** — "New Worksheet" button on the worksheet list page (standalone/unscheduled service calls)
 
-### Fixes Applied
+### What Changed
 
-**HIGH:**
-1. **Security: `updateFollowUp` ownership check** — Service now takes `worksheetId` parameter and uses `findFirst({ where: { id, worksheetId } })` instead of `findUnique({ where: { id } })`, matching the `deleteFollowUp` pattern. Route now passes `c.req.param('id')` to the service.
+**Backend (4 files):**
+1. `backend/prisma/schema.prisma` — `workOrderId` now optional (`String?`), added `ticketId String?` with relation, added `@@index([ticketId])`, added `worksheets Worksheet[]` back-reference on Ticket model
+2. `backend/src/validations/worksheet.ts` — `createWorksheetSchema` now has both `workOrderId` and `ticketId` as optional UUIDs
+3. `backend/src/services/worksheet.service.ts` — `createWorksheet` handles all 3 modes (WO, ticket, standalone); `WORKSHEET_DETAIL_INCLUDE` and `WORKSHEET_LIST_INCLUDE` now include `ticket` data; `listWorksheets` CUSTOMER filter uses OR clause for WO/ticket ownership; `getWorksheetById` ownership check covers both WO and ticket; `changeStatus` notifications use safe optional chaining; `createKbFromNote` handles null workOrder
+4. `backend/src/services/worksheet-pdf.service.ts` — PDF generation adapts to WO/ticket/standalone context (reference number, customer info, device info)
 
-**MEDIUM:**
-2. **DELETE worksheet route guard** — Changed from `requireRole('ADMIN', 'TECHNICIAN')` to `requireRole('ADMIN')` since the service already throws forbidden for non-admin.
-3. **Notes/follow-ups isDraft gate** — Add note/follow-up forms and delete buttons now wrapped in `{isDraft && ...}` like labor/parts/travel. Toggle-complete on follow-ups remains available in all statuses.
-4. **Admin date label i18n** — Replaced `t('worksheet.approve')` / `t('worksheet.markBilled')` (action verbs) with new keys `worksheet.approvedAt` ("Approuvee le") / `worksheet.billedAt` ("Facturee le") as date labels.
-5. **Not-found error state** — Tech WorksheetDetail now shows `t('worksheet.notFound')` ("Feuille de travail introuvable") instead of generic title.
-6. **Hardcoded 'mo' unit** — Replaced `${part.warrantyMonths} mo` with `${part.warrantyMonths} ${t('worksheet.warrantyMonthsShort')}` (fr: "mois", en: "mo").
+**Frontend (9 files):**
+1. `frontend/src/api/client.ts` — `Worksheet` and `WorksheetListItem` types: `workOrder` now optional, added `ticket` field; `create` method accepts `{ workOrderId?, ticketId? }`
+2. `frontend/src/pages/technician/TicketDetail.tsx` — Added `createWorksheetMutation` + "Start Worksheet" button card in right column; resolved `t` variable shadowing (renamed `t` ticket alias to `tk`)
+3. `frontend/src/pages/workorders/WorkOrderDetail.tsx` — Added `createWorksheetMutation` + "Start Worksheet" button for ADMIN/TECHNICIAN roles
+4. `frontend/src/pages/technician/Worksheets.tsx` — Added "New Worksheet" button in header for standalone creation; updated list items with null-safe WO access and ticket fallbacks
+5. `frontend/src/pages/technician/WorksheetDetail.tsx` — 3-way conditional for WO info section (WO / ticket / standalone); null-safe `wo` access
+6. `frontend/src/pages/admin/WorksheetDetail.tsx` — Dynamic card title/content for WO/ticket/standalone context; null-safe throughout
+7. `frontend/src/pages/admin/Worksheets.tsx` — Table cells use null-safe WO access with ticket fallbacks
+8. `frontend/src/lib/i18n/locales/fr.ts` — 7 new keys (107 total worksheet keys)
+9. `frontend/src/lib/i18n/locales/en.ts` — 7 new keys (107 total worksheet keys)
 
-**LOW:**
-7. **convertToKb query invalidation** — Added `queryClient.invalidateQueries({ queryKey: ['worksheet', id] })` to `onSuccess`.
-8. **Admin confirm dialogs** — `handleApprove` and `handleCancel` now show `window.confirm()` before firing mutation.
-9. **Pagination threshold** — Both tech and admin Worksheets pages changed from `totalPages > 0` to `totalPages > 1`.
-
-### New i18n Keys (7 added to both fr.ts and en.ts)
-- `worksheet.approvedAt` — "Approuvee le" / "Approved on"
-- `worksheet.billedAt` — "Facturee le" / "Billed on"
-- `worksheet.notFound` — "Feuille de travail introuvable" / "Worksheet not found"
-- `worksheet.warrantyMonthsShort` — "mois" / "mo"
-- `worksheet.confirmApprove` — confirm dialog text
-- `worksheet.confirmCancel` — confirm dialog text
-
-### Files Changed (8)
-- `backend/src/services/worksheet.service.ts` — updateFollowUp signature + ownership
-- `backend/src/routes/worksheet.routes.ts` — delete guard + updateFollowUp param
-- `frontend/src/pages/technician/WorksheetDetail.tsx` — isDraft gates, notFound, convertToKb invalidation
-- `frontend/src/pages/admin/WorksheetDetail.tsx` — date labels, warranty i18n, confirm dialogs
-- `frontend/src/pages/technician/Worksheets.tsx` — pagination threshold
-- `frontend/src/pages/admin/Worksheets.tsx` — pagination threshold
-- `frontend/src/lib/i18n/locales/fr.ts` — 6 new keys
-- `frontend/src/lib/i18n/locales/en.ts` — 6 new keys
+### New i18n Keys
+- `worksheet.created` — success toast
+- `worksheet.startWorksheet` — button label
+- `worksheet.newWorksheet` — standalone create button
+- `worksheet.unscheduledCall` — label for worksheets with no WO/ticket
+- `worksheet.ticketRef` — "Billet" / "Ticket"
+- `worksheet.ticketInfo` — card title
+- `worksheet.referenceLabel` — generic reference label
 
 ### Build Status
 - Backend tsc: PASS
 - Frontend tsc: PASS
 - Frontend vite build: PASS
-- Backend running on port 3200
-- Frontend running on port 5173
-
-## What's Next
-
-Potential follow-up tasks:
-- Manual QA testing (create worksheets, add entries, submit, approve, generate PDF)
-- Signature capture canvas component (currently uses text input for data URI)
-- Customer portal worksheet read-only view
-- SystemConfig `worksheet_alert_threshold` admin UI
-- Follow-up reminder cron job / scheduled notifications
-- Worksheet search in admin dashboard stats
+- Prisma db push: SUCCESS
+- i18n: 107 worksheet keys in sync (fr + en)
 
 ## Running Services
 - **Backend**: screen `valitek-backend`, port 3200
 - **Frontend**: screen `valitek-frontend`, port 5173
 - **Database**: Docker `valitek-db`, port 5433, PostgreSQL 16
+
+## What's Next
+- Manual QA testing (create worksheets from all 3 entry points)
+- Signature capture canvas component
+- Customer portal worksheet read-only view
+- SystemConfig `worksheet_alert_threshold` admin UI
+- Follow-up reminder cron job / scheduled notifications

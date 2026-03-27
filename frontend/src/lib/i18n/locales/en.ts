@@ -1322,6 +1322,13 @@ export const en: Record<string, string> = {
   'worksheet.warrantyMonthsShort': 'mo',
   'worksheet.confirmApprove': 'Are you sure you want to approve this worksheet?',
   'worksheet.confirmCancel': 'Are you sure you want to cancel this worksheet?',
+  'worksheet.created': 'Worksheet created successfully',
+  'worksheet.startWorksheet': 'Start Worksheet',
+  'worksheet.newWorksheet': 'New Worksheet',
+  'worksheet.unscheduledCall': 'Unscheduled service call',
+  'worksheet.ticketRef': 'Ticket',
+  'worksheet.ticketInfo': 'Ticket info',
+  'worksheet.referenceLabel': 'Reference',
 
   // ─── Client Detail ───
   'clientDetail.backToClients': 'Back to clients',

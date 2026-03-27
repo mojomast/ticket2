@@ -37,7 +37,21 @@ interface WorksheetForPdf {
       address?: string | null;
       phone?: string | null;
     } | null;
-  };
+  } | null;
+  ticket?: {
+    id: string;
+    ticketNumber: string;
+    title: string;
+    status: string;
+    customerId: string;
+    customer?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+    } | null;
+  } | null;
   laborEntries: Array<{
     laborType: string;
     description: string | null;
@@ -344,8 +358,17 @@ class PdfDrawer {
 export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
   const w = ws as WorksheetForPdf;
 
+  // Derive reference number and customer info from workOrder, ticket, or standalone
+  const refNumber = w.workOrder?.orderNumber ?? w.ticket?.ticketNumber ?? '—';
+  const customerName = w.workOrder?.customerName
+    ?? (w.ticket?.customer ? `${w.ticket.customer.firstName} ${w.ticket.customer.lastName}` : '—');
+  const customerPhone = w.workOrder?.customerPhone ?? w.ticket?.customer?.phone ?? '—';
+  const customerEmail = w.workOrder?.customerEmail ?? w.ticket?.customer?.email ?? null;
+  const companyName = w.workOrder?.customer?.companyName ?? null;
+  const customerAddress = w.workOrder?.customer?.address ?? null;
+
   const doc = await PDFDocument.create();
-  doc.setTitle(`Feuille de travail — ${w.workOrder.orderNumber}`);
+  doc.setTitle(`Feuille de travail — ${refNumber}`);
   doc.setAuthor('Valitek');
   doc.setSubject(`Feuille de travail ${w.id.slice(0, 8)}`);
   doc.setCreationDate(new Date());
@@ -363,7 +386,13 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
 
   // ─── Worksheet Info ───
   d.drawKeyValue('N° feuille:', w.id.slice(0, 8).toUpperCase());
-  d.drawKeyValue('Bon de travail:', w.workOrder.orderNumber);
+  if (w.workOrder) {
+    d.drawKeyValue('Bon de travail:', w.workOrder.orderNumber);
+  } else if (w.ticket) {
+    d.drawKeyValue('Billet:', w.ticket.ticketNumber);
+  } else {
+    d.drawKeyValue('Référence:', 'Appel non planifié');
+  }
   d.drawKeyValue('Statut:', STATUS_LABELS[w.status] || w.status);
   d.drawKeyValue('Technicien:', `${w.technician.firstName} ${w.technician.lastName}`);
   d.drawKeyValue('Date de création:', formatDateTime(w.createdAt));
@@ -374,19 +403,25 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
 
   // ─── Customer / Device Info ───
   d.drawSectionHeader('Information client & appareil');
-  d.drawKeyValue('Client:', w.workOrder.customerName);
-  if (w.workOrder.customer?.companyName) {
-    d.drawKeyValue('Entreprise:', w.workOrder.customer.companyName);
+  d.drawKeyValue('Client:', customerName);
+  if (companyName) {
+    d.drawKeyValue('Entreprise:', companyName);
   }
-  d.drawKeyValue('Téléphone:', w.workOrder.customerPhone || w.workOrder.customer?.phone || '—');
-  if (w.workOrder.customerEmail) d.drawKeyValue('Courriel:', w.workOrder.customerEmail);
-  if (w.workOrder.customer?.address) d.drawKeyValue('Adresse:', w.workOrder.customer.address);
+  d.drawKeyValue('Téléphone:', customerPhone);
+  if (customerEmail) d.drawKeyValue('Courriel:', customerEmail);
+  if (customerAddress) d.drawKeyValue('Adresse:', customerAddress);
   d.spacer(4);
-  d.drawKeyValue('Appareil:', `${w.workOrder.deviceBrand} ${w.workOrder.deviceModel}`);
-  d.drawKeyValue('Type:', w.workOrder.deviceType);
-  if (w.workOrder.deviceSerial) d.drawKeyValue('N° série:', w.workOrder.deviceSerial);
-  d.spacer(4);
-  d.drawText(`Problème signalé: ${w.workOrder.reportedIssue}`, { size: 9, color: COLOR_GRAY });
+  if (w.workOrder) {
+    d.drawKeyValue('Appareil:', `${w.workOrder.deviceBrand} ${w.workOrder.deviceModel}`);
+    d.drawKeyValue('Type:', w.workOrder.deviceType);
+    if (w.workOrder.deviceSerial) d.drawKeyValue('N° série:', w.workOrder.deviceSerial);
+    d.spacer(4);
+    d.drawText(`Problème signalé: ${w.workOrder.reportedIssue}`, { size: 9, color: COLOR_GRAY });
+  } else if (w.ticket) {
+    d.drawText(`Titre du billet: ${w.ticket.title}`, { size: 9, color: COLOR_GRAY });
+  } else {
+    d.drawText('Appel non planifié — aucun appareil associé', { size: 9, color: COLOR_GRAY });
+  }
   d.spacer(8);
 
   // ─── Labor Entries ───
@@ -568,7 +603,7 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
   const footerFont = await doc.embedFont(StandardFonts.Helvetica);
   for (let i = 0; i < allPages.length; i++) {
     const pg = allPages[i];
-    const footerText = `Valitek — Feuille de travail ${w.workOrder.orderNumber} — Page ${i + 1}/${allPages.length}`;
+    const footerText = `Valitek — Feuille de travail ${refNumber} — Page ${i + 1}/${allPages.length}`;
     const footerWidth = footerFont.widthOfTextAtSize(footerText, 7);
     pg.drawText(footerText, {
       x: (PAGE_WIDTH - footerWidth) / 2,

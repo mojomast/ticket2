@@ -14,6 +14,7 @@ import {
   WO_TERMINAL_STATUSES,
 } from '../../lib/constants';
 import { useTranslation } from '../../lib/i18n/hook';
+import { Button } from '../../components/ui/button';
 
 // ─── State Machine (mirrors backend WO_ALLOWED_TRANSITIONS) ───
 
@@ -187,6 +188,15 @@ export default function WorkOrderDetail() {
       navigate(`${basePath}/bons-travail`);
     },
     onError: (err: Error) => toast.error(err.message || t('common.error')),
+  });
+
+  const createWorksheetMutation = useMutation({
+    mutationFn: () => api.worksheets.create({ workOrderId: id }),
+    onSuccess: (ws) => {
+      toast.success(t('worksheet.created'));
+      navigate(`${basePath}/feuilles-travail/${ws.id}`);
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   // ─── Handlers ───
@@ -904,6 +914,19 @@ export default function WorkOrderDetail() {
                   </div>
                 </form>
               )}
+            </div>
+          )}
+
+          {/* Start Worksheet */}
+          {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && (
+            <div className="bg-card border rounded-lg p-4">
+              <Button
+                className="w-full"
+                onClick={() => createWorksheetMutation.mutate()}
+                disabled={createWorksheetMutation.isPending}
+              >
+                {createWorksheetMutation.isPending ? t('common.loading') : t('worksheet.startWorksheet')}
+              </Button>
             </div>
           )}
 
