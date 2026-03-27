@@ -89,6 +89,10 @@ enum NotificationType {
   APPOINTMENT_COUNTER_PROPOSED
   BACKUP_COMPLETED
   BACKUP_RESTORED
+  WORKSHEET_SUBMITTED
+  WORKSHEET_APPROVED
+  WORKSHEET_HIGH_VALUE
+  FOLLOWUP_REMINDER
 }
 
 enum BackupStatus {
@@ -161,6 +165,41 @@ enum KbLinkEntityType {
   CUSTOMER
 }
 
+// ─── Worksheet (Feuille de travail) ───
+
+enum WorksheetStatus {
+  BROUILLON        // Draft — tech is still filling in
+  SOUMISE          // Submitted — awaiting admin review
+  REVISEE          // Reviewed — admin reviewed, may request changes
+  APPROUVEE        // Approved — ready for billing
+  FACTUREE         // Billed — invoice generated
+  ANNULEE          // Voided — cancelled after approval
+}
+
+enum LaborType {
+  DIAGNOSTIC
+  REPARATION
+  INSTALLATION
+  CONSULTATION
+  GARANTIE         // Warranty work (non-billable or reduced rate)
+  REPRISE          // Rework — important for quality metrics
+}
+
+enum WorksheetNoteType {
+  INTERNE               // Tech-only, never shown to customer
+  VISIBLE_CLIENT        // Included on invoice/receipt
+  DIAGNOSTIC_FINDING    // Candidate for KB article
+  PROCEDURE             // Step-by-step repair procedure, candidate for KB
+}
+
+enum FollowUpType {
+  VERIFICATION_GARANTIE  // Warranty check
+  RAPPEL_CLIENT          // Customer callback
+  REVERIFICATION         // Re-check device
+  ARRIVEE_PIECES         // Parts arrival
+  SUIVI_DEVIS            // Quote follow-up
+}
+
 model User {
   id           String        @id @default(uuid())
   email        String        @unique
@@ -195,6 +234,10 @@ model User {
   kbArticleLinks       KbArticleLink[]    @relation("KbLinkCreator")
   customerNotesAuthored CustomerNote[]    @relation("CustomerNoteAuthor")
   customerNotesReceived CustomerNote[]    @relation("CustomerNoteTarget")
+  worksheetsTechnician  Worksheet[]       @relation("WorksheetTechnician")
+  worksheetsReviewed    Worksheet[]       @relation("WorksheetReviewer")
+  worksheetsApproved    Worksheet[]       @relation("WorksheetApprover")
+  worksheetNotes        WorksheetNote[]   @relation("WorksheetNoteAuthor")
 
   @@index([role, isActive])
   @@index([deletedAt])
@@ -413,6 +456,7 @@ model WorkOrder {
   intakeBy    User   @relation("IntakeByWorkOrders", fields: [intakeById], references: [id], onDelete: Restrict)
   technician  User?  @relation("TechnicianWorkOrders", fields: [technicianId], references: [id], onDelete: SetNull)
   notes       WorkOrderNote[]
+  worksheets  Worksheet[]
 
   @@index([status, createdAt])
   @@index([customerId])
@@ -534,4 +578,167 @@ model CustomerNote {
 
   @@index([customerId, isPinned, createdAt])
   @@index([deletedAt])
+}
+
+// ─── Worksheet (Feuille de travail — technician work log) ───
+
+model Worksheet {
+  id              String          @id @default(uuid())
+  workOrderId     String
+  technicianId    String
+  status          WorksheetStatus @default(BROUILLON)
+
+  // Timestamps
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  approvedAt      DateTime?
+  approvedById    String?
+  billedAt        DateTime?
+
+  // Signatures (base64 data URIs)
+  techSignature   String?         @db.Text
+  techSignedAt    DateTime?
+  custSignature   String?         @db.Text
+  custSignedAt    DateTime?
+
+  // Denormalized totals (recalculated on every mutation)
+  totalLabor      Float           @default(0)
+  totalParts      Float           @default(0)
+  totalTravel     Float           @default(0)
+  grandTotal      Float           @default(0)
+
+  // Summary (optional tech summary of all work done)
+  summary         String?         @db.Text
+
+  deletedAt       DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  workOrder       WorkOrder       @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  technician      User            @relation("WorksheetTechnician", fields: [technicianId], references: [id], onDelete: Restrict)
+  reviewedBy      User?           @relation("WorksheetReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  approvedBy      User?           @relation("WorksheetApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  laborEntries    LaborEntry[]
+  parts           PartUsed[]
+  travelEntries   TravelEntry[]
+  notes           WorksheetNote[]
+  followUps       FollowUp[]
+
+  @@index([workOrderId])
+  @@index([technicianId])
+  @@index([status, createdAt])
+  @@index([deletedAt])
+}
+
+model LaborEntry {
+  id              String      @id @default(uuid())
+  worksheetId     String
+  laborType       LaborType   @default(REPARATION)
+  description     String?
+
+  // Time tracking
+  startTime       DateTime
+  endTime         DateTime?   // null = timer still running
+  breakMinutes    Int         @default(0)
+
+  // Rate
+  hourlyRate      Float
+
+  // Computed
+  billableHours   Float?
+  lineTotal       Float?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  worksheet       Worksheet   @relation(fields: [worksheetId], references: [id], onDelete: Cascade)
+
+  @@index([worksheetId])
+}
+
+model PartUsed {
+  id              String      @id @default(uuid())
+  worksheetId     String
+
+  // Part identification
+  partName        String
+  partNumber      String?
+  supplier        String?
+
+  // Cost & billing
+  supplierCost    Float       @default(0)    // What the shop paid
+  quantity        Int         @default(1)
+  unitPrice       Float                      // Customer-facing price
+  lineTotal       Float                      // quantity * unitPrice
+
+  // Warranty
+  warrantyMonths  Int?
+  warrantyNotes   String?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  worksheet       Worksheet   @relation(fields: [worksheetId], references: [id], onDelete: Cascade)
+
+  @@index([worksheetId])
+}
+
+model TravelEntry {
+  id                String      @id @default(uuid())
+  worksheetId       String
+
+  departureAddress  String?
+  arrivalAddress    String?
+  distanceKm        Float
+  travelTimeMinutes Int?
+
+  ratePerKm         Float
+  lineTotal         Float       // distanceKm * ratePerKm
+
+  travelDate        DateTime    @default(now())
+  notes             String?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  worksheet         Worksheet   @relation(fields: [worksheetId], references: [id], onDelete: Cascade)
+
+  @@index([worksheetId])
+}
+
+model WorksheetNote {
+  id              String            @id @default(uuid())
+  worksheetId     String
+  authorId        String
+  noteType        WorksheetNoteType @default(INTERNE)
+  content         String            @db.Text
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  worksheet       Worksheet         @relation(fields: [worksheetId], references: [id], onDelete: Cascade)
+  author          User              @relation("WorksheetNoteAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([worksheetId])
+}
+
+model FollowUp {
+  id              String        @id @default(uuid())
+  worksheetId     String
+  followUpType    FollowUpType
+  scheduledDate   DateTime
+  notes           String?       @db.Text
+  completed       Boolean       @default(false)
+  completedAt     DateTime?
+  completedById   String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  worksheet       Worksheet     @relation(fields: [worksheetId], references: [id], onDelete: Cascade)
+
+  @@index([worksheetId])
+  @@index([scheduledDate, completed])
 }

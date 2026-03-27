@@ -1,0 +1,1255 @@
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api, LaborEntry, PartUsed, TravelEntry, WorksheetNote, FollowUp } from '../../api/client';
+import { useTranslation } from '../../lib/i18n/hook';
+import { useToast } from '../../hooks/use-toast';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import {
+  WS_STATUS_LABELS,
+  WS_STATUS_COLORS,
+  LABOR_TYPE_LABELS,
+  WS_NOTE_TYPE_LABELS,
+  FOLLOWUP_TYPE_LABELS,
+} from '../../lib/constants';
+import { formatDateTime } from '../../lib/utils';
+
+// ─── Tab definitions ───
+type TabKey = 'labor' | 'parts' | 'travel' | 'notes' | 'followups';
+
+// ─── Helper: format money ───
+function money(value: number | null | undefined): string {
+  return (value ?? 0).toFixed(2) + ' $';
+}
+
+// ─── Helper: format elapsed time from a start ISO string ───
+function formatElapsed(startTime: string): string {
+  const diff = Date.now() - new Date(startTime).getTime();
+  if (diff < 0) return '00:00:00';
+  const hrs = Math.floor(diff / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  const secs = Math.floor((diff % 60000) / 1000);
+  return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+export default function TechWorksheetDetail() {
+  const { t } = useTranslation();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  // ─── Active tab ───
+  const [activeTab, setActiveTab] = useState<TabKey>('labor');
+
+  // ─── Summary auto-save ───
+  const [summary, setSummary] = useState('');
+  const summaryInitializedRef = useRef(false);
+
+  // ─── Timer tick (value read indirectly to force re-render) ───
+  const [_timerTick, setTimerTick] = useState(0);
+
+  // ─── Form visibility toggles ───
+  const [showLaborForm, setShowLaborForm] = useState(false);
+  const [showPartForm, setShowPartForm] = useState(false);
+  const [showTravelForm, setShowTravelForm] = useState(false);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [showFollowUpForm, setShowFollowUpForm] = useState(false);
+
+  // ─── Labor form state ───
+  const [laborType, setLaborType] = useState('DIAGNOSTIC');
+  const [laborDescription, setLaborDescription] = useState('');
+  const [laborStartTime, setLaborStartTime] = useState('');
+  const [laborHourlyRate, setLaborHourlyRate] = useState('85');
+
+  // ─── Part form state ───
+  const [partName, setPartName] = useState('');
+  const [partNumber, setPartNumber] = useState('');
+  const [partSupplier, setPartSupplier] = useState('');
+  const [partSupplierCost, setPartSupplierCost] = useState('0');
+  const [partQuantity, setPartQuantity] = useState('1');
+  const [partUnitPrice, setPartUnitPrice] = useState('0');
+  const [partWarrantyMonths, setPartWarrantyMonths] = useState('');
+
+  // ─── Travel form state ───
+  const [travelDeparture, setTravelDeparture] = useState('');
+  const [travelArrival, setTravelArrival] = useState('');
+  const [travelDistanceKm, setTravelDistanceKm] = useState('');
+  const [travelRatePerKm, setTravelRatePerKm] = useState('0.68');
+  const [travelDate, setTravelDate] = useState('');
+
+  // ─── Note form state ───
+  const [noteType, setNoteType] = useState('INTERNE');
+  const [noteContent, setNoteContent] = useState('');
+
+  // ─── Follow-up form state ───
+  const [followUpType, setFollowUpType] = useState('RAPPEL_CLIENT');
+  const [followUpScheduledDate, setFollowUpScheduledDate] = useState('');
+  const [followUpNotes, setFollowUpNotes] = useState('');
+
+  // ─── Part edit state ───
+  const [editingPartId, setEditingPartId] = useState<string | null>(null);
+  const [editPartName, setEditPartName] = useState('');
+  const [editPartNumber, setEditPartNumber] = useState('');
+  const [editPartSupplier, setEditPartSupplier] = useState('');
+  const [editPartSupplierCost, setEditPartSupplierCost] = useState('0');
+  const [editPartQuantity, setEditPartQuantity] = useState('1');
+  const [editPartUnitPrice, setEditPartUnitPrice] = useState('0');
+  const [editPartWarrantyMonths, setEditPartWarrantyMonths] = useState('');
+
+  // ─── Main query ───
+  const { data: worksheet, isLoading } = useQuery({
+    queryKey: ['worksheet', id],
+    queryFn: () => api.worksheets.get(id!),
+    enabled: !!id,
+  });
+
+  // Sync summary from server on first load
+  useEffect(() => {
+    if (worksheet && !summaryInitializedRef.current) {
+      setSummary(worksheet.summary ?? '');
+      summaryInitializedRef.current = true;
+    }
+  }, [worksheet]);
+
+  // Timer interval for running labor entries
+  useEffect(() => {
+    const hasRunning = worksheet?.laborEntries?.some((le: LaborEntry) => !le.endTime);
+    if (!hasRunning) return;
+    const interval = setInterval(() => setTimerTick((tk) => tk + 1), 1000);
+    return () => clearInterval(interval);
+  }, [worksheet]);
+
+  // ─── Mutations ───
+
+  const updateSummaryMutation = useMutation({
+    mutationFn: (newSummary: string) => api.worksheets.update(id!, { summary: newSummary }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.saved'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const changeStatusMutation = useMutation({
+    mutationFn: (status: string) => api.worksheets.changeStatus(id!, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.submitted'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // ── Labor mutations ──
+  const addLaborMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => api.worksheets.labor.create(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.laborAdded'));
+      resetLaborForm();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const stopTimerMutation = useMutation({
+    mutationFn: (entryId: string) => api.worksheets.labor.stopTimer(id!, entryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.saved'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteLaborMutation = useMutation({
+    mutationFn: (entryId: string) => api.worksheets.labor.delete(id!, entryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.deleted'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // ── Parts mutations ──
+  const addPartMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => api.worksheets.parts.create(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.partAdded'));
+      resetPartForm();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updatePartMutation = useMutation({
+    mutationFn: ({ partId, data }: { partId: string; data: Record<string, unknown> }) =>
+      api.worksheets.parts.update(id!, partId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.saved'));
+      setEditingPartId(null);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deletePartMutation = useMutation({
+    mutationFn: (partId: string) => api.worksheets.parts.delete(id!, partId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.deleted'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // ── Travel mutations ──
+  const addTravelMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => api.worksheets.travel.create(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.travelAdded'));
+      resetTravelForm();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteTravelMutation = useMutation({
+    mutationFn: (entryId: string) => api.worksheets.travel.delete(id!, entryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.deleted'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // ── Notes mutations ──
+  const addNoteMutation = useMutation({
+    mutationFn: (data: { noteType: string; content: string }) =>
+      api.worksheets.notes.create(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.noteAdded'));
+      resetNoteForm();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: (noteId: string) => api.worksheets.notes.delete(id!, noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.deleted'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const convertToKbMutation = useMutation({
+    mutationFn: (noteId: string) => api.worksheets.notes.toKb(id!, noteId),
+    onSuccess: () => {
+      toast.success(t('worksheet.kbCreated'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // ── Follow-up mutations ──
+  const addFollowUpMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => api.worksheets.followUps.create(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.followUpAdded'));
+      resetFollowUpForm();
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updateFollowUpMutation = useMutation({
+    mutationFn: ({ followUpId, data }: { followUpId: string; data: Record<string, unknown> }) =>
+      api.worksheets.followUps.update(id!, followUpId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.saved'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteFollowUpMutation = useMutation({
+    mutationFn: (followUpId: string) => api.worksheets.followUps.delete(id!, followUpId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.deleted'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  // ─── Form reset helpers ───
+
+  function resetLaborForm() {
+    setLaborType('DIAGNOSTIC');
+    setLaborDescription('');
+    setLaborStartTime('');
+    setLaborHourlyRate('85');
+    setShowLaborForm(false);
+  }
+
+  function resetPartForm() {
+    setPartName('');
+    setPartNumber('');
+    setPartSupplier('');
+    setPartSupplierCost('0');
+    setPartQuantity('1');
+    setPartUnitPrice('0');
+    setPartWarrantyMonths('');
+    setShowPartForm(false);
+  }
+
+  function resetTravelForm() {
+    setTravelDeparture('');
+    setTravelArrival('');
+    setTravelDistanceKm('');
+    setTravelRatePerKm('0.68');
+    setTravelDate('');
+    setShowTravelForm(false);
+  }
+
+  function resetNoteForm() {
+    setNoteType('INTERNE');
+    setNoteContent('');
+    setShowNoteForm(false);
+  }
+
+  function resetFollowUpForm() {
+    setFollowUpType('RAPPEL_CLIENT');
+    setFollowUpScheduledDate('');
+    setFollowUpNotes('');
+    setShowFollowUpForm(false);
+  }
+
+  // ─── Form submit handlers ───
+
+  function handleAddLabor(e: React.FormEvent) {
+    e.preventDefault();
+    addLaborMutation.mutate({
+      laborType,
+      description: laborDescription || undefined,
+      startTime: laborStartTime ? new Date(laborStartTime).toISOString() : new Date().toISOString(),
+      hourlyRate: parseFloat(laborHourlyRate),
+    });
+  }
+
+  function handleAddPart(e: React.FormEvent) {
+    e.preventDefault();
+    addPartMutation.mutate({
+      partName,
+      partNumber: partNumber || undefined,
+      supplier: partSupplier || undefined,
+      supplierCost: parseFloat(partSupplierCost) || 0,
+      quantity: parseInt(partQuantity) || 1,
+      unitPrice: parseFloat(partUnitPrice) || 0,
+      warrantyMonths: partWarrantyMonths ? parseInt(partWarrantyMonths) : undefined,
+    });
+  }
+
+  function handleUpdatePart(partId: string) {
+    updatePartMutation.mutate({
+      partId,
+      data: {
+        partName: editPartName,
+        partNumber: editPartNumber || undefined,
+        supplier: editPartSupplier || undefined,
+        supplierCost: parseFloat(editPartSupplierCost) || 0,
+        quantity: parseInt(editPartQuantity) || 1,
+        unitPrice: parseFloat(editPartUnitPrice) || 0,
+        warrantyMonths: editPartWarrantyMonths ? parseInt(editPartWarrantyMonths) : undefined,
+      },
+    });
+  }
+
+  function startEditPart(part: PartUsed) {
+    setEditingPartId(part.id);
+    setEditPartName(part.partName);
+    setEditPartNumber(part.partNumber ?? '');
+    setEditPartSupplier(part.supplier ?? '');
+    setEditPartSupplierCost(String(part.supplierCost));
+    setEditPartQuantity(String(part.quantity));
+    setEditPartUnitPrice(String(part.unitPrice));
+    setEditPartWarrantyMonths(part.warrantyMonths != null ? String(part.warrantyMonths) : '');
+  }
+
+  function handleAddTravel(e: React.FormEvent) {
+    e.preventDefault();
+    addTravelMutation.mutate({
+      departureAddress: travelDeparture || undefined,
+      arrivalAddress: travelArrival || undefined,
+      distanceKm: parseFloat(travelDistanceKm) || 0,
+      ratePerKm: parseFloat(travelRatePerKm) || 0,
+      travelDate: travelDate ? new Date(travelDate).toISOString() : new Date().toISOString(),
+    });
+  }
+
+  function handleAddNote(e: React.FormEvent) {
+    e.preventDefault();
+    addNoteMutation.mutate({ noteType, content: noteContent });
+  }
+
+  function handleAddFollowUp(e: React.FormEvent) {
+    e.preventDefault();
+    addFollowUpMutation.mutate({
+      followUpType,
+      scheduledDate: followUpScheduledDate ? new Date(followUpScheduledDate).toISOString() : undefined,
+      notes: followUpNotes || undefined,
+    });
+  }
+
+  function handleSubmitWorksheet() {
+    if (confirm(t('worksheet.submitConfirm'))) {
+      changeStatusMutation.mutate('SOUMISE');
+    }
+  }
+
+  function handleSaveDraft() {
+    updateSummaryMutation.mutate(summary);
+  }
+
+  function handleSummaryBlur() {
+    if (worksheet && summary !== (worksheet.summary ?? '')) {
+      updateSummaryMutation.mutate(summary);
+    }
+  }
+
+  // ─── Loading / Error ───
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-muted-foreground">{t('common.loading')}</div>;
+  }
+
+  if (!worksheet) {
+    return <div className="p-8 text-center text-muted-foreground">{t('worksheet.title')}</div>;
+  }
+
+  const isDraft = worksheet.status === 'BROUILLON';
+  const statusColor = WS_STATUS_COLORS[worksheet.status] ?? { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' };
+  const wo = worksheet.workOrder;
+
+  const tabs: Array<{ key: TabKey; label: string }> = [
+    { key: 'labor', label: t('worksheet.laborTab') },
+    { key: 'parts', label: t('worksheet.partsTab') },
+    { key: 'travel', label: t('worksheet.travelTab') },
+    { key: 'notes', label: t('worksheet.notesTab') },
+    { key: 'followups', label: t('worksheet.followUpsTab') },
+  ];
+
+  // ─── Render ───
+
+  return (
+    <div className="pb-28 space-y-4">
+      {/* ════════════════════════════════════════════════ */}
+      {/* HEADER */}
+      {/* ════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/technicien/feuilles-travail')}>
+            ← {t('worksheet.backToList')}
+          </Button>
+        </div>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor.bg} ${statusColor.text} ${statusColor.border} border`}>
+          {WS_STATUS_LABELS[worksheet.status] ?? worksheet.status}
+        </span>
+      </div>
+
+      {/* Work Order + Customer info */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">{t('worksheet.title')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1 text-sm">
+          <p>
+            <span className="font-medium">{t('worksheet.workOrder')}:</span>{' '}
+            <Link to={`/technicien/bons-travail/${wo.id}`} className="text-primary underline">
+              {wo.orderNumber}
+            </Link>
+          </p>
+          <p>
+            <span className="font-medium">{t('worksheet.customer')}:</span> {wo.customerName}
+          </p>
+          <p>
+            <span className="font-medium">{t('worksheet.device')}:</span>{' '}
+            {wo.deviceBrand} {wo.deviceModel} {wo.deviceSerial ? `(${wo.deviceSerial})` : ''}
+          </p>
+          <p>
+            <span className="font-medium">{t('worksheet.issue')}:</span> {wo.reportedIssue}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* SUMMARY (editable) */}
+      {/* ════════════════════════════════════════════════ */}
+      <div className="space-y-1">
+        <label className="text-sm font-medium">{t('worksheet.summary')}</label>
+        <textarea
+          className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[80px]"
+          placeholder={t('worksheet.summaryPlaceholder')}
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          onBlur={handleSummaryBlur}
+          disabled={!isDraft}
+        />
+      </div>
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* TAB NAVIGATION */}
+      {/* ════════════════════════════════════════════════ */}
+      <div className="flex gap-1 overflow-x-auto border-b pb-0">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* TAB CONTENT */}
+      {/* ════════════════════════════════════════════════ */}
+
+      {/* ── Labor Tab ── */}
+      {activeTab === 'labor' && (
+        <div className="space-y-3">
+          {/* Totals summary */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">{t('worksheet.totalLabor')}</span>
+            <span className="font-bold">{money(worksheet.totalLabor)}</span>
+          </div>
+
+          {/* Existing entries */}
+          {worksheet.laborEntries.map((le: LaborEntry) => (
+            <Card key={le.id}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                    {LABOR_TYPE_LABELS[le.laborType] ?? le.laborType}
+                  </span>
+                  {!le.endTime && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 animate-pulse">
+                      ⏱ {t('worksheet.timerRunning')} — {formatElapsed(le.startTime)}
+                    </span>
+                  )}
+                </div>
+                {le.description && <p className="text-sm text-muted-foreground">{le.description}</p>}
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>{t('worksheet.startTime')}: {formatDateTime(le.startTime)}</div>
+                  <div>{t('worksheet.endTime')}: {le.endTime ? formatDateTime(le.endTime) : '—'}</div>
+                  <div>{t('worksheet.breakMinutes')}: {le.breakMinutes} min</div>
+                  <div>{t('worksheet.hourlyRate')}: {money(le.hourlyRate)}/h</div>
+                  <div>{t('worksheet.billableHours')}: {le.billableHours != null ? le.billableHours.toFixed(2) : '—'}</div>
+                  <div>{t('worksheet.lineTotal')}: {money(le.lineTotal)}</div>
+                </div>
+                {isDraft && (
+                  <div className="flex gap-2 pt-1">
+                    {!le.endTime && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => stopTimerMutation.mutate(le.id)}
+                        disabled={stopTimerMutation.isPending}
+                      >
+                        ⏹ {t('worksheet.stopTimer')}
+                      </Button>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteLaborMutation.mutate(le.id)}
+                      disabled={deleteLaborMutation.isPending}
+                    >
+                      {t('common.delete')}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+
+          {worksheet.laborEntries.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">{t('worksheet.noEntries')}</p>
+          )}
+
+          {/* Add labor form */}
+          {isDraft && (
+            <>
+              {!showLaborForm ? (
+                <Button variant="outline" className="w-full" onClick={() => setShowLaborForm(true)}>
+                  + {t('worksheet.addLabor')}
+                </Button>
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{t('worksheet.addLabor')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleAddLabor} className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.laborType')}</label>
+                        <select
+                          value={laborType}
+                          onChange={(e) => setLaborType(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        >
+                          {Object.entries(LABOR_TYPE_LABELS).map(([val, label]) => (
+                            <option key={val} value={val}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.description')}</label>
+                        <textarea
+                          value={laborDescription}
+                          onChange={(e) => setLaborDescription(e.target.value)}
+                          className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px]"
+                          placeholder={t('worksheet.description')}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.startTime')}</label>
+                        <input
+                          type="datetime-local"
+                          value={laborStartTime}
+                          onChange={(e) => setLaborStartTime(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.hourlyRate')}</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={laborHourlyRate}
+                          onChange={(e) => setLaborHourlyRate(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" disabled={addLaborMutation.isPending}>
+                          {t('common.save')}
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={resetLaborForm}>
+                          {t('common.cancel')}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Parts Tab ── */}
+      {activeTab === 'parts' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">{t('worksheet.totalParts')}</span>
+            <span className="font-bold">{money(worksheet.totalParts)}</span>
+          </div>
+
+          {worksheet.parts.map((part: PartUsed) => (
+            <Card key={part.id}>
+              <CardContent className="p-4 space-y-2">
+                {editingPartId === part.id ? (
+                  /* Inline edit form */
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs font-medium">{t('worksheet.partName')}</label>
+                      <input
+                        type="text"
+                        value={editPartName}
+                        onChange={(e) => setEditPartName(e.target.value)}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.partNumber')}</label>
+                        <input
+                          type="text"
+                          value={editPartNumber}
+                          onChange={(e) => setEditPartNumber(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.supplier')}</label>
+                        <input
+                          type="text"
+                          value={editPartSupplier}
+                          onChange={(e) => setEditPartSupplier(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.supplierCost')}</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editPartSupplierCost}
+                          onChange={(e) => setEditPartSupplierCost(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.quantity')}</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={editPartQuantity}
+                          onChange={(e) => setEditPartQuantity(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.unitPrice')}</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={editPartUnitPrice}
+                          onChange={(e) => setEditPartUnitPrice(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium">{t('worksheet.warrantyMonths')}</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editPartWarrantyMonths}
+                        onChange={(e) => setEditPartWarrantyMonths(e.target.value)}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleUpdatePart(part.id)} disabled={updatePartMutation.isPending}>
+                        {t('common.save')}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingPartId(null)}>
+                        {t('common.cancel')}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Display mode */
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{part.partName}</span>
+                      <span className="text-sm font-bold">{money(part.lineTotal)}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                      {part.partNumber && <div>{t('worksheet.partNumber')}: {part.partNumber}</div>}
+                      {part.supplier && <div>{t('worksheet.supplier')}: {part.supplier}</div>}
+                      <div>{t('worksheet.quantity')}: {part.quantity}</div>
+                      <div>{t('worksheet.unitPrice')}: {money(part.unitPrice)}</div>
+                      <div>{t('worksheet.supplierCost')}: {money(part.supplierCost)}</div>
+                      {part.warrantyMonths != null && (
+                        <div>{t('worksheet.warrantyMonths')}: {part.warrantyMonths}</div>
+                      )}
+                    </div>
+                    {isDraft && (
+                      <div className="flex gap-2 pt-1">
+                        <Button variant="outline" size="sm" onClick={() => startEditPart(part)}>
+                          {t('common.edit')}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deletePartMutation.mutate(part.id)}
+                          disabled={deletePartMutation.isPending}
+                        >
+                          {t('common.delete')}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+
+          {worksheet.parts.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">{t('worksheet.noEntries')}</p>
+          )}
+
+          {/* Add part form */}
+          {isDraft && (
+            <>
+              {!showPartForm ? (
+                <Button variant="outline" className="w-full" onClick={() => setShowPartForm(true)}>
+                  + {t('worksheet.addPart')}
+                </Button>
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{t('worksheet.addPart')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleAddPart} className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.partName')}</label>
+                        <input
+                          type="text"
+                          value={partName}
+                          onChange={(e) => setPartName(e.target.value)}
+                          required
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.partNumber')}</label>
+                          <input
+                            type="text"
+                            value={partNumber}
+                            onChange={(e) => setPartNumber(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.supplier')}</label>
+                          <input
+                            type="text"
+                            value={partSupplier}
+                            onChange={(e) => setPartSupplier(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.supplierCost')}</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={partSupplierCost}
+                            onChange={(e) => setPartSupplierCost(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.quantity')}</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={partQuantity}
+                            onChange={(e) => setPartQuantity(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.unitPrice')}</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={partUnitPrice}
+                            onChange={(e) => setPartUnitPrice(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.warrantyMonths')}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={partWarrantyMonths}
+                          onChange={(e) => setPartWarrantyMonths(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" disabled={addPartMutation.isPending}>
+                          {t('common.save')}
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={resetPartForm}>
+                          {t('common.cancel')}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Travel Tab ── */}
+      {activeTab === 'travel' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">{t('worksheet.totalTravel')}</span>
+            <span className="font-bold">{money(worksheet.totalTravel)}</span>
+          </div>
+
+          {worksheet.travelEntries.map((te: TravelEntry) => (
+            <Card key={te.id}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {te.departureAddress || '?'} → {te.arrivalAddress || '?'}
+                  </span>
+                  <span className="text-sm font-bold">{money(te.lineTotal)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
+                  <div>{t('worksheet.distanceKm')}: {te.distanceKm} km</div>
+                  <div>{t('worksheet.ratePerKm')}: {money(te.ratePerKm)}/km</div>
+                  <div>{t('worksheet.travelDate')}: {formatDateTime(te.travelDate)}</div>
+                  {te.notes && <div>{t('worksheet.travelNotes')}: {te.notes}</div>}
+                </div>
+                {isDraft && (
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteTravelMutation.mutate(te.id)}
+                      disabled={deleteTravelMutation.isPending}
+                    >
+                      {t('common.delete')}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+
+          {worksheet.travelEntries.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">{t('worksheet.noEntries')}</p>
+          )}
+
+          {/* Add travel form */}
+          {isDraft && (
+            <>
+              {!showTravelForm ? (
+                <Button variant="outline" className="w-full" onClick={() => setShowTravelForm(true)}>
+                  + {t('worksheet.addTravel')}
+                </Button>
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{t('worksheet.addTravel')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleAddTravel} className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.departureAddress')}</label>
+                        <input
+                          type="text"
+                          value={travelDeparture}
+                          onChange={(e) => setTravelDeparture(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.arrivalAddress')}</label>
+                        <input
+                          type="text"
+                          value={travelArrival}
+                          onChange={(e) => setTravelArrival(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.distanceKm')}</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={travelDistanceKm}
+                            onChange={(e) => setTravelDistanceKm(e.target.value)}
+                            required
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.ratePerKm')}</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={travelRatePerKm}
+                            onChange={(e) => setTravelRatePerKm(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.travelDate')}</label>
+                        <input
+                          type="datetime-local"
+                          value={travelDate}
+                          onChange={(e) => setTravelDate(e.target.value)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="submit" size="sm" disabled={addTravelMutation.isPending}>
+                          {t('common.save')}
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={resetTravelForm}>
+                          {t('common.cancel')}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Notes Tab ── */}
+      {activeTab === 'notes' && (
+        <div className="space-y-3">
+          {worksheet.notes.map((note: WorksheetNote) => (
+            <Card key={note.id}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                    {WS_NOTE_TYPE_LABELS[note.noteType] ?? note.noteType}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(note.createdAt)}</span>
+                </div>
+                <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                <p className="text-xs text-muted-foreground">
+                  {note.author.firstName} {note.author.lastName}
+                </p>
+                <div className="flex gap-2 pt-1">
+                  {(note.noteType === 'DIAGNOSTIC_FINDING' || note.noteType === 'PROCEDURE') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => convertToKbMutation.mutate(note.id)}
+                      disabled={convertToKbMutation.isPending}
+                    >
+                      {t('worksheet.convertToKb')}
+                    </Button>
+                  )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteNoteMutation.mutate(note.id)}
+                    disabled={deleteNoteMutation.isPending}
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {worksheet.notes.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">{t('worksheet.noEntries')}</p>
+          )}
+
+          {/* Add note form */}
+          {!showNoteForm ? (
+            <Button variant="outline" className="w-full" onClick={() => setShowNoteForm(true)}>
+              + {t('worksheet.addNote')}
+            </Button>
+          ) : (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">{t('worksheet.addNote')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddNote} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium">{t('worksheet.noteType')}</label>
+                    <select
+                      value={noteType}
+                      onChange={(e) => setNoteType(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                    >
+                      {Object.entries(WS_NOTE_TYPE_LABELS).map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">{t('worksheet.noteContent')}</label>
+                    <textarea
+                      value={noteContent}
+                      onChange={(e) => setNoteContent(e.target.value)}
+                      required
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
+                      placeholder={t('worksheet.noteContent')}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" disabled={addNoteMutation.isPending}>
+                      {t('common.save')}
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={resetNoteForm}>
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ── Follow-ups Tab ── */}
+      {activeTab === 'followups' && (
+        <div className="space-y-3">
+          {worksheet.followUps.map((fu: FollowUp) => (
+            <Card key={fu.id}>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                    {FOLLOWUP_TYPE_LABELS[fu.followUpType] ?? fu.followUpType}
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${fu.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                    {fu.completed ? '✓' : '○'}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <div>{t('worksheet.scheduledDate')}: {formatDateTime(fu.scheduledDate)}</div>
+                  {fu.notes && <div className="mt-1">{fu.notes}</div>}
+                  {fu.completedAt && <div>{t('worksheet.completedAt')}: {formatDateTime(fu.completedAt)}</div>}
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      updateFollowUpMutation.mutate({
+                        followUpId: fu.id,
+                        data: { completed: !fu.completed },
+                      })
+                    }
+                    disabled={updateFollowUpMutation.isPending}
+                  >
+                    {fu.completed ? '↩' : '✓'} {t('worksheet.markComplete')}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteFollowUpMutation.mutate(fu.id)}
+                    disabled={deleteFollowUpMutation.isPending}
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {worksheet.followUps.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">{t('worksheet.noEntries')}</p>
+          )}
+
+          {/* Add follow-up form */}
+          {!showFollowUpForm ? (
+            <Button variant="outline" className="w-full" onClick={() => setShowFollowUpForm(true)}>
+              + {t('worksheet.addFollowUp')}
+            </Button>
+          ) : (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">{t('worksheet.addFollowUp')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddFollowUp} className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium">{t('worksheet.followUpType')}</label>
+                    <select
+                      value={followUpType}
+                      onChange={(e) => setFollowUpType(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                    >
+                      {Object.entries(FOLLOWUP_TYPE_LABELS).map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">{t('worksheet.scheduledDate')}</label>
+                    <input
+                      type="datetime-local"
+                      value={followUpScheduledDate}
+                      onChange={(e) => setFollowUpScheduledDate(e.target.value)}
+                      required
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">{t('worksheet.followUpNotes')}</label>
+                    <textarea
+                      value={followUpNotes}
+                      onChange={(e) => setFollowUpNotes(e.target.value)}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px]"
+                      placeholder={t('worksheet.followUpNotes')}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" disabled={addFollowUpMutation.isPending}>
+                      {t('common.save')}
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={resetFollowUpForm}>
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* STICKY BOTTOM BAR */}
+      {/* ════════════════════════════════════════════════ */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50 px-4 py-3">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+          {/* Grand total */}
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">{t('worksheet.grandTotal')}</p>
+            <p className="text-xl font-bold">{money(worksheet.grandTotal)}</p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            {isDraft && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveDraft}
+                disabled={updateSummaryMutation.isPending}
+              >
+                {t('worksheet.saveDraft')}
+              </Button>
+            )}
+            {isDraft && (
+              <Button
+                size="sm"
+                onClick={handleSubmitWorksheet}
+                disabled={changeStatusMutation.isPending}
+              >
+                {t('worksheet.submit')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

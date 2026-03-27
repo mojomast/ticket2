@@ -338,6 +338,152 @@ export interface CustomerNote {
   updatedAt: string;
 }
 
+// ─── Worksheet Types ───
+
+export interface WorksheetUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+}
+
+export interface WorksheetListItem {
+  id: string;
+  status: string;
+  totalLabor: number;
+  totalParts: number;
+  totalTravel: number;
+  grandTotal: number;
+  summary: string | null;
+  createdAt: string;
+  updatedAt: string;
+  submittedAt: string | null;
+  approvedAt: string | null;
+  technician: WorksheetUser;
+  workOrder: {
+    orderNumber: string;
+    status: string;
+    customerName: string;
+    deviceBrand: string;
+    deviceModel: string;
+  };
+}
+
+export interface LaborEntry {
+  id: string;
+  worksheetId: string;
+  laborType: string;
+  description: string | null;
+  startTime: string;
+  endTime: string | null;
+  breakMinutes: number;
+  hourlyRate: number;
+  billableHours: number | null;
+  lineTotal: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PartUsed {
+  id: string;
+  worksheetId: string;
+  partName: string;
+  partNumber: string | null;
+  supplier: string | null;
+  supplierCost: number;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  warrantyMonths: number | null;
+  warrantyNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TravelEntry {
+  id: string;
+  worksheetId: string;
+  departureAddress: string | null;
+  arrivalAddress: string | null;
+  distanceKm: number;
+  travelTimeMinutes: number | null;
+  ratePerKm: number;
+  lineTotal: number;
+  travelDate: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorksheetNote {
+  id: string;
+  worksheetId: string;
+  authorId: string;
+  noteType: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  author: WorksheetUser;
+}
+
+export interface FollowUp {
+  id: string;
+  worksheetId: string;
+  followUpType: string;
+  scheduledDate: string;
+  notes: string | null;
+  completed: boolean;
+  completedAt: string | null;
+  completedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Worksheet extends WorksheetListItem {
+  workOrderId: string;
+  technicianId: string;
+  reviewedAt: string | null;
+  reviewedById: string | null;
+  billedAt: string | null;
+  techSignature: string | null;
+  techSignedAt: string | null;
+  custSignature: string | null;
+  custSignedAt: string | null;
+  deletedAt: string | null;
+  reviewedBy: WorksheetUser | null;
+  approvedBy: WorksheetUser | null;
+  workOrder: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string | null;
+    deviceBrand: string;
+    deviceModel: string;
+    deviceSerial: string | null;
+    deviceType: string;
+    reportedIssue: string;
+    customer: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      role: string;
+      customerType: string | null;
+      companyName: string | null;
+      address: string | null;
+      phone: string | null;
+    } | null;
+  };
+  laborEntries: LaborEntry[];
+  parts: PartUsed[];
+  travelEntries: TravelEntry[];
+  notes: WorksheetNote[];
+  followUps: FollowUp[];
+}
+
 export const api = {
   auth: {
     login: (data: LoginInput) =>
@@ -606,5 +752,82 @@ export const api = {
       request<CustomerNote>(`/api/customer-notes/${id}/toggle-pin`, { method: 'PATCH' }),
     delete: (id: string) =>
       request<{ success: boolean }>(`/api/customer-notes/${id}`, { method: 'DELETE' }),
+  },
+
+  worksheets: {
+    list: (params?: Record<string, unknown>) =>
+      requestPaginated<WorksheetListItem>(`/api/worksheets${params ? `?${qs(params)}` : ''}`),
+    get: (id: string) => request<Worksheet>(`/api/worksheets/${id}`),
+    create: (data: { workOrderId: string }) =>
+      request<Worksheet>('/api/worksheets', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { summary?: string }) =>
+      request<Worksheet>(`/api/worksheets/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) =>
+      request<{ success: boolean }>(`/api/worksheets/${id}`, { method: 'DELETE' }),
+    changeStatus: (id: string, status: string, reason?: string) =>
+      request<Worksheet>(`/api/worksheets/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status, reason }),
+      }),
+    pdfUrl: (id: string) => `${BASE_URL}/api/worksheets/${id}/pdf`,
+
+    // Labor entries
+    labor: {
+      create: (worksheetId: string, data: Record<string, unknown>) =>
+        request<LaborEntry>(`/api/worksheets/${worksheetId}/labor`, { method: 'POST', body: JSON.stringify(data) }),
+      update: (worksheetId: string, entryId: string, data: Record<string, unknown>) =>
+        request<LaborEntry>(`/api/worksheets/${worksheetId}/labor/${entryId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      delete: (worksheetId: string, entryId: string) =>
+        request<{ success: boolean }>(`/api/worksheets/${worksheetId}/labor/${entryId}`, { method: 'DELETE' }),
+      stopTimer: (worksheetId: string, entryId: string) =>
+        request<LaborEntry>(`/api/worksheets/${worksheetId}/labor/${entryId}/stop`, { method: 'POST' }),
+    },
+
+    // Parts
+    parts: {
+      create: (worksheetId: string, data: Record<string, unknown>) =>
+        request<PartUsed>(`/api/worksheets/${worksheetId}/parts`, { method: 'POST', body: JSON.stringify(data) }),
+      update: (worksheetId: string, partId: string, data: Record<string, unknown>) =>
+        request<PartUsed>(`/api/worksheets/${worksheetId}/parts/${partId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      delete: (worksheetId: string, partId: string) =>
+        request<{ success: boolean }>(`/api/worksheets/${worksheetId}/parts/${partId}`, { method: 'DELETE' }),
+    },
+
+    // Travel entries
+    travel: {
+      create: (worksheetId: string, data: Record<string, unknown>) =>
+        request<TravelEntry>(`/api/worksheets/${worksheetId}/travel`, { method: 'POST', body: JSON.stringify(data) }),
+      update: (worksheetId: string, entryId: string, data: Record<string, unknown>) =>
+        request<TravelEntry>(`/api/worksheets/${worksheetId}/travel/${entryId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      delete: (worksheetId: string, entryId: string) =>
+        request<{ success: boolean }>(`/api/worksheets/${worksheetId}/travel/${entryId}`, { method: 'DELETE' }),
+    },
+
+    // Notes
+    notes: {
+      create: (worksheetId: string, data: { noteType: string; content: string }) =>
+        request<WorksheetNote>(`/api/worksheets/${worksheetId}/notes`, { method: 'POST', body: JSON.stringify(data) }),
+      delete: (worksheetId: string, noteId: string) =>
+        request<{ success: boolean }>(`/api/worksheets/${worksheetId}/notes/${noteId}`, { method: 'DELETE' }),
+      toKb: (worksheetId: string, noteId: string) =>
+        request<KbArticle>(`/api/worksheets/${worksheetId}/notes/${noteId}/to-kb`, { method: 'POST' }),
+    },
+
+    // Follow-ups
+    followUps: {
+      create: (worksheetId: string, data: Record<string, unknown>) =>
+        request<FollowUp>(`/api/worksheets/${worksheetId}/follow-ups`, { method: 'POST', body: JSON.stringify(data) }),
+      update: (worksheetId: string, followUpId: string, data: Record<string, unknown>) =>
+        request<FollowUp>(`/api/worksheets/${worksheetId}/follow-ups/${followUpId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      delete: (worksheetId: string, followUpId: string) =>
+        request<{ success: boolean }>(`/api/worksheets/${worksheetId}/follow-ups/${followUpId}`, { method: 'DELETE' }),
+    },
+
+    // Signatures
+    saveSignature: (worksheetId: string, type: 'tech' | 'customer', signatureData: string) =>
+      request<Worksheet>(`/api/worksheets/${worksheetId}/signature`, {
+        method: 'POST',
+        body: JSON.stringify({ type, signatureData }),
+      }),
   },
 };

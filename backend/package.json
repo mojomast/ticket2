@@ -17,21 +17,22 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "hono": "^4",
     "@hono/node-server": "^1",
-    "jose": "^5",
-    "hash-wasm": "^4",
-    "zod": "^3.23",
     "@prisma/client": "^6",
-    "pino": "^9"
+    "hash-wasm": "^4",
+    "hono": "^4",
+    "jose": "^5",
+    "pdf-lib": "^1.17.1",
+    "pino": "^9",
+    "zod": "^3.23"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^22",
+    "pino-pretty": "^13",
     "prisma": "^6",
-    "vitest": "^3",
-    "tsx": "^4",
     "tsup": "^8",
-    "pino-pretty": "^13"
+    "tsx": "^4",
+    "typescript": "^5",
+    "vitest": "^3"
   }
 }

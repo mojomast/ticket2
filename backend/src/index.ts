@@ -26,6 +26,7 @@ import serviceRequestRoutes from './routes/service-request.routes.js';
 import attachmentRoutes from './routes/attachment.routes.js';
 import kbRoutes from './routes/knowledgebase.routes.js';
 import customerNoteRoutes from './routes/customer-note.routes.js';
+import worksheetRoutes from './routes/worksheet.routes.js';
 
 const app = new Hono();
 
@@ -67,6 +68,7 @@ app.use('/api/technicians/*', requireAuth);
 app.use('/api/users/*', requireAuth);
 app.use('/api/kb/*', requireAuth);
 app.use('/api/customer-notes/*', requireAuth);
+app.use('/api/worksheets/*', requireAuth);
 
 app.route('/api', attachmentRoutes);
 app.route('/api/tickets', ticketRoutes);
@@ -78,6 +80,7 @@ app.route('/api/technicians', technicianRoutes);
 app.route('/api/users', profileRoutes);
 app.route('/api/kb', kbRoutes);
 app.route('/api/customer-notes', customerNoteRoutes);
+app.route('/api/worksheets', worksheetRoutes);
 
 // ─── Admin Routes ───
 app.use('/api/admin/*', requireAuth);

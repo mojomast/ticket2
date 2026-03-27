@@ -23,6 +23,8 @@ const AdminTechnicians = lazy(() => import('./pages/admin/Technicians'));
 const AdminKnowledgeBase = lazy(() => import('./pages/admin/KnowledgeBase'));
 const AdminKbArticleDetail = lazy(() => import('./pages/admin/KbArticleDetail'));
 const AdminClientDetail = lazy(() => import('./pages/admin/ClientDetail'));
+const AdminWorksheets = lazy(() => import('./pages/admin/Worksheets'));
+const AdminWorksheetDetail = lazy(() => import('./pages/admin/WorksheetDetail'));
 
 // Work Order pages (shared between admin + tech)
 const WorkOrdersDashboard = lazy(() => import('./pages/workorders/WorkOrdersDashboard'));
@@ -44,6 +46,8 @@ const TechDashboard = lazy(() => import('./pages/technician/Dashboard'));
 const TechTickets = lazy(() => import('./pages/technician/Tickets'));
 const TechTicketDetail = lazy(() => import('./pages/technician/TicketDetail'));
 const TechSchedule = lazy(() => import('./pages/technician/Schedule'));
+const TechWorksheets = lazy(() => import('./pages/technician/Worksheets'));
+const TechWorksheetDetail = lazy(() => import('./pages/technician/WorksheetDetail'));
 
 // Shared pages
 const Profile = lazy(() => import('./pages/shared/Profile'));
@@ -112,6 +116,8 @@ export const router = createBrowserRouter([
           { path: 'bons-travail', element: <WorkOrdersDashboard /> },
           { path: 'bons-travail/nouveau', element: <WorkOrderIntake /> },
           { path: 'bons-travail/:id', element: <WorkOrderDetail /> },
+          { path: 'feuilles-travail', element: <AdminWorksheets /> },
+          { path: 'feuilles-travail/:id', element: <AdminWorksheetDetail /> },
           { path: 'profil', element: <Profile /> },
         ],
       },
@@ -145,6 +151,8 @@ export const router = createBrowserRouter([
           { path: 'bons-travail', element: <WorkOrdersDashboard /> },
           { path: 'bons-travail/nouveau', element: <WorkOrderIntake /> },
           { path: 'bons-travail/:id', element: <WorkOrderDetail /> },
+          { path: 'feuilles-travail', element: <TechWorksheets /> },
+          { path: 'feuilles-travail/:id', element: <TechWorksheetDetail /> },
           { path: 'profil', element: <Profile /> },
         ],
       },

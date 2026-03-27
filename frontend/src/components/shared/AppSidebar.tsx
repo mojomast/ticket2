@@ -14,6 +14,7 @@ import {
   LogOut,
   ClipboardList,
   BookOpen,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from '../../lib/i18n/hook';
@@ -34,6 +35,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   LogOut,
   ClipboardList,
   BookOpen,
+  FileText,
 };
 
 interface NavItem {
@@ -48,6 +50,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: 'nav.tickets', path: '/admin/billets', icon: 'Ticket' },
     { label: 'nav.kanban', path: '/admin/billets/kanban', icon: 'Columns3' },
     { label: 'nav.workorders', path: '/admin/bons-travail', icon: 'ClipboardList' },
+    { label: 'nav.worksheets', path: '/admin/feuilles-travail', icon: 'FileText' },
     { label: 'nav.calendar', path: '/admin/calendrier', icon: 'Calendar' },
     { label: 'nav.clients', path: '/admin/clients', icon: 'Users' },
     { label: 'nav.technicians', path: '/admin/techniciens', icon: 'Wrench' },
@@ -60,6 +63,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: 'nav.dashboard', path: '/technicien', icon: 'LayoutDashboard' },
     { label: 'nav.tickets', path: '/technicien/billets', icon: 'Ticket' },
     { label: 'nav.workorders', path: '/technicien/bons-travail', icon: 'ClipboardList' },
+    { label: 'nav.worksheets', path: '/technicien/feuilles-travail', icon: 'FileText' },
     { label: 'nav.schedule', path: '/technicien/horaire', icon: 'Calendar' },
     { label: 'nav.profile', path: '/technicien/profil', icon: 'UserCircle' },
   ],

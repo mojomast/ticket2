@@ -162,3 +162,47 @@ export const WO_KANBAN_COLUMNS = [
   'RECEPTION', 'DIAGNOSTIC', 'ATTENTE_APPROBATION', 'APPROUVE',
   'ATTENTE_PIECES', 'EN_REPARATION', 'VERIFICATION', 'PRET',
 ] as const;
+
+// ─── Worksheet Status ───
+
+export const WS_STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  BROUILLON: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' },
+  SOUMISE: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
+  REVISEE: { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' },
+  APPROUVEE: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
+  FACTUREE: { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-200' },
+  ANNULEE: { bg: 'bg-red-100', text: 'text-red-500', border: 'border-red-200' },
+};
+
+export const WS_STATUS_LABELS: Record<string, string> = {
+  BROUILLON: 'Brouillon',
+  SOUMISE: 'Soumise',
+  REVISEE: 'Révisée',
+  APPROUVEE: 'Approuvée',
+  FACTUREE: 'Facturée',
+  ANNULEE: 'Annulée',
+};
+
+export const LABOR_TYPE_LABELS: Record<string, string> = {
+  DIAGNOSTIC: 'Diagnostic',
+  REPARATION: 'Réparation',
+  INSTALLATION: 'Installation',
+  CONSULTATION: 'Consultation',
+  GARANTIE: 'Garantie',
+  REPRISE: 'Reprise',
+};
+
+export const WS_NOTE_TYPE_LABELS: Record<string, string> = {
+  INTERNE: 'Interne',
+  VISIBLE_CLIENT: 'Visible client',
+  DIAGNOSTIC_FINDING: 'Constat diagnostic',
+  PROCEDURE: 'Procédure',
+};
+
+export const FOLLOWUP_TYPE_LABELS: Record<string, string> = {
+  VERIFICATION_GARANTIE: 'Vérification garantie',
+  RAPPEL_CLIENT: 'Rappel client',
+  REVERIFICATION: 'Revérification',
+  ARRIVEE_PIECES: 'Arrivée pièces',
+  SUIVI_DEVIS: 'Suivi devis',
+};
