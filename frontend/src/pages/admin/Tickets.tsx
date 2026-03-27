@@ -7,12 +7,6 @@ import HelpTooltip from '../../components/shared/HelpTooltip';
 import { formatDate } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
-import {
-  STATUS_LABELS,
-  PRIORITY_LABELS,
-  SERVICE_CATEGORY_LABELS,
-  SERVICE_MODE_LABELS,
-} from '../../lib/constants';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -27,6 +21,18 @@ interface CreateTicketForm {
   serviceMode: string;
   customerId: string;
 }
+
+// ─── Label key arrays (values from i18n catalogs) ───
+const STATUS_KEYS = [
+  'NOUVELLE', 'EN_ATTENTE_APPROBATION', 'EN_ATTENTE_REPONSE_CLIENT', 'APPROUVEE',
+  'PLANIFIEE', 'EN_COURS', 'BLOCAGE', 'TERMINEE', 'FERMEE', 'ANNULEE',
+] as const;
+const PRIORITY_KEYS = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'] as const;
+const SERVICE_CATEGORY_KEYS = [
+  'REPARATION', 'LOGICIEL', 'RESEAU', 'DONNEES', 'INSTALLATION',
+  'MAINTENANCE', 'CONSULTATION', 'FORMATION', 'AUTRE',
+] as const;
+const SERVICE_MODE_KEYS = ['SUR_ROUTE', 'EN_CUBICULE'] as const;
 
 const EMPTY_FORM: CreateTicketForm = {
   title: '',
@@ -179,8 +185,8 @@ export default function AdminTickets() {
                 onChange={(e) => updateField('priority', e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {PRIORITY_KEYS.map((key) => (
+                  <option key={key} value={key}>{t(`label.priority.${key}`)}</option>
                 ))}
               </select>
             </div>
@@ -195,8 +201,8 @@ export default function AdminTickets() {
                 onChange={(e) => updateField('serviceCategory', e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {Object.entries(SERVICE_CATEGORY_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {SERVICE_CATEGORY_KEYS.map((key) => (
+                  <option key={key} value={key}>{t(`label.serviceCategory.${key}`)}</option>
                 ))}
               </select>
             </div>
@@ -211,8 +217,8 @@ export default function AdminTickets() {
                 onChange={(e) => updateField('serviceMode', e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {Object.entries(SERVICE_MODE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {SERVICE_MODE_KEYS.map((key) => (
+                  <option key={key} value={key}>{t(`label.serviceMode.${key}`)}</option>
                 ))}
               </select>
             </div>
@@ -248,8 +254,8 @@ export default function AdminTickets() {
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
             <option value="">{t('ticket.allStatuses')}</option>
-            {Object.entries(STATUS_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
+            {STATUS_KEYS.map((key) => (
+              <option key={key} value={key}>{t(`label.status.${key}`)}</option>
             ))}
           </select>
         </HelpTooltip>
@@ -259,8 +265,8 @@ export default function AdminTickets() {
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
             <option value="">{t('ticket.allPriorities')}</option>
-            {Object.entries(PRIORITY_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
+            {PRIORITY_KEYS.map((key) => (
+              <option key={key} value={key}>{t(`label.priority.${key}`)}</option>
             ))}
           </select>
         </HelpTooltip>

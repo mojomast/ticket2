@@ -1,84 +1,81 @@
 # Handoff — Valitek v2
 
-## Completed: Session 9 — 5 worksheet features/fixes
+## Completed: Full code review + 22 fixes (7 critical, 8 high, 7 medium)
 ## Branch: main
 
-## Session 9 Changes
+## Code Review Session Changes
 
-### Feature 1: Admin Worksheet Config UI
-- Added authenticated non-admin `GET /api/config/:key` endpoint with whitelist (`backend/src/index.ts`)
-- Added `api.config.get(key)` method to API client (`frontend/src/api/client.ts`)
-- Added complete worksheet config card to admin Settings page (`frontend/src/pages/admin/Settings.tsx`, 540→721 lines):
-  - Default hourly rate
-  - Travel charge mode dropdown (per_km, flat, time_based)
-  - Enable/disable toggles for labor, parts, travel, notes, follow-ups sections
-- Technician WorksheetDetail fetches config defaults, pre-fills rates, adapts travel form by charge mode, hides disabled tabs
+### CRITICAL Fixes (7)
+1. **Follow-ups schedule endpoint response envelope** — `c.json(followUps)` → `c.json({ data: followUps, error: null })`. Feature was completely broken (frontend got `undefined`).
+2. **Follow-up CRUD ownership + status checks** — Added `requireEditableStatus()` + `requireOwnership()` to `createFollowUp`, `updateFollowUp`, `deleteFollowUp`. Previously any tech could modify any worksheet's follow-ups in any status.
+3. **Internal notes leaked to customers** — `getWorksheetById` now filters out `INTERNE` notes when `role === 'CUSTOMER'`.
+4. **Backup service missing 9 models** — Added Worksheet, LaborEntry, PartUsed, TravelEntry, WorksheetNote, FollowUp, KbArticle, KbArticleLink, CustomerNote to MODELS/DELETE_ORDER/INSERT_ORDER.
+5. **Demo reset missing models** — Added same 9 models to the transaction delete chain in proper FK order.
+6. **Worksheet mutations not transactional** — All labor/parts/travel create/update/delete now wrapped in `prisma.$transaction()`. `recalculateTotals` accepts optional transaction client.
+7. **API client non-JSON crash** — `request()` and `requestPaginated()` now wrap `res.json()` in try-catch. Header merging bug also fixed.
 
-### Feature 2: Manual Labor Time Entry
-- Added timer/manual mode toggle to labor entry form in technician WorksheetDetail
-- Manual mode shows end time + break minutes fields instead of timer controls
-- Auto-calculates billable hours from start/end/breaks
+### HIGH Fixes (8)
+8. **Financial totals rounding** — `recalculateTotals` rounds all subtotals and grandTotal to 2 decimals via `parseFloat(toFixed(2))`.
+9. **WorkOrder status+note transactions** — `changeStatus`, `approveQuote`, `declineQuote` now wrap update+note in `prisma.$transaction()`.
+10. **Labor endTime > startTime validation** — Throws `AppError.badRequest` if endTime <= startTime.
+11. **PDF signature Y position overlap** — `drawSignature` now decrements `this.y`. Tech/customer signatures render side-by-side without text overlap.
+12. **Schedule follow-ups date validation** — `from`/`to` query params validated with `isNaN(getTime())` check.
+13. **Note deletion blocked in SOUMISE for techs** — Technicians restricted to BROUILLON/REVISEE. Admins can delete in BROUILLON/SOUMISE/REVISEE.
+14. **addNote ownership check** — Now calls `requireOwnership()` consistent with labor/parts/travel.
+15. **Frontend loading/error states** — Added to admin, technician, portal Dashboard pages.
 
-### Feature 3: Follow-ups in Technician Schedule
-- Added `getFollowUpsForSchedule()` to worksheet service (`backend/src/services/worksheet.service.ts`)
-- Added `GET /follow-ups/schedule` endpoint BEFORE `/:id` route (`backend/src/routes/worksheet.routes.ts`)
-- Added `ScheduleFollowUp` type + `api.worksheets.followUps.schedule()` to API client
-- Integrated into Schedule page — orange dots/blocks/cards in month/week/day views, follow-up count in day summary
+### MEDIUM Fixes (7)
+16. **getDashboardStats 9→2 queries** — Replaced 8 separate `count()` calls with single `groupBy()`.
+17. **Schema indexes** — Added 5 missing indexes (WorkOrder.customerName, estimatedPickupDate; Notification.userId+createdAt; Ticket.priority; Appointment.technicianId+scheduledStart+scheduledEnd). Removed redundant `@@index([orderNumber])`.
+18. **KB slug soft-delete fix** — `generateUniqueSlug` no longer filters by `deletedAt`, avoiding P2002 constraint violations.
+19. **Service request race condition** — `createServiceRequest` user-find-or-create + ticket-create wrapped in transaction.
+20. **PDF table column widths** — Parts (455→495px) and travel (475→495px) tables now fill CONTENT_WIDTH.
+21. **Notification service typing** — `query: any` → `query: NotificationQuery` interface.
+22. **breakMinutes validation** — Throws error if break minutes exceed total work time.
 
-### Feature 4: Admin Worksheet Editing
-- Rewrote admin WorksheetDetail (`frontend/src/pages/admin/WorksheetDetail.tsx`, 645→1691 lines) with full editing:
-  - Summary editing (inline textarea)
-  - Labor entries: add/edit/delete with inline row editing
-  - Parts: add/edit/delete with inline row editing
-  - Travel entries: add/edit/delete with inline row editing
-  - Notes: add/delete
-  - Follow-ups: add/edit/delete/toggle complete
-- Status-gated: all edit controls only visible for BROUILLON or REVISEE status
-- Fetches worksheet config for default hourly rate and rate per km
+### Additional Fix
+- **KanbanBoard t() shadowing** — `.map((t) =>` renamed to `.map((tk) =>` to prevent shadowing translation function.
 
-### Feature 5: Fix PDF Generation Error
-- **Root cause**: Unicode characters `✓` (U+2713) and `○` (U+25CB) in follow-up status display. pdf-lib's StandardFonts.Helvetica only supports WinAnsi encoding — these chars caused `StandardFontEmbedder.encodeText` to throw.
-- **Fix**: Replaced with ASCII-safe `[X] Complété` / `[ ] En attente`
-- **Defense-in-depth**: Added `sanitizeForPdf()` helper that validates all text against WinAnsi before passing to pdf-lib, applied to all PdfDrawer methods
-- Any worksheet with follow-ups previously returned HTTP 500; now returns valid PDF
+## Files Modified
 
-## Files Modified (Session 9)
+### Backend (10 files)
+- `backend/src/services/worksheet.service.ts` — Fixes 2,3,6,8,10,13,14,22
+- `backend/src/services/worksheet-pdf.service.ts` — Fixes 11,20
+- `backend/src/services/workorder.service.ts` — Fixes 9,16
+- `backend/src/services/backup.service.ts` — Fix 4
+- `backend/src/services/knowledgebase.service.ts` — Fix 18
+- `backend/src/services/ticket.service.ts` — Fix 19
+- `backend/src/services/notification.service.ts` — Fix 21
+- `backend/src/routes/worksheet.routes.ts` — Fixes 1,2,12
+- `backend/src/routes/demo.routes.ts` — Fix 5
+- `backend/prisma/schema.prisma` — Fix 17
 
-### Backend
-- `backend/src/index.ts` — Added GET /api/config/:key non-admin endpoint
-- `backend/src/routes/worksheet.routes.ts` — Added GET /follow-ups/schedule route
-- `backend/src/services/worksheet.service.ts` — Added getFollowUpsForSchedule()
-- `backend/src/services/worksheet-pdf.service.ts` — Fixed non-WinAnsi chars, added sanitizeForPdf()
-
-### Frontend
-- `frontend/src/api/client.ts` — Added config.get(), ScheduleFollowUp type, followUps.schedule()
-- `frontend/src/pages/admin/Settings.tsx` — Added worksheet config card (540→721 lines)
-- `frontend/src/pages/admin/WorksheetDetail.tsx` — Full editing rewrite (645→1691 lines)
-- `frontend/src/pages/technician/WorksheetDetail.tsx` — Config defaults, tab hiding, manual labor mode (1361→1531 lines)
-- `frontend/src/pages/technician/Schedule.tsx` — Follow-ups integration with orange markers
-- `frontend/src/lib/i18n/locales/fr.ts` — ~33 new keys
-- `frontend/src/lib/i18n/locales/en.ts` — ~33 new keys (in sync with fr.ts)
+### Frontend (5 files)
+- `frontend/src/api/client.ts` — Fix 7
+- `frontend/src/pages/admin/Dashboard.tsx` — Fix 15
+- `frontend/src/pages/admin/KanbanBoard.tsx` — t() shadowing fix
+- `frontend/src/pages/technician/Dashboard.tsx` — Fix 15
+- `frontend/src/pages/portal/Dashboard.tsx` — Fix 15
 
 ## Build Status
 - Backend tsc: PASS
 - Frontend tsc: PASS
 - Vite build: PASS
+- Prisma db push: PASS (indexes applied)
+
+## Known Issues Not Fixed (documented for future)
+- `Float` for currency fields (should be `Decimal`) — requires schema migration + code changes across entire app
+- `WorkOrder.devicePassword` stored in plaintext — needs encryption implementation
+- User soft-delete doesn't cascade to child records — needs transaction + policy decision
+- `AuditLog.userId` has no FK relation — by design (audit survives user deletion)
+- Notification table grows unbounded — needs TTL/purge mechanism
+- Ticket number generation race condition — needs DB sequence or advisory lock
+- README.md significantly stale (missing 8 models, 7 enums, 9 route groups)
 
 ## Running Services
 - **Backend**: screen `valitek-backend`, port 3200
 - **Frontend**: screen `valitek-frontend`, port 5173
 - **Database**: Docker `valitek-db`, port 5433, PostgreSQL 16
-
-## Completed Sessions
-
-1. **Sessions 1-4**: Email/SMS, pagination, password change, attachments, i18n (1014 keys), technician calendar, dashboard fix, attachment fix, email/SMS settings, admin calendar, file viewer, knowledge base, customer notes, client detail
-2. **Session 5** (`7f34599`): Code review pass — 11 bug fixes
-3. **Session 6** (`cfbf1a1`): Full worksheet system — 6 Prisma models, 22-function service, PDF generator, 24 endpoints, 4 frontend pages, ~95 i18n keys
-4. **Session 7a** (`ff3723b`): First worksheet code review — 9 fixes
-5. **Session 7b** (`c81649f`): Flexible worksheet creation — optional workOrderId, ticketId support
-6. **Session 7c** (`1db0677`): Second code review — 13 fixes (security, status logic, validation, UX)
-7. **Session 8** (`723c512`): 4 features — signature canvas, portal worksheets, admin threshold, follow-up reminders
-8. **Session 9** (this): 5 features — admin worksheet config, manual labor entry, schedule follow-ups, admin worksheet editing, PDF fix
 
 ## Key Architecture Notes
 - Backend: Hono v4, TypeScript, Prisma 6, Zod, jose JWT, pdf-lib
@@ -87,4 +84,3 @@
 - Services throw AppError, NO Prisma in routes, { data, error: null } response envelope
 - TanStack Query v5: no onSuccess in useQuery, use useEffect instead
 - DB uses `prisma db push` (no migration history), all models use uuid IDs
-- i18n catalogs: 1,325 keys each in fr.ts and en.ts (in sync)

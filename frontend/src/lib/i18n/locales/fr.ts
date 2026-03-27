@@ -1415,4 +1415,144 @@ export const fr: Record<string, string> = {
   'clientDetail.linkSuccess': 'Article lié avec succès',
   'clientDetail.unlinkSuccess': 'Article délié avec succès',
   'clientDetail.notFound': 'Client non trouvé',
+
+  // ─── Label Maps (Phase 5 — admin pages) ───
+
+  // Customer type labels
+  'label.customerType.PARTICULIER': 'Particulier',
+  'label.customerType.ENTREPRISE': 'Entreprise',
+  'label.customerType.RESIDENTIAL': 'Résidentiel',
+  'label.customerType.COMMERCIAL': 'Commercial',
+
+  // KB category labels
+  'label.kbCategory.MATERIEL': 'Matériel',
+  'label.kbCategory.LOGICIEL': 'Logiciel',
+  'label.kbCategory.RESEAU': 'Réseau',
+  'label.kbCategory.PROCEDURE': 'Procédure',
+  'label.kbCategory.FAQ': 'FAQ',
+  'label.kbCategory.AUTRE': 'Autre',
+
+  // KB visibility labels
+  'label.kbVisibility.INTERNAL': 'Interne',
+  'label.kbVisibility.PUBLIC': 'Public',
+
+  // KB entity type labels
+  'label.kbEntityType.TICKET': 'Billet',
+  'label.kbEntityType.WORKORDER': 'Bon de travail',
+  'label.kbEntityType.CUSTOMER': 'Client',
+
+  // Permission labels
+  'label.permission.can_accept_tickets': 'Accepter les billets',
+  'label.permission.can_close_tickets': 'Fermer les billets',
+  'label.permission.can_send_quotes': 'Envoyer des devis',
+  'label.permission.can_cancel_appointments': 'Annuler les rendez-vous',
+  'label.permission.can_view_all_tickets': 'Voir tous les billets',
+
+  // Permission descriptions
+  'label.permissionDesc.can_accept_tickets': 'Permet au technicien de prendre en charge de nouveaux billets',
+  'label.permissionDesc.can_close_tickets': 'Permet de marquer un billet comme résolu et de le fermer',
+  'label.permissionDesc.can_send_quotes': "Autorise l'envoi de devis et estimations aux clients",
+  'label.permissionDesc.can_cancel_appointments': "Permet d'annuler ou reporter les rendez-vous planifiés",
+  'label.permissionDesc.can_view_all_tickets': 'Donne accès à tous les billets, pas seulement ceux assignés',
+
+  // Appointment status labels
+  'label.appointmentStatus.DEMANDE': 'Demande',
+  'label.appointmentStatus.PLANIFIE': 'Planifié',
+  'label.appointmentStatus.CONFIRME': 'Confirmé',
+  'label.appointmentStatus.EN_COURS': 'En cours',
+  'label.appointmentStatus.TERMINE': 'Terminé',
+  'label.appointmentStatus.ANNULE': 'Annulé',
+
+  // Ticket status labels
+  'label.status.NOUVELLE': 'Nouvelle',
+  'label.status.EN_ATTENTE_APPROBATION': "En attente d'approbation",
+  'label.status.EN_ATTENTE_REPONSE_CLIENT': 'En attente réponse client',
+  'label.status.APPROUVEE': 'Approuvée',
+  'label.status.PLANIFIEE': 'Planifiée',
+  'label.status.EN_COURS': 'En cours',
+  'label.status.BLOCAGE': 'Blocage',
+  'label.status.TERMINEE': 'Terminée',
+  'label.status.FERMEE': 'Fermée',
+  'label.status.ANNULEE': 'Annulée',
+
+  // Priority labels
+  'label.priority.BASSE': 'Basse',
+  'label.priority.NORMALE': 'Normale',
+  'label.priority.HAUTE': 'Haute',
+  'label.priority.URGENTE': 'Urgente',
+
+  // Service mode labels
+  'label.serviceMode.SUR_ROUTE': 'Sur route',
+  'label.serviceMode.EN_CUBICULE': 'En cubicule',
+
+  // Service category labels
+  'label.serviceCategory.REPARATION': 'Réparation',
+  'label.serviceCategory.LOGICIEL': 'Logiciel',
+  'label.serviceCategory.RESEAU': 'Réseau',
+  'label.serviceCategory.DONNEES': 'Données',
+  'label.serviceCategory.INSTALLATION': 'Installation',
+  'label.serviceCategory.MAINTENANCE': 'Maintenance',
+  'label.serviceCategory.CONSULTATION': 'Consultation',
+  'label.serviceCategory.FORMATION': 'Formation',
+  'label.serviceCategory.AUTRE': 'Autre',
+
+  // Worksheet status labels
+  'label.wsStatus.BROUILLON': 'Brouillon',
+  'label.wsStatus.SOUMISE': 'Soumise',
+  'label.wsStatus.REVISEE': 'Révisée',
+  'label.wsStatus.APPROUVEE': 'Approuvée',
+  'label.wsStatus.FACTUREE': 'Facturée',
+  'label.wsStatus.ANNULEE': 'Annulée',
+
+  // Labor type labels
+  'label.laborType.DIAGNOSTIC': 'Diagnostic',
+  'label.laborType.REPARATION': 'Réparation',
+  'label.laborType.INSTALLATION': 'Installation',
+  'label.laborType.CONSULTATION': 'Consultation',
+  'label.laborType.GARANTIE': 'Garantie',
+  'label.laborType.REPRISE': 'Reprise',
+
+  // Worksheet note type labels
+  'label.wsNoteType.INTERNE': 'Interne',
+  'label.wsNoteType.VISIBLE_CLIENT': 'Visible client',
+  'label.wsNoteType.DIAGNOSTIC_FINDING': 'Constat diagnostic',
+  'label.wsNoteType.PROCEDURE': 'Procédure',
+
+  // Follow-up type labels
+  'label.followUpType.VERIFICATION_GARANTIE': 'Vérification garantie',
+  'label.followUpType.RAPPEL_CLIENT': 'Rappel client',
+  'label.followUpType.REVERIFICATION': 'Revérification',
+  'label.followUpType.ARRIVEE_PIECES': 'Arrivée pièces',
+  'label.followUpType.SUIVI_DEVIS': 'Suivi devis',
+
+  // Work order status labels
+  'label.woStatus.RECEPTION': 'Réception',
+  'label.woStatus.DIAGNOSTIC': 'Diagnostic',
+  'label.woStatus.ATTENTE_APPROBATION': 'Attente approbation',
+  'label.woStatus.APPROUVE': 'Approuvé',
+  'label.woStatus.ATTENTE_PIECES': 'Attente pièces',
+  'label.woStatus.EN_REPARATION': 'En réparation',
+  'label.woStatus.VERIFICATION': 'Vérification',
+  'label.woStatus.PRET': 'Prêt pour ramassage',
+  'label.woStatus.REMIS': 'Remis au client',
+  'label.woStatus.REFUSE': 'Refusé',
+  'label.woStatus.ABANDONNE': 'Abandonné',
+  'label.woStatus.ANNULE': 'Annulé',
+
+  // Proposal status labels
+  'label.proposalStatus.PROPOSEE': 'En attente',
+  'label.proposalStatus.ACCEPTEE': 'Acceptée',
+  'label.proposalStatus.REFUSEE': 'Refusée',
+  'label.proposalStatus.ANNULEE': 'Annulée',
+
+  // Device type labels
+  'label.deviceType.LAPTOP': 'Portable',
+  'label.deviceType.DESKTOP': 'Bureau',
+  'label.deviceType.TABLETTE': 'Tablette',
+  'label.deviceType.TELEPHONE': 'Téléphone',
+  'label.deviceType.TOUT_EN_UN': 'Tout-en-un',
+  'label.deviceType.IMPRIMANTE': 'Imprimante',
+  'label.deviceType.SERVEUR': 'Serveur',
+  'label.deviceType.RESEAU_EQUIP': 'Équipement réseau',
+  'label.deviceType.AUTRE': 'Autre',
 };

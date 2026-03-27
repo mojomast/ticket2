@@ -42,17 +42,20 @@ export default function AdminDashboard() {
   const today = useMemo(() => getTodayRange(), []);
 
   // Fetch all tickets (up to 100) to compute accurate stats
-  const { data: tickets = [] } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading: ticketsLoading, isError: ticketsError } = useQuery<Ticket[]>({
     queryKey: ['tickets', { limit: 100 }],
     queryFn: () => api.tickets.list({ limit: 100 }),
   });
 
   // Fetch today's appointments
-  const { data: appointments = [] } = useQuery<Appointment[]>({
+  const { data: appointments = [], isLoading: appointmentsLoading, isError: appointmentsError } = useQuery<Appointment[]>({
     queryKey: ['appointments', { from: today.start, to: today.end }],
     queryFn: () =>
       api.appointments.list({ from: today.start, to: today.end }),
   });
+
+  const isLoading = ticketsLoading || appointmentsLoading;
+  const isError = ticketsError || appointmentsError;
 
   // Recent 10 tickets for the list, sorted by most recent first
   const recentTickets = useMemo(() => {
@@ -97,6 +100,9 @@ export default function AdminDashboard() {
       },
     ];
   }, [tickets, t]);
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>;
+  if (isError) return <div className="text-center py-8 text-red-600">{t('common.error')}</div>;
 
   return (
     <div className="space-y-6">

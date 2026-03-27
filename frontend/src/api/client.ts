@@ -13,16 +13,26 @@ export class ApiError extends Error {
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const { headers: optHeaders, ...restOptions } = options ?? {};
   const res = await fetch(`${BASE_URL}${path}`, {
     credentials: 'include',
+    ...restOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...optHeaders,
     },
-    ...options,
   });
 
-  const json = await res.json();
+  let json: any;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(
+      res.status >= 500
+        ? 'Erreur serveur. Veuillez réessayer.'
+        : 'Réponse invalide du serveur.'
+    );
+  }
 
   if (json.error) {
     throw new ApiError(json.error.message, json.error.code, res.status);
@@ -33,16 +43,26 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 /** Like request(), but returns the full paginated envelope (data + pagination metadata). */
 async function requestPaginated<T>(path: string, options?: RequestInit): Promise<PaginatedResponse<T>> {
+  const { headers: optHeaders, ...restOptions } = options ?? {};
   const res = await fetch(`${BASE_URL}${path}`, {
     credentials: 'include',
+    ...restOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...optHeaders,
     },
-    ...options,
   });
 
-  const json = await res.json();
+  let json: any;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(
+      res.status >= 500
+        ? 'Erreur serveur. Veuillez réessayer.'
+        : 'Réponse invalide du serveur.'
+    );
+  }
 
   if (json.error) {
     throw new ApiError(json.error.message, json.error.code, res.status);

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type Appointment, type ScheduleFollowUp } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
-import { APPOINTMENT_STATUS_COLORS, FOLLOWUP_TYPE_LABELS } from '../../lib/constants';
+import { APPOINTMENT_STATUS_COLORS } from '../../lib/constants';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import HelpTooltip from '../../components/shared/HelpTooltip';
@@ -524,7 +524,7 @@ function MonthView({
                     >
                       <span className="h-1.5 w-1.5 rounded-full flex-shrink-0 bg-orange-400" />
                       <span className="text-[10px] leading-tight truncate text-orange-700">
-                        {FOLLOWUP_TYPE_LABELS[fu.followUpType] ?? fu.followUpType}
+                        {t(`label.followUpType.${fu.followUpType}`) ?? fu.followUpType}
                       </span>
                     </div>
                   ))}
@@ -672,7 +672,7 @@ function WeekView({
                         {formatTime(fu.scheduledDate)}
                       </span>{' '}
                       <span className="truncate">
-                        {FOLLOWUP_TYPE_LABELS[fu.followUpType] ?? fu.followUpType}
+                        {t(`label.followUpType.${fu.followUpType}`) ?? fu.followUpType}
                       </span>
                     </Link>
                   ))}
@@ -958,7 +958,7 @@ function FollowUpCard({
   followUp: ScheduleFollowUp;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
-  const typeLabel = FOLLOWUP_TYPE_LABELS[followUp.followUpType] ?? followUp.followUpType;
+  const typeLabel = t(`label.followUpType.${followUp.followUpType}`) ?? followUp.followUpType;
   const ref = getFollowUpRef(followUp);
   const customerName = followUp.worksheet.workOrder?.customerName
     ?? (followUp.worksheet.ticket?.title || null);

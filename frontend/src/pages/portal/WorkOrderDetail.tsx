@@ -6,8 +6,7 @@ import StatusBadge from '../../components/shared/StatusBadge';
 import { useToast } from '../../hooks/use-toast';
 import { formatDateTime, formatCurrency, cn } from '../../lib/utils';
 import {
-  WO_STATUS_LABELS, DEVICE_TYPE_LABELS,
-  SERVICE_CATEGORY_LABELS, WO_TERMINAL_STATUSES,
+  WO_TERMINAL_STATUSES,
 } from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
@@ -99,7 +98,7 @@ export default function PortalWorkOrderDetail() {
         <CardContent className="pt-6">
           <p className="text-sm">
             <span className="font-medium">{t('portal.woDetail.currentStatus')}</span>{' '}
-            {WO_STATUS_LABELS[wo.status] || wo.status}
+            {t(`label.woStatus.${wo.status}`) || wo.status}
           </p>
           <HelpTooltip content={t('portal.woDetail.timelineTooltip')} side="bottom">
             <div>
@@ -166,7 +165,7 @@ export default function PortalWorkOrderDetail() {
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceType')}</span>
-              <p>{DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType}</p>
+              <p>{t(`label.deviceType.${wo.deviceType}`) || wo.deviceType}</p>
             </div>
             <div>
               <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceBrandModel')}</span>
@@ -185,7 +184,7 @@ export default function PortalWorkOrderDetail() {
           <p className="text-sm whitespace-pre-wrap">{wo.reportedIssue}</p>
           {wo.serviceCategory && (
             <p className="text-xs text-muted-foreground mt-2">
-              {t('portal.woDetail.categoryLabel', { category: SERVICE_CATEGORY_LABELS[wo.serviceCategory] || wo.serviceCategory })}
+              {t('portal.woDetail.categoryLabel', { category: t(`label.serviceCategory.${wo.serviceCategory}`) || wo.serviceCategory })}
             </p>
           )}
         </CardContent>
@@ -333,7 +332,7 @@ function StatusTimeline({ status }: { status: string }) {
   if (['REFUSE', 'ABANDONNE', 'ANNULE'].includes(status)) {
     return (
       <p className="text-xs text-muted-foreground mt-2">
-        {t('portal.woDetail.terminalStatus', { status: WO_STATUS_LABELS[status] ?? status })}
+        {t('portal.woDetail.terminalStatus', { status: t(`label.woStatus.${status}`) ?? status })}
       </p>
     );
   }

@@ -498,41 +498,48 @@ export async function removeBlocker(id: string, userId: string) {
 
 // ─── Public Service Request (no auth) ───
 export async function createServiceRequest(data: ServiceRequestInput) {
-  // Find or create customer by email
-  let customer = await prisma.user.findFirst({
-    where: { email: data.customerEmail, deletedAt: null },
-  });
-
-  if (!customer) {
-    // Generate a random password hash placeholder (customer can reset later)
-    const randomPassword = crypto.randomBytes(32).toString('hex');
-    customer = await prisma.user.create({
-      data: {
-        email: data.customerEmail,
-        passwordHash: randomPassword, // Not a real hash — user must reset password
-        firstName: data.customerFirstName,
-        lastName: data.customerLastName,
-        phone: data.customerPhone || null,
-        role: 'CUSTOMER',
-        customerType: 'RESIDENTIAL',
-        isActive: true,
-      },
+  // Wrap user lookup/creation + ticket creation in a transaction to prevent
+  // race conditions (e.g. two concurrent requests for the same email creating
+  // duplicate users or orphaned records).
+  const { ticket, customer } = await prisma.$transaction(async (tx) => {
+    // Find or create customer by email
+    let cust = await tx.user.findFirst({
+      where: { email: data.customerEmail, deletedAt: null },
     });
-  }
 
-  const ticketNumber = await generateTicketNumber();
+    if (!cust) {
+      // Generate a random password hash placeholder (customer can reset later)
+      const randomPassword = crypto.randomBytes(32).toString('hex');
+      cust = await tx.user.create({
+        data: {
+          email: data.customerEmail,
+          passwordHash: randomPassword, // Not a real hash — user must reset password
+          firstName: data.customerFirstName,
+          lastName: data.customerLastName,
+          phone: data.customerPhone || null,
+          role: 'CUSTOMER',
+          customerType: 'RESIDENTIAL',
+          isActive: true,
+        },
+      });
+    }
 
-  const ticket = await prisma.ticket.create({
-    data: {
-      ticketNumber,
-      title: data.title,
-      description: data.description,
-      priority: data.priority || 'NORMALE',
-      serviceMode: data.serviceMode || 'EN_CUBICULE',
-      serviceCategory: data.serviceCategory || 'REPARATION',
-      customerId: customer.id,
-    },
-    include: TICKET_INCLUDE,
+    const ticketNumber = await generateTicketNumber();
+
+    const tkt = await tx.ticket.create({
+      data: {
+        ticketNumber,
+        title: data.title,
+        description: data.description,
+        priority: data.priority || 'NORMALE',
+        serviceMode: data.serviceMode || 'EN_CUBICULE',
+        serviceCategory: data.serviceCategory || 'REPARATION',
+        customerId: cust.id,
+      },
+      include: TICKET_INCLUDE,
+    });
+
+    return { ticket: tkt, customer: cust };
   });
 
   // Fire-and-forget audit log
@@ -541,7 +548,7 @@ export async function createServiceRequest(data: ServiceRequestInput) {
     entityId: ticket.id,
     action: 'CREATED',
     userId: customer.id,
-    newValue: { ticketNumber, title: data.title, source: 'service-request' },
+    newValue: { ticketNumber: ticket.ticketNumber, title: data.title, source: 'service-request' },
   }).catch(() => {});
 
   // Fire-and-forget: notify admins about new ticket
@@ -551,15 +558,15 @@ export async function createServiceRequest(data: ServiceRequestInput) {
   }).then((admins) => {
     const recipientIds = admins.map(a => a.id);
     if (recipientIds.length > 0) {
-      notificationService.notifyTicketCreated(ticket.id, ticketNumber, recipientIds).catch(() => {});
+      notificationService.notifyTicketCreated(ticket.id, ticket.ticketNumber, recipientIds).catch(() => {});
     }
     // Email admins about new service request
     for (const admin of admins) {
       if (admin.email) {
         sendEmail({
           to: admin.email,
-          subject: `Nouvelle demande de service ${ticketNumber}`,
-          body: `Une nouvelle demande de service a été soumise:\n\nNuméro: ${ticketNumber}\nTitre: ${data.title}\nClient: ${data.customerFirstName} ${data.customerLastName} (${data.customerEmail})`,
+          subject: `Nouvelle demande de service ${ticket.ticketNumber}`,
+          body: `Une nouvelle demande de service a été soumise:\n\nNuméro: ${ticket.ticketNumber}\nTitre: ${data.title}\nClient: ${data.customerFirstName} ${data.customerLastName} (${data.customerEmail})`,
         }).catch(err => logger.error({ err }, 'Failed to send service request email to admin'));
       }
     }
@@ -568,8 +575,8 @@ export async function createServiceRequest(data: ServiceRequestInput) {
   // Fire-and-forget: send confirmation email to customer
   sendEmail({
     to: data.customerEmail,
-    subject: `Confirmation — Demande de service ${ticketNumber}`,
-    body: `Bonjour ${data.customerFirstName},\n\nVotre demande de service a bien été reçue.\n\nNuméro de billet: ${ticketNumber}\nTitre: ${data.title}\n\nNous vous contacterons sous peu. Merci de votre confiance!`,
+    subject: `Confirmation — Demande de service ${ticket.ticketNumber}`,
+    body: `Bonjour ${data.customerFirstName},\n\nVotre demande de service a bien été reçue.\n\nNuméro de billet: ${ticket.ticketNumber}\nTitre: ${data.title}\n\nNous vous contacterons sous peu. Merci de votre confiance!`,
   }).catch(err => logger.error({ err }, 'Failed to send service request confirmation email'));
 
   return ticket;

@@ -53,10 +53,12 @@ async function generateUniqueSlug(title: string, excludeId?: string): Promise<st
   let suffix = 2;
 
   while (true) {
+    // Don't filter by deletedAt — the DB unique constraint covers ALL rows
+    // (including soft-deleted ones), so we must check against all rows to
+    // avoid P2002 unique-constraint violations.
     const existing = await prisma.kbArticle.findFirst({
       where: {
         slug: candidate,
-        deletedAt: null,
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
       select: { id: true },

@@ -8,12 +8,8 @@ import AttachmentSection from '../../components/shared/AttachmentSection';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import { formatDateTime, formatCurrency } from '../../lib/utils';
-import {
-  SERVICE_CATEGORY_LABELS,
-  STATUS_LABELS,
-  SERVICE_MODE_LABELS,
-  APPOINTMENT_STATUS_LABELS,
-} from '../../lib/constants';
+// COLOR maps still from constants; LABEL maps now use t()
+
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -73,6 +69,7 @@ const TIME_SLOTS = buildTimeSlots();
 // InlineDayCalendar — shows all tech appointments for a day
 // ─────────────────────────────────────────────────────────
 function InlineDayCalendar({ appointments }: { appointments: any[] }) {
+  const { t: tr } = useTranslation();
   const DAY_START = 8;
   const DAY_END = 18;
   const TOTAL_SLOTS = (DAY_END - DAY_START) * 2; // 20 half-hour slots
@@ -98,7 +95,7 @@ function InlineDayCalendar({ appointments }: { appointments: any[] }) {
         height: spanSlots * ROW_HEIGHT,
         label: `${a.ticket?.ticketNumber || 'RDV'} — ${a.ticket?.title || ''}`,
         time: `${formatSlotTime(a.scheduledStart)} – ${formatSlotTime(a.scheduledEnd)}`,
-        statusLabel: APPOINTMENT_STATUS_LABELS[a.status] || a.status,
+        statusLabel: tr(`label.appointmentStatus.${a.status}`) || a.status,
         ...colors,
       };
     })
@@ -1082,11 +1079,11 @@ export default function TechTicketDetail() {
             <CardContent className="text-sm space-y-2">
               <div>
                 <span className="text-muted-foreground">Catégorie:</span>{' '}
-                {SERVICE_CATEGORY_LABELS[tk.serviceCategory] || tk.serviceCategory}
+                {t(`label.serviceCategory.${tk.serviceCategory}`) || tk.serviceCategory}
               </div>
               <div>
                 <span className="text-muted-foreground">Mode:</span>{' '}
-                {SERVICE_MODE_LABELS[tk.serviceMode] || tk.serviceMode}
+                {t(`label.serviceMode.${tk.serviceMode}`) || tk.serviceMode}
               </div>
               <div>
                 <span className="text-muted-foreground">Créé:</span> {formatDateTime(tk.createdAt)}
@@ -1138,7 +1135,7 @@ export default function TechTicketDetail() {
                     </option>
                     {allowedStatuses.map((status) => (
                       <option key={status} value={status}>
-                        {STATUS_LABELS[status] || status}
+                        {t(`label.status.${status}`) || status}
                       </option>
                     ))}
                   </select>

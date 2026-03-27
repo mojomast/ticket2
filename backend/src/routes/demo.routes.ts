@@ -30,8 +30,17 @@ app.post('/reset', requireAuth, requireRole('ADMIN'), async (c) => {
     throw AppError.forbidden('Mode demo desactive');
   }
 
-  // Delete all data in proper FK dependency order
+  // Delete all data in proper FK dependency order (children before parents)
   await prisma.$transaction([
+    prisma.followUp.deleteMany(),
+    prisma.worksheetNote.deleteMany(),
+    prisma.travelEntry.deleteMany(),
+    prisma.partUsed.deleteMany(),
+    prisma.laborEntry.deleteMany(),
+    prisma.worksheet.deleteMany(),
+    prisma.kbArticleLink.deleteMany(),
+    prisma.kbArticle.deleteMany(),
+    prisma.customerNote.deleteMany(),
     prisma.workOrderNote.deleteMany(),
     prisma.workOrder.deleteMany(),
     prisma.appointmentProposal.deleteMany(),

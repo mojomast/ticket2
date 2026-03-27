@@ -22,12 +22,7 @@ import {
 
 const PAGE_LIMIT = 25;
 
-const CUSTOMER_TYPE_LABELS: Record<string, string> = {
-  PARTICULIER: 'Particulier',
-  ENTREPRISE: 'Entreprise',
-};
-
-const CUSTOMER_TYPE_OPTIONS = Object.entries(CUSTOMER_TYPE_LABELS);
+const CUSTOMER_TYPE_KEYS = ['PARTICULIER', 'ENTREPRISE'] as const;
 
 /** Empty form state for creating a new client. */
 const EMPTY_FORM: ClientFormData = {
@@ -276,7 +271,7 @@ export default function AdminClients() {
                   <td className="p-3 text-sm">{user.phone || '–'}</td>
                   <td className="p-3 text-sm">
                     {user.customerType
-                      ? CUSTOMER_TYPE_LABELS[user.customerType] ?? user.customerType
+                      ? t(`label.customerType.${user.customerType}`) || user.customerType
                       : '–'}
                   </td>
                   <td className="p-3 text-sm">{user.companyName || '–'}</td>
@@ -479,9 +474,9 @@ export default function AdminClients() {
                 onChange={handleFieldChange('customerType')}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {CUSTOMER_TYPE_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {CUSTOMER_TYPE_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`label.customerType.${key}`)}
                   </option>
                 ))}
               </select>

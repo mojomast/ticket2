@@ -4,9 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import { formatDate } from '../../lib/utils';
-import { STATUS_LABELS } from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
+
+const STATUS_KEYS = [
+  'NOUVELLE', 'EN_COURS', 'EN_ATTENTE_APPROBATION', 'APPROUVEE',
+  'PLANIFIEE', 'BLOCAGE', 'ANNULEE', 'REFUSEE', 'TERMINEE', 'FACTUREE',
+] as const;
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 
@@ -37,7 +41,7 @@ export default function TechTickets() {
       <HelpTooltip content={t('tech.tickets.filterTooltip')} side="bottom">
         <select onChange={(e) => handleStatusChange(e.target.value)} className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
           <option value="">{t('ticket.allStatuses')}</option>
-          {Object.entries(STATUS_LABELS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+          {STATUS_KEYS.map((key) => <option key={key} value={key}>{t(`label.status.${key}`)}</option>)}
         </select>
       </HelpTooltip>
       {isLoading ? <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div> : (

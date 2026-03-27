@@ -121,28 +121,28 @@ const WS_ALLOWED_TRANSITIONS: Record<WorksheetStatus, Array<{ to: WorksheetStatu
 
 // ─── Internal: Recalculate Totals ───
 
-async function recalculateTotals(worksheetId: string): Promise<void> {
+async function recalculateTotals(worksheetId: string, client: any = prisma): Promise<void> {
   const [laborAgg, partsAgg, travelAgg] = await Promise.all([
-    prisma.laborEntry.aggregate({
+    client.laborEntry.aggregate({
       where: { worksheetId },
       _sum: { lineTotal: true },
     }),
-    prisma.partUsed.aggregate({
+    client.partUsed.aggregate({
       where: { worksheetId },
       _sum: { lineTotal: true },
     }),
-    prisma.travelEntry.aggregate({
+    client.travelEntry.aggregate({
       where: { worksheetId },
       _sum: { lineTotal: true },
     }),
   ]);
 
-  const totalLabor = laborAgg._sum.lineTotal ?? 0;
-  const totalParts = partsAgg._sum.lineTotal ?? 0;
-  const totalTravel = travelAgg._sum.lineTotal ?? 0;
-  const grandTotal = totalLabor + totalParts + totalTravel;
+  const totalLabor = parseFloat((laborAgg._sum.lineTotal ?? 0).toFixed(2));
+  const totalParts = parseFloat((partsAgg._sum.lineTotal ?? 0).toFixed(2));
+  const totalTravel = parseFloat((travelAgg._sum.lineTotal ?? 0).toFixed(2));
+  const grandTotal = parseFloat((totalLabor + totalParts + totalTravel).toFixed(2));
 
-  await prisma.worksheet.update({
+  await client.worksheet.update({
     where: { id: worksheetId },
     data: { totalLabor, totalParts, totalTravel, grandTotal },
   });
@@ -154,7 +154,20 @@ function calculateLaborLine(startTime: Date, endTime: Date | null, breakMinutes:
   if (!endTime) {
     return { billableHours: null, lineTotal: null };
   }
+
+  // Fix 5: Validate endTime > startTime
+  if (endTime.getTime() <= startTime.getTime()) {
+    throw AppError.badRequest('L\'heure de fin doit être après l\'heure de début');
+  }
+
   const totalMs = endTime.getTime() - startTime.getTime();
+  const totalMinutes = totalMs / (1000 * 60);
+
+  // Fix 7: Validate breakMinutes doesn't exceed total work time
+  if (breakMinutes > totalMinutes) {
+    throw AppError.badRequest('La durée de pause ne peut pas dépasser la durée totale de travail');
+  }
+
   const totalHours = totalMs / (1000 * 60 * 60);
   const breakHours = breakMinutes / 60;
   const billableHours = Math.max(0, parseFloat((totalHours - breakHours).toFixed(4)));
@@ -277,6 +290,11 @@ export async function getWorksheetById(id: string, userId: string, role: UserRol
       (ws.workOrder && ws.workOrder.customerId === userId) ||
       (ws.ticket && ws.ticket.customerId === userId);
     if (!isOwner) throw AppError.forbidden('Accès refusé');
+
+    // Fix 2: Filter out internal notes for customers
+    if (ws.notes) {
+      ws.notes = ws.notes.filter((n: any) => n.noteType !== 'INTERNE');
+    }
   }
 
   return ws;
@@ -550,21 +568,24 @@ export async function addLaborEntry(worksheetId: string, data: CreateLaborEntryI
   const breakMinutes = data.breakMinutes ?? 0;
   const { billableHours, lineTotal } = calculateLaborLine(startTime, endTime, breakMinutes, data.hourlyRate);
 
-  const entry = await prisma.laborEntry.create({
-    data: {
-      worksheetId,
-      laborType: data.laborType,
-      description: data.description ?? null,
-      startTime,
-      endTime,
-      breakMinutes,
-      hourlyRate: data.hourlyRate,
-      billableHours,
-      lineTotal,
-    },
-  });
+  const entry = await prisma.$transaction(async (tx) => {
+    const created = await tx.laborEntry.create({
+      data: {
+        worksheetId,
+        laborType: data.laborType,
+        description: data.description ?? null,
+        startTime,
+        endTime,
+        breakMinutes,
+        hourlyRate: data.hourlyRate,
+        billableHours,
+        lineTotal,
+      },
+    });
 
-  await recalculateTotals(worksheetId);
+    await recalculateTotals(worksheetId, tx);
+    return created;
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -603,12 +624,15 @@ export async function updateLaborEntry(worksheetId: string, entryId: string, dat
   if (data.breakMinutes !== undefined) updatePayload.breakMinutes = breakMinutes;
   if (data.hourlyRate !== undefined) updatePayload.hourlyRate = hourlyRate;
 
-  const updated = await prisma.laborEntry.update({
-    where: { id: entryId },
-    data: updatePayload,
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.laborEntry.update({
+      where: { id: entryId },
+      data: updatePayload,
+    });
 
-  await recalculateTotals(worksheetId);
+    await recalculateTotals(worksheetId, tx);
+    return result;
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -632,8 +656,10 @@ export async function deleteLaborEntry(worksheetId: string, entryId: string, use
   });
   if (!existing) throw AppError.notFound('Entree de main-d\'oeuvre introuvable');
 
-  await prisma.laborEntry.delete({ where: { id: entryId } });
-  await recalculateTotals(worksheetId);
+  await prisma.$transaction(async (tx) => {
+    await tx.laborEntry.delete({ where: { id: entryId } });
+    await recalculateTotals(worksheetId, tx);
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -661,12 +687,15 @@ export async function stopTimer(worksheetId: string, entryId: string, userId: st
   const endTime = new Date();
   const { billableHours, lineTotal } = calculateLaborLine(existing.startTime, endTime, existing.breakMinutes, existing.hourlyRate);
 
-  const updated = await prisma.laborEntry.update({
-    where: { id: entryId },
-    data: { endTime, billableHours, lineTotal },
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.laborEntry.update({
+      where: { id: entryId },
+      data: { endTime, billableHours, lineTotal },
+    });
 
-  await recalculateTotals(worksheetId);
+    await recalculateTotals(worksheetId, tx);
+    return result;
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -691,22 +720,25 @@ export async function addPart(worksheetId: string, data: CreatePartInput, userId
   const quantity = data.quantity ?? 1;
   const lineTotal = parseFloat((quantity * data.unitPrice).toFixed(2));
 
-  const part = await prisma.partUsed.create({
-    data: {
-      worksheetId,
-      partName: data.partName,
-      partNumber: data.partNumber ?? null,
-      supplier: data.supplier ?? null,
-      supplierCost: data.supplierCost,
-      quantity,
-      unitPrice: data.unitPrice,
-      lineTotal,
-      warrantyMonths: data.warrantyMonths ?? null,
-      warrantyNotes: data.warrantyNotes ?? null,
-    },
-  });
+  const part = await prisma.$transaction(async (tx) => {
+    const created = await tx.partUsed.create({
+      data: {
+        worksheetId,
+        partName: data.partName,
+        partNumber: data.partNumber ?? null,
+        supplier: data.supplier ?? null,
+        supplierCost: data.supplierCost,
+        quantity,
+        unitPrice: data.unitPrice,
+        lineTotal,
+        warrantyMonths: data.warrantyMonths ?? null,
+        warrantyNotes: data.warrantyNotes ?? null,
+      },
+    });
 
-  await recalculateTotals(worksheetId);
+    await recalculateTotals(worksheetId, tx);
+    return created;
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -743,12 +775,15 @@ export async function updatePart(worksheetId: string, partId: string, data: Upda
   if (data.warrantyMonths !== undefined) updatePayload.warrantyMonths = data.warrantyMonths;
   if (data.warrantyNotes !== undefined) updatePayload.warrantyNotes = data.warrantyNotes;
 
-  const updated = await prisma.partUsed.update({
-    where: { id: partId },
-    data: updatePayload,
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.partUsed.update({
+      where: { id: partId },
+      data: updatePayload,
+    });
 
-  await recalculateTotals(worksheetId);
+    await recalculateTotals(worksheetId, tx);
+    return result;
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -772,8 +807,10 @@ export async function deletePart(worksheetId: string, partId: string, userId: st
   });
   if (!existing) throw AppError.notFound('Piece introuvable');
 
-  await prisma.partUsed.delete({ where: { id: partId } });
-  await recalculateTotals(worksheetId);
+  await prisma.$transaction(async (tx) => {
+    await tx.partUsed.delete({ where: { id: partId } });
+    await recalculateTotals(worksheetId, tx);
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -795,21 +832,24 @@ export async function addTravelEntry(worksheetId: string, data: CreateTravelEntr
 
   const lineTotal = parseFloat((data.distanceKm * data.ratePerKm).toFixed(2));
 
-  const entry = await prisma.travelEntry.create({
-    data: {
-      worksheetId,
-      departureAddress: data.departureAddress ?? null,
-      arrivalAddress: data.arrivalAddress ?? null,
-      distanceKm: data.distanceKm,
-      travelTimeMinutes: data.travelTimeMinutes ?? null,
-      ratePerKm: data.ratePerKm,
-      lineTotal,
-      travelDate: data.travelDate ? new Date(data.travelDate) : new Date(),
-      notes: data.notes ?? null,
-    },
-  });
+  const entry = await prisma.$transaction(async (tx) => {
+    const created = await tx.travelEntry.create({
+      data: {
+        worksheetId,
+        departureAddress: data.departureAddress ?? null,
+        arrivalAddress: data.arrivalAddress ?? null,
+        distanceKm: data.distanceKm,
+        travelTimeMinutes: data.travelTimeMinutes ?? null,
+        ratePerKm: data.ratePerKm,
+        lineTotal,
+        travelDate: data.travelDate ? new Date(data.travelDate) : new Date(),
+        notes: data.notes ?? null,
+      },
+    });
 
-  await recalculateTotals(worksheetId);
+    await recalculateTotals(worksheetId, tx);
+    return created;
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -845,12 +885,15 @@ export async function updateTravelEntry(worksheetId: string, entryId: string, da
   if (data.travelDate !== undefined) updatePayload.travelDate = data.travelDate ? new Date(data.travelDate) : existing.travelDate;
   if (data.notes !== undefined) updatePayload.notes = data.notes;
 
-  const updated = await prisma.travelEntry.update({
-    where: { id: entryId },
-    data: updatePayload,
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.travelEntry.update({
+      where: { id: entryId },
+      data: updatePayload,
+    });
 
-  await recalculateTotals(worksheetId);
+    await recalculateTotals(worksheetId, tx);
+    return result;
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -874,8 +917,10 @@ export async function deleteTravelEntry(worksheetId: string, entryId: string, us
   });
   if (!existing) throw AppError.notFound('Entree de deplacement introuvable');
 
-  await prisma.travelEntry.delete({ where: { id: entryId } });
-  await recalculateTotals(worksheetId);
+  await prisma.$transaction(async (tx) => {
+    await tx.travelEntry.delete({ where: { id: entryId } });
+    await recalculateTotals(worksheetId, tx);
+  });
 
   // Fire-and-forget audit log
   createAuditLog({
@@ -894,7 +939,7 @@ export async function deleteTravelEntry(worksheetId: string, entryId: string, us
 export async function addNote(worksheetId: string, data: CreateWorksheetNoteInput, userId: string, role: UserRole) {
   const ws = await prisma.worksheet.findFirst({
     where: { id: worksheetId, deletedAt: null },
-    select: { id: true, status: true },
+    select: { id: true, status: true, technicianId: true },
   });
   if (!ws) throw AppError.notFound('Feuille de travail introuvable');
 
@@ -907,6 +952,9 @@ export async function addNote(worksheetId: string, data: CreateWorksheetNoteInpu
   if (ws.status === 'SOUMISE' && role !== 'ADMIN') {
     throw AppError.forbidden('Seul un administrateur peut ajouter des notes sur une feuille soumise');
   }
+
+  // Fix 6: Ownership check — consistent with labor/parts/travel
+  requireOwnership(ws, userId, role);
 
   const note = await prisma.worksheetNote.create({
     data: {
@@ -938,8 +986,17 @@ export async function deleteNote(worksheetId: string, noteId: string, userId: st
   });
   if (!ws) throw AppError.notFound('Feuille de travail introuvable');
 
-  if (ws.status !== 'BROUILLON' && ws.status !== 'SOUMISE' && ws.status !== 'REVISEE') {
-    throw AppError.badRequest('Les notes ne peuvent être supprimées qu\'en statut brouillon, soumise ou en révision');
+  // Fix 6: Technicians can only delete notes in BROUILLON or REVISEE (not SOUMISE)
+  // Admins can delete in BROUILLON, SOUMISE, or REVISEE
+  if (role === 'ADMIN') {
+    if (ws.status !== 'BROUILLON' && ws.status !== 'SOUMISE' && ws.status !== 'REVISEE') {
+      throw AppError.badRequest('Les notes ne peuvent être supprimées qu\'en statut brouillon, soumise ou en révision');
+    }
+  } else {
+    // TECHNICIAN — no deletion allowed in SOUMISE
+    if (ws.status !== 'BROUILLON' && ws.status !== 'REVISEE') {
+      throw AppError.badRequest('Les notes ne peuvent être supprimées qu\'en statut brouillon ou en révision');
+    }
   }
 
   const note = await prisma.worksheetNote.findFirst({
@@ -968,12 +1025,9 @@ export async function deleteNote(worksheetId: string, noteId: string, userId: st
 //  FOLLOW-UPS
 // ═══════════════════════════════════════════════════════
 
-export async function createFollowUp(worksheetId: string, data: CreateFollowUpInput, userId: string) {
-  const ws = await prisma.worksheet.findFirst({
-    where: { id: worksheetId, deletedAt: null },
-    select: { id: true },
-  });
-  if (!ws) throw AppError.notFound('Feuille de travail introuvable');
+export async function createFollowUp(worksheetId: string, data: CreateFollowUpInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const followUp = await prisma.followUp.create({
     data: {
@@ -996,7 +1050,10 @@ export async function createFollowUp(worksheetId: string, data: CreateFollowUpIn
   return followUp;
 }
 
-export async function updateFollowUp(worksheetId: string, followUpId: string, data: UpdateFollowUpInput, userId: string) {
+export async function updateFollowUp(worksheetId: string, followUpId: string, data: UpdateFollowUpInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
+
   const existing = await prisma.followUp.findFirst({
     where: { id: followUpId, worksheetId },
   });
@@ -1030,7 +1087,10 @@ export async function updateFollowUp(worksheetId: string, followUpId: string, da
   return updated;
 }
 
-export async function deleteFollowUp(worksheetId: string, followUpId: string, userId: string) {
+export async function deleteFollowUp(worksheetId: string, followUpId: string, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
+
   const existing = await prisma.followUp.findFirst({
     where: { id: followUpId, worksheetId },
   });

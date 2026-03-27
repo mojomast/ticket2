@@ -27,13 +27,13 @@ export default function TechDashboard() {
   const today = useMemo(() => getTodayRange(), []);
 
   // Fetch assigned tickets (up to 100)
-  const { data: tickets = [] } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading: ticketsLoading, isError: ticketsError } = useQuery<Ticket[]>({
     queryKey: ['tickets', { limit: 100 }],
     queryFn: () => api.tickets.list({ limit: 100 }),
   });
 
   // Fetch today's appointments
-  const { data: appointments = [] } = useQuery<Appointment[]>({
+  const { data: appointments = [], isLoading: appointmentsLoading } = useQuery<Appointment[]>({
     queryKey: ['appointments', { from: today.start, to: today.end }],
     queryFn: () => api.appointments.list({ from: today.start, to: today.end }),
   });
@@ -43,6 +43,9 @@ export default function TechDashboard() {
     queryKey: ['workorders-stats'],
     queryFn: () => api.workorders.stats(),
   });
+
+  const isLoading = ticketsLoading || appointmentsLoading;
+  const isError = ticketsError;
 
   // Stats
   const activeTickets = tickets.filter((tk) => ACTIVE_STATUSES.includes(tk.status));
@@ -89,6 +92,9 @@ export default function TechDashboard() {
       tooltip: t('tech.dashboard.activeWorkOrdersTooltip'),
     },
   ];
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>;
+  if (isError) return <div className="text-center py-8 text-red-600">{t('common.error')}</div>;
 
   return (
     <div className="space-y-6">

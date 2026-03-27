@@ -3,12 +3,17 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, LaborEntry, PartUsed, TravelEntry, WorksheetNote, FollowUp } from '../../api/client';
 import { formatDate, formatDateTime } from '../../lib/utils';
-import { WS_STATUS_LABELS, WS_STATUS_COLORS, LABOR_TYPE_LABELS, WS_NOTE_TYPE_LABELS, FOLLOWUP_TYPE_LABELS } from '../../lib/constants';
+import { WS_STATUS_COLORS } from '../../lib/constants';
 import { useTranslation } from '../../lib/i18n/hook';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { useToast } from '../../hooks/use-toast';
 import { Plus, Pencil, Trash2, Save, X } from 'lucide-react';
+
+// ─── Label key arrays (values from i18n catalogs) ───
+const LABOR_TYPE_KEYS = ['DIAGNOSTIC', 'REPARATION', 'INSTALLATION', 'CONSULTATION', 'GARANTIE', 'REPRISE'] as const;
+const WS_NOTE_TYPE_KEYS = ['INTERNE', 'VISIBLE_CLIENT', 'DIAGNOSTIC_FINDING', 'PROCEDURE'] as const;
+const FOLLOWUP_TYPE_KEYS = ['VERIFICATION_GARANTIE', 'RAPPEL_CLIENT', 'REVERIFICATION', 'ARRIVEE_PIECES', 'SUIVI_DEVIS'] as const;
 
 // ─── Helper: format money ───
 function money(value: number | null | undefined): string {
@@ -609,7 +614,7 @@ export default function AdminWorksheetDetail() {
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}
           >
-            {WS_STATUS_LABELS[ws.status] || ws.status}
+            {t(`label.wsStatus.${ws.status}`) || ws.status}
           </span>
 
           <h1 className="text-2xl font-bold">
@@ -888,8 +893,8 @@ export default function AdminWorksheetDetail() {
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.laborType')}</label>
                     <select value={laborType} onChange={(e) => setLaborType(e.target.value)} className={inputCls}>
-                      {Object.entries(LABOR_TYPE_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
+                      {LABOR_TYPE_KEYS.map((key) => (
+                        <option key={key} value={key}>{t(`label.laborType.${key}`)}</option>
                       ))}
                     </select>
                   </div>
@@ -953,8 +958,8 @@ export default function AdminWorksheetDetail() {
                       <tr key={entry.id} className="bg-muted/20">
                         <td className="p-2">
                           <select value={editLaborType} onChange={(e) => setEditLaborType(e.target.value)} className={inputCls}>
-                            {Object.entries(LABOR_TYPE_LABELS).map(([val, label]) => (
-                              <option key={val} value={val}>{label}</option>
+                            {LABOR_TYPE_KEYS.map((key) => (
+                              <option key={key} value={key}>{t(`label.laborType.${key}`)}</option>
                             ))}
                           </select>
                         </td>
@@ -991,7 +996,7 @@ export default function AdminWorksheetDetail() {
                       <tr key={entry.id} className="hover:bg-muted/30">
                         <td className="p-3">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                            {LABOR_TYPE_LABELS[entry.laborType] || entry.laborType}
+                            {t(`label.laborType.${entry.laborType}`) || entry.laborType}
                           </span>
                         </td>
                         <td className="p-3 text-muted-foreground max-w-xs truncate">
@@ -1396,8 +1401,8 @@ export default function AdminWorksheetDetail() {
                 <div>
                   <label className="text-xs font-medium">{t('worksheet.noteType')}</label>
                   <select value={noteType} onChange={(e) => setNoteType(e.target.value)} className={inputCls}>
-                    {Object.entries(WS_NOTE_TYPE_LABELS).map(([val, label]) => (
-                      <option key={val} value={val}>{label}</option>
+                    {WS_NOTE_TYPE_KEYS.map((key) => (
+                      <option key={key} value={key}>{t(`label.wsNoteType.${key}`)}</option>
                     ))}
                   </select>
                 </div>
@@ -1433,7 +1438,7 @@ export default function AdminWorksheetDetail() {
               >
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                    {WS_NOTE_TYPE_LABELS[note.noteType] || note.noteType}
+                    {t(`label.wsNoteType.${note.noteType}`) || note.noteType}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {note.author.firstName} {note.author.lastName}
@@ -1492,8 +1497,8 @@ export default function AdminWorksheetDetail() {
                   <div>
                     <label className="text-xs font-medium">{t('worksheet.followUpType')}</label>
                     <select value={followUpType} onChange={(e) => setFollowUpType(e.target.value)} className={inputCls}>
-                      {Object.entries(FOLLOWUP_TYPE_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
+                      {FOLLOWUP_TYPE_KEYS.map((key) => (
+                        <option key={key} value={key}>{t(`label.followUpType.${key}`)}</option>
                       ))}
                     </select>
                   </div>
@@ -1534,8 +1539,8 @@ export default function AdminWorksheetDetail() {
                     <div>
                       <label className="text-xs font-medium">{t('worksheet.followUpType')}</label>
                       <select value={editFollowUpType} onChange={(e) => setEditFollowUpType(e.target.value)} className={inputCls}>
-                        {Object.entries(FOLLOWUP_TYPE_LABELS).map(([val, label]) => (
-                          <option key={val} value={val}>{label}</option>
+                        {FOLLOWUP_TYPE_KEYS.map((key) => (
+                          <option key={key} value={key}>{t(`label.followUpType.${key}`)}</option>
                         ))}
                       </select>
                     </div>
@@ -1566,7 +1571,7 @@ export default function AdminWorksheetDetail() {
                   className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
                 >
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 shrink-0">
-                    {FOLLOWUP_TYPE_LABELS[fu.followUpType] || fu.followUpType}
+                    {t(`label.followUpType.${fu.followUpType}`) || fu.followUpType}
                   </span>
                   <span className="text-sm whitespace-nowrap">
                     {formatDate(fu.scheduledDate)}

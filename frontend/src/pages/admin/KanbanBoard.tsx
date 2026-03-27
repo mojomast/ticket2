@@ -18,7 +18,7 @@ import { Link } from 'react-router-dom';
 import { api, type Ticket } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
-import { STATUS_LABELS, STATUS_COLORS } from '../../lib/constants';
+import { STATUS_COLORS } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
@@ -160,7 +160,7 @@ function KanbanColumn({ status, tickets, isOver }: KanbanColumnProps) {
             {colors && (
               <div className={cn('w-2 h-2 rounded-full', colors.bg)} />
             )}
-            <h3 className="font-medium text-sm truncate">{STATUS_LABELS[status] || status}</h3>
+            <h3 className="font-medium text-sm truncate">{t(`label.status.${status}`) || status}</h3>
           </div>
         </HelpTooltip>
         <span className="text-xs text-muted-foreground bg-background rounded-full px-2 py-0.5 flex-shrink-0">
@@ -241,8 +241,8 @@ export default function KanbanBoard() {
       // Optimistically update the cache
       queryClient.setQueryData<Ticket[]>(['tickets', { limit: 100 }], (old) => {
         if (!old) return old;
-        return old.map((t) =>
-          t.id === ticketId ? { ...t, status: newStatus } : t
+        return old.map((tk) =>
+          tk.id === ticketId ? { ...tk, status: newStatus } : tk
         );
       });
 

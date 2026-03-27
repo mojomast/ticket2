@@ -3,8 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { formatDate } from '../../lib/utils';
-import { WS_STATUS_LABELS, WS_STATUS_COLORS } from '../../lib/constants';
+import { WS_STATUS_COLORS } from '../../lib/constants';
 import { useTranslation } from '../../lib/i18n/hook';
+
+const WS_STATUS_KEYS = [
+  'BROUILLON', 'EN_COURS', 'SOUMISE', 'APPROUVEE', 'REFUSEE', 'ANNULEE',
+] as const;
 import { useToast } from '../../hooks/use-toast';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -60,8 +64,8 @@ export default function TechWorksheets() {
         className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <option value="">{t('worksheet.allStatuses')}</option>
-        {Object.entries(WS_STATUS_LABELS).map(([val, label]) => (
-          <option key={val} value={val}>{label}</option>
+        {WS_STATUS_KEYS.map((key) => (
+          <option key={key} value={key}>{t(`label.wsStatus.${key}`)}</option>
         ))}
       </select>
 
@@ -98,7 +102,7 @@ export default function TechWorksheets() {
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${WS_STATUS_COLORS[ws.status]?.bg || 'bg-gray-100'} ${WS_STATUS_COLORS[ws.status]?.text || 'text-gray-700'}`}
                   >
-                    {WS_STATUS_LABELS[ws.status] || ws.status}
+                    {t(`label.wsStatus.${ws.status}`) || ws.status}
                   </span>
                   <span className="text-sm font-medium tabular-nums text-right min-w-[5rem]">
                     {Number(ws.grandTotal ?? 0).toFixed(2)}&nbsp;$

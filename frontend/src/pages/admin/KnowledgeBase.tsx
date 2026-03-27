@@ -22,23 +22,9 @@ import {
 
 const PAGE_LIMIT = 20;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  MATERIEL: 'Matériel',
-  LOGICIEL: 'Logiciel',
-  RESEAU: 'Réseau',
-  PROCEDURE: 'Procédure',
-  FAQ: 'FAQ',
-  AUTRE: 'Autre',
-};
+const KB_CATEGORY_KEYS = ['MATERIEL', 'LOGICIEL', 'RESEAU', 'PROCEDURE', 'FAQ', 'AUTRE'] as const;
 
-const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS);
-
-const VISIBILITY_LABELS: Record<string, string> = {
-  INTERNAL: 'Interne',
-  PUBLIC: 'Public',
-};
-
-const VISIBILITY_OPTIONS = Object.entries(VISIBILITY_LABELS);
+const KB_VISIBILITY_KEYS = ['INTERNAL', 'PUBLIC'] as const;
 
 /** Empty form state for creating a new article. */
 const EMPTY_FORM: ArticleFormData = {
@@ -208,9 +194,9 @@ export default function KnowledgeBase() {
           className="rounded-md border border-input bg-background px-3 py-2 text-sm"
         >
           <option value="">{t('kb.allCategories')}</option>
-          {CATEGORY_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
+          {KB_CATEGORY_KEYS.map((key) => (
+            <option key={key} value={key}>
+              {t(`label.kbCategory.${key}`)}
             </option>
           ))}
         </select>
@@ -223,9 +209,9 @@ export default function KnowledgeBase() {
           className="rounded-md border border-input bg-background px-3 py-2 text-sm"
         >
           <option value="">{t('kb.allVisibility')}</option>
-          {VISIBILITY_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
+          {KB_VISIBILITY_KEYS.map((key) => (
+            <option key={key} value={key}>
+              {t(`label.kbVisibility.${key}`)}
             </option>
           ))}
         </select>
@@ -263,7 +249,7 @@ export default function KnowledgeBase() {
                   </td>
                   <td className="p-3">
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                      {CATEGORY_LABELS[article.category] ?? article.category}
+                      {t(`label.kbCategory.${article.category}`) || article.category}
                     </Badge>
                   </td>
                   <td className="p-3">
@@ -405,9 +391,9 @@ export default function KnowledgeBase() {
                 onChange={handleFieldChange('category')}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {CATEGORY_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {KB_CATEGORY_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`label.kbCategory.${key}`)}
                   </option>
                 ))}
               </select>
@@ -421,9 +407,9 @@ export default function KnowledgeBase() {
                 onChange={handleFieldChange('visibility')}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {VISIBILITY_OPTIONS.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {KB_VISIBILITY_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`label.kbVisibility.${key}`)}
                   </option>
                 ))}
               </select>

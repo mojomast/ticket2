@@ -21,12 +21,7 @@ import StatusBadge from '../../components/shared/StatusBadge';
 
 // ─── Constants ───
 
-const CUSTOMER_TYPE_LABELS: Record<string, string> = {
-  PARTICULIER: 'Résidentiel',
-  ENTREPRISE: 'Commercial',
-  RESIDENTIAL: 'Résidentiel',
-  COMMERCIAL: 'Commercial',
-};
+// (customer type labels moved to i18n catalogs)
 
 // ─── Component ───
 
@@ -95,7 +90,7 @@ export default function ClientDetail() {
       setNoteForm({ content: '', isPinned: false });
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('common.error'));
     },
   });
 
@@ -107,7 +102,7 @@ export default function ClientDetail() {
       setDeleteNoteConfirmId(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('common.error'));
       setDeleteNoteConfirmId(null);
     },
   });
@@ -118,7 +113,7 @@ export default function ClientDetail() {
       queryClient.invalidateQueries({ queryKey: ['customerNotes', { customerId: id }] });
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('common.error'));
     },
   });
 
@@ -131,7 +126,7 @@ export default function ClientDetail() {
       setLinkArticleId('');
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('common.error'));
     },
   });
 
@@ -143,7 +138,7 @@ export default function ClientDetail() {
       setUnlinkConfirmId(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur');
+      toast.error(err.message || t('common.error'));
       setUnlinkConfirmId(null);
     },
   });
@@ -243,7 +238,7 @@ export default function ClientDetail() {
           <div>
             <span className="text-muted-foreground">{t('clientDetail.type')}:</span>{' '}
             {user.customerType
-              ? CUSTOMER_TYPE_LABELS[user.customerType] ?? user.customerType
+              ? t(`label.customerType.${user.customerType}`) || user.customerType
               : '–'}
           </div>
           <div>

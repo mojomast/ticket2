@@ -3,10 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { formatDate, formatDateTime } from '../../lib/utils';
 import {
-  WS_STATUS_LABELS,
   WS_STATUS_COLORS,
-  LABOR_TYPE_LABELS,
-  WS_NOTE_TYPE_LABELS,
 } from '../../lib/constants';
 import { useTranslation } from '../../lib/i18n/hook';
 import { Button } from '../../components/ui/button';
@@ -71,7 +68,7 @@ export default function PortalWorksheetDetail() {
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors.bg} ${statusColors.text}`}
           >
-            {WS_STATUS_LABELS[ws.status] || ws.status}
+            {t(`label.wsStatus.${ws.status}`) || ws.status}
           </span>
 
           <h1 className="text-2xl font-bold">
@@ -248,7 +245,7 @@ export default function PortalWorksheetDetail() {
                     <tr key={entry.id} className="hover:bg-muted/30">
                       <td className="p-3">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                          {LABOR_TYPE_LABELS[entry.laborType] || entry.laborType}
+                          {t(`label.laborType.${entry.laborType}`) || entry.laborType}
                         </span>
                       </td>
                       <td className="p-3 text-muted-foreground max-w-xs truncate">
@@ -367,7 +364,7 @@ export default function PortalWorksheetDetail() {
                 >
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      {WS_NOTE_TYPE_LABELS[note.noteType] || note.noteType}
+                      {t(`label.wsNoteType.${note.noteType}`) || note.noteType}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {note.author.firstName} {note.author.lastName}

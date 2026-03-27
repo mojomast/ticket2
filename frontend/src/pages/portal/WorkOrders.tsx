@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api, type WorkOrder } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
-import { DEVICE_TYPE_LABELS } from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
 import { Card } from '../../components/ui/card';
@@ -42,7 +41,7 @@ export default function PortalWorkOrders() {
                 </div>
                 <div className="text-sm">
                   <span className="text-muted-foreground">
-                    {DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType}
+                    {t(`label.deviceType.${wo.deviceType}`) || wo.deviceType}
                   </span>
                   {' — '}
                   <span>{wo.deviceBrand} {wo.deviceModel}</span>

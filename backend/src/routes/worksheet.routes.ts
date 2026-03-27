@@ -45,13 +45,20 @@ app.get('/follow-ups/schedule', async (c) => {
     return c.json({ data: null, error: { message: 'Accès refusé', code: 'FORBIDDEN' } }, 403);
   }
 
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+
+  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+    return c.json({ data: [], error: null });
+  }
+
   const followUps = await worksheetService.getFollowUpsForSchedule(
     session.user.id,
     session.user.role,
-    from,
-    to,
+    fromDate.toISOString(),
+    toDate.toISOString(),
   );
-  return c.json(followUps);
+  return c.json({ data: followUps, error: null });
 });
 
 // ─── Detail ───
@@ -195,20 +202,20 @@ app.post('/:id/notes/:noteId/to-kb', requireRole('ADMIN', 'TECHNICIAN'), async (
 app.post('/:id/follow-ups', requireRole('ADMIN', 'TECHNICIAN'), validateBody(createFollowUpSchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const followUp = await worksheetService.createFollowUp(c.req.param('id'), data, session.user.id);
+  const followUp = await worksheetService.createFollowUp(c.req.param('id'), data, session.user.id, session.user.role);
   return c.json({ data: followUp, error: null }, 201);
 });
 
 app.patch('/:id/follow-ups/:followUpId', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updateFollowUpSchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const followUp = await worksheetService.updateFollowUp(c.req.param('id'), c.req.param('followUpId'), data, session.user.id);
+  const followUp = await worksheetService.updateFollowUp(c.req.param('id'), c.req.param('followUpId'), data, session.user.id, session.user.role);
   return c.json({ data: followUp, error: null });
 });
 
 app.delete('/:id/follow-ups/:followUpId', requireRole('ADMIN', 'TECHNICIAN'), async (c) => {
   const session = c.get('session');
-  await worksheetService.deleteFollowUp(c.req.param('id'), c.req.param('followUpId'), session.user.id);
+  await worksheetService.deleteFollowUp(c.req.param('id'), c.req.param('followUpId'), session.user.id, session.user.role);
   return c.json({ data: { success: true }, error: null });
 });
 

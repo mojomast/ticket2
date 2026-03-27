@@ -5,7 +5,7 @@ import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
-import { APPOINTMENT_STATUS_COLORS, APPOINTMENT_STATUS_LABELS } from '../../lib/constants';
+import { APPOINTMENT_STATUS_COLORS } from '../../lib/constants';
 import type { AppointmentStatus } from '../../types';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -1148,7 +1148,7 @@ function AdminAppointmentCard({
                 <option value="">{t('admin.calendar.changeStatusOption')}</option>
                 {ALL_STATUSES.filter((s) => s !== apt.status).map((s) => (
                   <option key={s} value={s}>
-                    {APPOINTMENT_STATUS_LABELS[s] || s}
+                    {t(`label.appointmentStatus.${s}`) || s}
                   </option>
                 ))}
               </select>

@@ -22,7 +22,7 @@ export default function PortalDashboard() {
   const { t } = useTranslation();
 
   // Fetch customer tickets (up to 50)
-  const { data: tickets = [] } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading: ticketsLoading, isError: ticketsError } = useQuery<Ticket[]>({
     queryKey: ['tickets', { limit: 50 }],
     queryFn: () => api.tickets.list({ limit: 50 }),
   });
@@ -32,6 +32,9 @@ export default function PortalDashboard() {
     queryKey: ['workorders-stats'],
     queryFn: () => api.workorders.stats(),
   });
+
+  const isLoading = ticketsLoading;
+  const isError = ticketsError;
 
   // Stats
   const activeTickets = tickets.filter((tk) => ACTIVE_STATUSES.includes(tk.status));
@@ -70,6 +73,9 @@ export default function PortalDashboard() {
       tooltip: t('portal.dashboard.activeWoTooltip'),
     },
   ];
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>;
+  if (isError) return <div className="text-center py-8 text-red-600">{t('common.error')}</div>;
 
   return (
     <div className="space-y-6">

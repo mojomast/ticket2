@@ -355,6 +355,7 @@ class PdfDrawer {
         x, y: this.y,
         size: 9, font: this.fontRegular, color: COLOR_GRAY,
       });
+      this.y -= 14; // Advance Y past the label
       return;
     }
 
@@ -366,6 +367,7 @@ class PdfDrawer {
           x, y: this.y,
           size: 9, font: this.fontRegular, color: COLOR_GRAY,
         });
+        this.y -= 14;
         return;
       }
 
@@ -384,12 +386,15 @@ class PdfDrawer {
         x, y: this.y,
         width: scaledDims.width, height: scaledDims.height,
       });
+      // Advance Y past the image (label is above the image, so only image height matters)
+      // Note: we don't subtract for label since it's drawn *above* current Y
     } catch (err) {
       logger.warn({ err }, 'Failed to embed signature image in PDF');
       this.page.drawText(`${safeLabel}: (erreur image)`, {
         x, y: this.y,
         size: 9, font: this.fontRegular, color: COLOR_GRAY,
       });
+      this.y -= 14;
     }
   }
 
@@ -509,32 +514,32 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
     d.drawSectionHeader('Pièces');
 
     const partCols = [
-      { text: 'Pièce', width: 150 },
-      { text: 'N° pièce', width: 80 },
-      { text: 'Qté', width: 40, align: 'right' as const },
+      { text: 'Pièce', width: 170 },
+      { text: 'N° pièce', width: 90 },
+      { text: 'Qté', width: 45, align: 'right' as const },
       { text: 'Prix unit.', width: 65, align: 'right' as const },
       { text: 'Garantie', width: 60 },
-      { text: 'Total', width: 60, align: 'right' as const },
+      { text: 'Total', width: 65, align: 'right' as const },
     ];
     d.drawTableRow(partCols, { bold: true, bg: true });
 
     for (let i = 0; i < w.parts.length; i++) {
       const part = w.parts[i];
       d.drawTableRow([
-        { text: part.partName.slice(0, 40), width: 150 },
-        { text: (part.partNumber || '—').slice(0, 20), width: 80 },
-        { text: String(part.quantity), width: 40, align: 'right' },
+        { text: part.partName.slice(0, 45), width: 170 },
+        { text: (part.partNumber || '—').slice(0, 22), width: 90 },
+        { text: String(part.quantity), width: 45, align: 'right' },
         { text: formatMoney(part.unitPrice), width: 65, align: 'right' },
         { text: part.warrantyMonths ? `${part.warrantyMonths} mois` : '—', width: 60 },
-        { text: formatMoney(part.lineTotal), width: 60, align: 'right' },
+        { text: formatMoney(part.lineTotal), width: 65, align: 'right' },
       ], { bg: i % 2 === 1 });
     }
 
     d.spacer(4);
     d.drawTableRow([
-      { text: '', width: 395 },
+      { text: '', width: 390 },
       { text: 'Sous-total pièces:', width: 60, align: 'right' },
-      { text: formatMoney(w.totalParts), width: 40, align: 'right' },
+      { text: formatMoney(w.totalParts), width: 45, align: 'right' },
     ], { bold: true });
     d.spacer(8);
   }
@@ -544,11 +549,11 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
     d.drawSectionHeader('Déplacements');
 
     const travelCols = [
-      { text: 'Date', width: 70 },
-      { text: 'Départ', width: 120 },
-      { text: 'Arrivée', width: 120 },
+      { text: 'Date', width: 75 },
+      { text: 'Départ', width: 130 },
+      { text: 'Arrivée', width: 130 },
       { text: 'Km', width: 50, align: 'right' as const },
-      { text: 'Taux/km', width: 55, align: 'right' as const },
+      { text: 'Taux/km', width: 50, align: 'right' as const },
       { text: 'Total', width: 60, align: 'right' as const },
     ];
     d.drawTableRow(travelCols, { bold: true, bg: true });
@@ -556,11 +561,11 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
     for (let i = 0; i < w.travelEntries.length; i++) {
       const entry = w.travelEntries[i];
       d.drawTableRow([
-        { text: formatDate(entry.travelDate), width: 70 },
-        { text: (entry.departureAddress || '—').slice(0, 30), width: 120 },
-        { text: (entry.arrivalAddress || '—').slice(0, 30), width: 120 },
+        { text: formatDate(entry.travelDate), width: 75 },
+        { text: (entry.departureAddress || '—').slice(0, 32), width: 130 },
+        { text: (entry.arrivalAddress || '—').slice(0, 32), width: 130 },
         { text: `${entry.distanceKm.toFixed(1)}`, width: 50, align: 'right' },
-        { text: formatMoney(entry.ratePerKm), width: 55, align: 'right' },
+        { text: formatMoney(entry.ratePerKm), width: 50, align: 'right' },
         { text: formatMoney(entry.lineTotal), width: 60, align: 'right' },
       ], { bg: i % 2 === 1 });
     }
@@ -632,18 +637,26 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
   d.spacer(4);
 
   const sigStartY = d.getY();
+
+  // Draw tech signature (left side)
   await d.drawSignature(w.techSignature, 'Technicien', MARGIN_LEFT);
   if (w.techSignedAt) {
-    d.setY(d.getY() - 4);
+    d.spacer(4);
     d.drawText(`Signé le ${formatDateTime(w.techSignedAt)}`, { size: 7, color: COLOR_GRAY });
   }
+  const afterTechY = d.getY();
 
+  // Draw customer signature (right side, same starting Y)
   d.setY(sigStartY);
   await d.drawSignature(w.custSignature, 'Client', MARGIN_LEFT + 250);
   if (w.custSignedAt) {
-    d.setY(d.getY() - 4);
+    d.spacer(4);
     d.drawText(`Signé le ${formatDateTime(w.custSignedAt)}`, { size: 7, color: COLOR_GRAY, indent: 250 });
   }
+  const afterCustY = d.getY();
+
+  // Set Y to the lowest point of both signatures
+  d.setY(Math.min(afterTechY, afterCustY));
 
   // ─── Footer ───
   const allPages = doc.getPages();

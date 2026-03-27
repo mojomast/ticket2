@@ -12,31 +12,13 @@ import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
-// ─── Label Maps ───
+// ─── Label Map Keys (values from i18n catalogs) ───
 
-const CATEGORY_LABELS: Record<string, string> = {
-  MATERIEL: 'Matériel',
-  LOGICIEL: 'Logiciel',
-  RESEAU: 'Réseau',
-  PROCEDURE: 'Procédure',
-  FAQ: 'FAQ',
-  AUTRE: 'Autre',
-};
+const KB_CATEGORY_KEYS = ['MATERIEL', 'LOGICIEL', 'RESEAU', 'PROCEDURE', 'FAQ', 'AUTRE'] as const;
 
-const VISIBILITY_LABELS: Record<string, string> = {
-  INTERNAL: 'Interne',
-  PUBLIC: 'Public',
-};
+const KB_VISIBILITY_KEYS = ['INTERNAL', 'PUBLIC'] as const;
 
-const ENTITY_TYPE_LABELS: Record<string, string> = {
-  TICKET: 'Billet',
-  WORKORDER: 'Bon de travail',
-  CUSTOMER: 'Client',
-};
-
-const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS);
-const VISIBILITY_OPTIONS = Object.entries(VISIBILITY_LABELS);
-const ENTITY_TYPE_OPTIONS = Object.entries(ENTITY_TYPE_LABELS);
+const KB_ENTITY_TYPE_KEYS = ['TICKET', 'WORKORDER', 'CUSTOMER'] as const;
 
 // ─── Main Component ───
 
@@ -304,9 +286,9 @@ export default function KbArticleDetail() {
                       onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      {CATEGORY_OPTIONS.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
+                      {KB_CATEGORY_KEYS.map((key) => (
+                        <option key={key} value={key}>
+                          {t(`label.kbCategory.${key}`)}
                         </option>
                       ))}
                     </select>
@@ -322,9 +304,9 @@ export default function KbArticleDetail() {
                       onChange={(e) => setEditForm({ ...editForm, visibility: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      {VISIBILITY_OPTIONS.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
+                      {KB_VISIBILITY_KEYS.map((key) => (
+                        <option key={key} value={key}>
+                          {t(`label.kbVisibility.${key}`)}
                         </option>
                       ))}
                     </select>
@@ -395,10 +377,10 @@ export default function KbArticleDetail() {
                 {/* Badges row */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge>
-                    {CATEGORY_LABELS[a.category] || a.category}
+                    {t(`label.kbCategory.${a.category}`) || a.category}
                   </Badge>
                   <Badge variant={a.visibility === 'PUBLIC' ? 'default' : 'secondary'}>
-                    {VISIBILITY_LABELS[a.visibility] || a.visibility}
+                    {t(`label.kbVisibility.${a.visibility}`) || a.visibility}
                   </Badge>
                   {a.tags &&
                     a.tags.map((tk) => (
@@ -448,13 +430,13 @@ export default function KbArticleDetail() {
               <div>
                 <span className="text-muted-foreground">{t('kb.detail.categoryLabel')}:</span>{' '}
                 <Badge variant="default">
-                  {CATEGORY_LABELS[a.category] || a.category}
+                  {t(`label.kbCategory.${a.category}`) || a.category}
                 </Badge>
               </div>
               <div>
                 <span className="text-muted-foreground">{t('kb.detail.visibilityLabel')}:</span>{' '}
                 <Badge variant={a.visibility === 'PUBLIC' ? 'default' : 'secondary'}>
-                  {VISIBILITY_LABELS[a.visibility] || a.visibility}
+                  {t(`label.kbVisibility.${a.visibility}`) || a.visibility}
                 </Badge>
               </div>
               {a.tags && a.tags.length > 0 && (
@@ -482,13 +464,13 @@ export default function KbArticleDetail() {
                 <p className="text-sm text-muted-foreground">{t('kb.detail.noLinks')}</p>
               ) : (
                 <div className="space-y-3">
-                  {ENTITY_TYPE_OPTIONS.map(([typeKey, typeLabel]) => {
+                  {KB_ENTITY_TYPE_KEYS.map((typeKey) => {
                     const typeLinks = linksByType[typeKey];
                     if (!typeLinks || typeLinks.length === 0) return null;
                     return (
                       <div key={typeKey}>
                         <p className="text-xs font-medium text-muted-foreground mb-1">
-                          {typeLabel}
+                          {t(`label.kbEntityType.${typeKey}`)}
                         </p>
                         <div className="space-y-1">
                           {typeLinks.map((link) => (
@@ -498,7 +480,7 @@ export default function KbArticleDetail() {
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="text-xs font-medium text-muted-foreground">
-                                  {typeLabel}
+                                  {t(`label.kbEntityType.${typeKey}`)}
                                 </span>
                                 <span
                                   className="text-xs font-mono truncate max-w-[120px]"
@@ -539,9 +521,9 @@ export default function KbArticleDetail() {
                       onChange={(e) => setLinkEntityType(e.target.value)}
                       className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      {ENTITY_TYPE_OPTIONS.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
+                      {KB_ENTITY_TYPE_KEYS.map((key) => (
+                        <option key={key} value={key}>
+                          {t(`label.kbEntityType.${key}`)}
                         </option>
                       ))}
                     </select>

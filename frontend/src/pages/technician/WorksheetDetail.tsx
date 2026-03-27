@@ -7,12 +7,20 @@ import { useToast } from '../../hooks/use-toast';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import {
-  WS_STATUS_LABELS,
   WS_STATUS_COLORS,
-  LABOR_TYPE_LABELS,
-  WS_NOTE_TYPE_LABELS,
-  FOLLOWUP_TYPE_LABELS,
 } from '../../lib/constants';
+
+const LABOR_TYPE_KEYS = [
+  'DIAGNOSTIC', 'REPARATION', 'INSTALLATION', 'FORMATION', 'CONSULTATION', 'AUTRE',
+] as const;
+
+const WS_NOTE_TYPE_KEYS = [
+  'DIAGNOSTIC_FINDING', 'PROCEDURE', 'VISIBLE_CLIENT', 'INTERNE',
+] as const;
+
+const FOLLOWUP_TYPE_KEYS = [
+  'VERIFICATION_GARANTIE', 'RAPPEL_CLIENT', 'REVERIFICATION', 'ARRIVEE_PIECES', 'SUIVI_DEVIS',
+] as const;
 import { formatDateTime } from '../../lib/utils';
 import SignaturePad from '../../components/shared/SignaturePad';
 
@@ -544,7 +552,7 @@ export default function TechWorksheetDetail() {
           </Button>
         </div>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor.bg} ${statusColor.text} ${statusColor.border} border`}>
-          {WS_STATUS_LABELS[worksheet.status] ?? worksheet.status}
+          {t(`label.wsStatus.${worksheet.status}`) ?? worksheet.status}
         </span>
       </div>
 
@@ -651,7 +659,7 @@ export default function TechWorksheetDetail() {
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                    {LABOR_TYPE_LABELS[le.laborType] ?? le.laborType}
+                    {t(`label.laborType.${le.laborType}`) ?? le.laborType}
                   </span>
                   {!le.endTime && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 animate-pulse">
@@ -738,8 +746,8 @@ export default function TechWorksheetDetail() {
                           onChange={(e) => setLaborType(e.target.value)}
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                         >
-                          {Object.entries(LABOR_TYPE_LABELS).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
+                          {LABOR_TYPE_KEYS.map((key) => (
+                            <option key={key} value={key}>{t(`label.laborType.${key}`)}</option>
                           ))}
                         </select>
                       </div>
@@ -1229,7 +1237,7 @@ export default function TechWorksheetDetail() {
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                    {WS_NOTE_TYPE_LABELS[note.noteType] ?? note.noteType}
+                    {t(`label.wsNoteType.${note.noteType}`) ?? note.noteType}
                   </span>
                   <span className="text-xs text-muted-foreground">{formatDateTime(note.createdAt)}</span>
                 </div>
@@ -1286,8 +1294,8 @@ export default function TechWorksheetDetail() {
                       onChange={(e) => setNoteType(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                     >
-                      {Object.entries(WS_NOTE_TYPE_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
+                      {WS_NOTE_TYPE_KEYS.map((key) => (
+                        <option key={key} value={key}>{t(`label.wsNoteType.${key}`)}</option>
                       ))}
                     </select>
                   </div>
@@ -1324,7 +1332,7 @@ export default function TechWorksheetDetail() {
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                    {FOLLOWUP_TYPE_LABELS[fu.followUpType] ?? fu.followUpType}
+                    {t(`label.followUpType.${fu.followUpType}`) ?? fu.followUpType}
                   </span>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${fu.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                     {fu.completed ? '✓' : '○'}
@@ -1387,8 +1395,8 @@ export default function TechWorksheetDetail() {
                       onChange={(e) => setFollowUpType(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                     >
-                      {Object.entries(FOLLOWUP_TYPE_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
+                      {FOLLOWUP_TYPE_KEYS.map((key) => (
+                        <option key={key} value={key}>{t(`label.followUpType.${key}`)}</option>
                       ))}
                     </select>
                   </div>

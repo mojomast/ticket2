@@ -3,10 +3,20 @@ import { AppError } from '../lib/errors.js';
 import type { NotificationType } from '@prisma/client';
 import { getPagination, buildPaginatedResponse } from '../types/index.js';
 
-export async function getNotifications(userId: string, query: any) {
-  const { page, limit, skip } = getPagination({ page: query.page || 1, limit: query.limit || 20 });
+// ─── Query types ───
 
-  const where: any = { userId };
+interface NotificationQuery {
+  page?: number | string;
+  limit?: number | string;
+}
+
+export async function getNotifications(userId: string, query: NotificationQuery) {
+  const { page, limit, skip } = getPagination({
+    page: Number(query.page) || 1,
+    limit: Number(query.limit) || 20,
+  });
+
+  const where: { userId: string } = { userId };
 
   const [notifications, total] = await Promise.all([
     prisma.notification.findMany({

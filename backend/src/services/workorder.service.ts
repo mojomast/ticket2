@@ -286,20 +286,24 @@ export async function changeStatus(id: string, newStatus: WorkOrderStatus, reaso
     updateData.abandonedDate = new Date();
   }
 
-  const updated = await prisma.workOrder.update({
-    where: { id },
-    data: updateData,
-    include: WORKORDER_DETAIL_INCLUDE,
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const wo2 = await tx.workOrder.update({
+      where: { id },
+      data: updateData,
+      include: WORKORDER_DETAIL_INCLUDE,
+    });
 
-  // Add an auto-note for the status change
-  await prisma.workOrderNote.create({
-    data: {
-      workOrderId: id,
-      authorId: userId,
-      content: `Statut change: ${wo.status} → ${newStatus}${reason ? ` — ${reason}` : ''}`,
-      isInternal: true,
-    },
+    // Add an auto-note for the status change
+    await tx.workOrderNote.create({
+      data: {
+        workOrderId: id,
+        authorId: userId,
+        content: `Statut change: ${wo.status} → ${newStatus}${reason ? ` — ${reason}` : ''}`,
+        isInternal: true,
+      },
+    });
+
+    return wo2;
   });
 
   // Fire-and-forget audit log
@@ -429,19 +433,23 @@ export async function approveQuote(id: string, userId: string, role: UserRole) {
     throw AppError.forbidden();
   }
 
-  const updated = await prisma.workOrder.update({
-    where: { id },
-    data: { status: 'APPROUVE' },
-    include: WORKORDER_DETAIL_INCLUDE,
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const wo2 = await tx.workOrder.update({
+      where: { id },
+      data: { status: 'APPROUVE' },
+      include: WORKORDER_DETAIL_INCLUDE,
+    });
 
-  await prisma.workOrderNote.create({
-    data: {
-      workOrderId: id,
-      authorId: userId,
-      content: 'Devis approuve par le client',
-      isInternal: false,
-    },
+    await tx.workOrderNote.create({
+      data: {
+        workOrderId: id,
+        authorId: userId,
+        content: 'Devis approuve par le client',
+        isInternal: false,
+      },
+    });
+
+    return wo2;
   });
 
   return updated;
@@ -458,19 +466,23 @@ export async function declineQuote(id: string, userId: string, role: UserRole) {
     throw AppError.forbidden();
   }
 
-  const updated = await prisma.workOrder.update({
-    where: { id },
-    data: { status: 'REFUSE' },
-    include: WORKORDER_DETAIL_INCLUDE,
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const wo2 = await tx.workOrder.update({
+      where: { id },
+      data: { status: 'REFUSE' },
+      include: WORKORDER_DETAIL_INCLUDE,
+    });
 
-  await prisma.workOrderNote.create({
-    data: {
-      workOrderId: id,
-      authorId: userId,
-      content: 'Devis refuse par le client',
-      isInternal: false,
-    },
+    await tx.workOrderNote.create({
+      data: {
+        workOrderId: id,
+        authorId: userId,
+        content: 'Devis refuse par le client',
+        isInternal: false,
+      },
+    });
+
+    return wo2;
   });
 
   return updated;
@@ -525,28 +537,29 @@ export async function getDashboardStats(userId: string, role: UserRole) {
     ];
   }
 
-  const statuses: WorkOrderStatus[] = [
+  const openStatuses: WorkOrderStatus[] = [
     'RECEPTION', 'DIAGNOSTIC', 'ATTENTE_APPROBATION', 'APPROUVE',
     'ATTENTE_PIECES', 'EN_REPARATION', 'VERIFICATION', 'PRET',
   ];
 
-  const counts = await Promise.all(
-    statuses.map(status =>
-      prisma.workOrder.count({ where: { ...baseWhere, status } })
-    )
-  );
+  // Single groupBy query instead of 8 separate counts
+  const grouped = await prisma.workOrder.groupBy({
+    by: ['status'],
+    where: { ...baseWhere, status: { in: openStatuses } },
+    _count: true,
+  });
 
   const statusCounts: Record<string, number> = {};
-  statuses.forEach((s, i) => { statusCounts[s] = counts[i]; });
+  for (const s of openStatuses) { statusCounts[s] = 0; }
+  for (const g of grouped) { statusCounts[g.status] = g._count; }
 
-  // Total open (non-terminal)
-  const totalOpen = counts.reduce((sum, c) => sum + c, 0);
+  const totalOpen = Object.values(statusCounts).reduce((sum, c) => sum + c, 0);
 
   // Overdue: estimatedPickupDate < now AND not in terminal status
   const overdue = await prisma.workOrder.count({
     where: {
       ...baseWhere,
-      status: { in: statuses },
+      status: { in: openStatuses },
       estimatedPickupDate: { lt: new Date() },
     },
   });

@@ -5,23 +5,13 @@ import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
 
-const PERMISSION_LABELS: Record<string, string> = {
-  can_accept_tickets: 'Accepter les billets',
-  can_close_tickets: 'Fermer les billets',
-  can_send_quotes: 'Envoyer des devis',
-  can_cancel_appointments: 'Annuler les rendez-vous',
-  can_view_all_tickets: 'Voir tous les billets',
-};
-
-const PERMISSION_DESCRIPTIONS: Record<string, string> = {
-  can_accept_tickets: 'Permet au technicien de prendre en charge de nouveaux billets',
-  can_close_tickets: 'Permet de marquer un billet comme résolu et de le fermer',
-  can_send_quotes: 'Autorise l\'envoi de devis et estimations aux clients',
-  can_cancel_appointments: 'Permet d\'annuler ou reporter les rendez-vous planifiés',
-  can_view_all_tickets: 'Donne accès à tous les billets, pas seulement ceux assignés',
-};
-
-const PERMISSION_KEYS = Object.keys(PERMISSION_LABELS);
+const PERMISSION_KEYS = [
+  'can_accept_tickets',
+  'can_close_tickets',
+  'can_send_quotes',
+  'can_cancel_appointments',
+  'can_view_all_tickets',
+];
 
 interface TechnicianFormData {
   firstName: string;
@@ -384,7 +374,7 @@ export default function AdminTechnicians() {
                       permissionsMutation.isPending &&
                       permissionsMutation.variables?.id === tech.id;
                     return (
-                      <HelpTooltip key={permKey} content={PERMISSION_DESCRIPTIONS[permKey] ?? PERMISSION_LABELS[permKey] ?? permKey} side="right">
+                      <HelpTooltip key={permKey} content={t(`label.permissionDesc.${permKey}`)} side="right">
                         <label
                           className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/30 rounded px-1 py-0.5"
                         >
@@ -396,7 +386,7 @@ export default function AdminTechnicians() {
                             className="rounded border-input disabled:opacity-50"
                           />
                           <span className={isPending ? 'opacity-50' : ''}>
-                            {PERMISSION_LABELS[permKey]}
+                            {t(`label.permission.${permKey}`)}
                           </span>
                         </label>
                       </HelpTooltip>
@@ -442,7 +432,7 @@ export default function AdminTechnicians() {
           {/* Empty State */}
           {technicians && technicians.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              Aucun technicien trouvé
+              {t('admin.technicians.noTechnicians')}
             </div>
           )}
         </>

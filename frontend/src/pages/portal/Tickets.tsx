@@ -5,13 +5,15 @@ import { api, type Ticket } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import { formatDate } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
-import {
-  PRIORITY_LABELS,
-  SERVICE_CATEGORY_LABELS,
-  SERVICE_MODE_LABELS,
-} from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
+
+const PRIORITY_KEYS = ['BASSE', 'NORMALE', 'HAUTE', 'URGENTE'] as const;
+const SERVICE_CATEGORY_KEYS = [
+  'REPARATION', 'DEPANNAGE', 'MAINTENANCE', 'INSTALLATION',
+  'CONSULTATION', 'FORMATION', 'RESEAU', 'SECURITE', 'AUTRE',
+] as const;
+const SERVICE_MODE_KEYS = ['EN_CUBICULE', 'SUR_SITE'] as const;
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -149,9 +151,9 @@ export default function PortalTickets() {
                 onChange={(e) => updateField('priority', e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {PRIORITY_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`label.priority.${key}`)}
                   </option>
                 ))}
               </select>
@@ -168,9 +170,9 @@ export default function PortalTickets() {
                 onChange={(e) => updateField('serviceCategory', e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {Object.entries(SERVICE_CATEGORY_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {SERVICE_CATEGORY_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`label.serviceCategory.${key}`)}
                   </option>
                 ))}
               </select>
@@ -187,9 +189,9 @@ export default function PortalTickets() {
                 onChange={(e) => updateField('serviceMode', e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                {Object.entries(SERVICE_MODE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+                {SERVICE_MODE_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`label.serviceMode.${key}`)}
                   </option>
                 ))}
               </select>

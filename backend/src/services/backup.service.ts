@@ -12,11 +12,23 @@ const MODELS = [
   'user', 'ticket', 'appointment', 'appointmentProposal', 'message',
   'notification', 'attachment', 'systemConfig', 'auditLog', 'backupRecord',
   'workOrder', 'workOrderNote',
+  'worksheet', 'laborEntry', 'partUsed', 'travelEntry', 'worksheetNote', 'followUp',
+  'kbArticle', 'kbArticleLink',
+  'customerNote',
 ] as const;
 
 // Delete order: child → parent (respect FK constraints)
 // Appointment has FK to AppointmentProposal (proposalId), so delete appointment first
 const DELETE_ORDER = [
+  'followUp',            // depends on Worksheet
+  'worksheetNote',       // depends on Worksheet, User
+  'travelEntry',         // depends on Worksheet
+  'partUsed',            // depends on Worksheet
+  'laborEntry',          // depends on Worksheet
+  'worksheet',           // depends on WorkOrder, Ticket, User
+  'kbArticleLink',       // depends on KbArticle, User
+  'kbArticle',           // depends on User
+  'customerNote',        // depends on User (customer + author)
   'workOrderNote',       // depends on WorkOrder, User
   'workOrder',           // depends on User
   'notification',        // depends on User, Ticket
@@ -36,6 +48,8 @@ const DELETE_ORDER = [
 const INSERT_ORDER = [
   'user', 'systemConfig', 'ticket', 'appointmentProposal', 'appointment',
   'message', 'attachment', 'notification', 'workOrder', 'workOrderNote',
+  'kbArticle', 'kbArticleLink', 'customerNote',
+  'worksheet', 'laborEntry', 'partUsed', 'travelEntry', 'worksheetNote', 'followUp',
   'auditLog', 'backupRecord',
 ] as const;
 
