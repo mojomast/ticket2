@@ -1,72 +1,47 @@
 # Handoff — Valitek v2
 
-## Last Completed: Worksheet Feature (Full-Stack)
-## Commit: (pending — about to push)
+## Last Completed: Worksheet Code Review Fixes
+## Commit: `ff3723b`
 ## Branch: main
 
 ## Session Summary
 
-Built the complete **Technician Worksheet System** — full-stack feature spanning 6 Prisma models, backend service + routes + PDF generation, and 4 frontend pages with i18n.
+Fixed all 9 bugs identified during the worksheet feature code review (1 high, 5 medium, 3 low priority).
 
-### What Was Built
+### Fixes Applied
 
-**Backend (6 new files, 3 modified):**
-1. `backend/prisma/schema.prisma` — 6 new models (Worksheet, LaborEntry, PartUsed, TravelEntry, WorksheetNote, FollowUp), 5 new enums, 4 new NotificationType values, User/WorkOrder back-references
-2. `backend/src/validations/worksheet.ts` — 14 Zod schemas with French error messages (186 lines)
-3. `backend/src/services/worksheet.service.ts` — 22 exported service functions: CRUD, status workflow (BROUILLON→SOUMISE→REVISEE→APPROUVEE→FACTUREE→ANNULEE), labor/parts/travel/notes/follow-ups, signatures, KB integration, totals recalculation, admin notifications (~1054 lines)
-4. `backend/src/services/worksheet-pdf.service.ts` — Professional PDF generation using pdf-lib with tables, signatures, totals (~380 lines)
-5. `backend/src/routes/worksheet.routes.ts` — REST endpoints with role guards (ADMIN+TECHNICIAN for writes, all auth for reads), PDF download endpoint (~200 lines)
-6. `backend/src/index.ts` — Worksheet routes mounted at `/api/worksheets` with `requireAuth`
+**HIGH:**
+1. **Security: `updateFollowUp` ownership check** — Service now takes `worksheetId` parameter and uses `findFirst({ where: { id, worksheetId } })` instead of `findUnique({ where: { id } })`, matching the `deleteFollowUp` pattern. Route now passes `c.req.param('id')` to the service.
 
-**Frontend (4 new files, 6 modified):**
-1. `frontend/src/pages/technician/Worksheets.tsx` — Paginated list page with status filter (122 lines)
-2. `frontend/src/pages/technician/WorksheetDetail.tsx` — Mobile-first fill-in page with 5 tabbed sections (Labor/Parts/Travel/Notes/Follow-ups), live timer, inline forms, sticky bottom bar (1255 lines)
-3. `frontend/src/pages/admin/Worksheets.tsx` — Admin list with search, table layout, technician column (171 lines)
-4. `frontend/src/pages/admin/WorksheetDetail.tsx` — Admin review page with approve/revise/bill actions, read-only data, PDF download, signature display (609 lines)
-5. `frontend/src/api/client.ts` — Worksheet types + 20+ API methods for all sub-resources
-6. `frontend/src/App.tsx` — Lazy imports + routes for all 4 pages
-7. `frontend/src/components/shared/AppSidebar.tsx` — Nav links for ADMIN + TECHNICIAN
-8. `frontend/src/lib/constants.ts` — Worksheet status colors/labels, labor types, note types, follow-up types
-9. `frontend/src/lib/i18n/locales/fr.ts` — ~95 new worksheet keys
-10. `frontend/src/lib/i18n/locales/en.ts` — ~95 matching English keys
+**MEDIUM:**
+2. **DELETE worksheet route guard** — Changed from `requireRole('ADMIN', 'TECHNICIAN')` to `requireRole('ADMIN')` since the service already throws forbidden for non-admin.
+3. **Notes/follow-ups isDraft gate** — Add note/follow-up forms and delete buttons now wrapped in `{isDraft && ...}` like labor/parts/travel. Toggle-complete on follow-ups remains available in all statuses.
+4. **Admin date label i18n** — Replaced `t('worksheet.approve')` / `t('worksheet.markBilled')` (action verbs) with new keys `worksheet.approvedAt` ("Approuvee le") / `worksheet.billedAt` ("Facturee le") as date labels.
+5. **Not-found error state** — Tech WorksheetDetail now shows `t('worksheet.notFound')` ("Feuille de travail introuvable") instead of generic title.
+6. **Hardcoded 'mo' unit** — Replaced `${part.warrantyMonths} mo` with `${part.warrantyMonths} ${t('worksheet.warrantyMonthsShort')}` (fr: "mois", en: "mo").
 
-### Routes
+**LOW:**
+7. **convertToKb query invalidation** — Added `queryClient.invalidateQueries({ queryKey: ['worksheet', id] })` to `onSuccess`.
+8. **Admin confirm dialogs** — `handleApprove` and `handleCancel` now show `window.confirm()` before firing mutation.
+9. **Pagination threshold** — Both tech and admin Worksheets pages changed from `totalPages > 0` to `totalPages > 1`.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/worksheets | List (paginated, filtered by role) |
-| POST | /api/worksheets | Create (ADMIN/TECH) |
-| GET | /api/worksheets/:id | Detail |
-| PATCH | /api/worksheets/:id | Update summary (ADMIN/TECH) |
-| DELETE | /api/worksheets/:id | Soft delete (ADMIN/TECH) |
-| PATCH | /api/worksheets/:id/status | Status change (ADMIN/TECH) |
-| GET | /api/worksheets/:id/pdf | PDF download |
-| POST | /api/worksheets/:id/labor | Add labor entry |
-| PATCH | /api/worksheets/:id/labor/:entryId | Update labor entry |
-| DELETE | /api/worksheets/:id/labor/:entryId | Delete labor entry |
-| POST | /api/worksheets/:id/labor/:entryId/stop | Stop timer |
-| POST | /api/worksheets/:id/parts | Add part |
-| PATCH | /api/worksheets/:id/parts/:partId | Update part |
-| DELETE | /api/worksheets/:id/parts/:partId | Delete part |
-| POST | /api/worksheets/:id/travel | Add travel entry |
-| PATCH | /api/worksheets/:id/travel/:entryId | Update travel entry |
-| DELETE | /api/worksheets/:id/travel/:entryId | Delete travel entry |
-| POST | /api/worksheets/:id/notes | Add note |
-| DELETE | /api/worksheets/:id/notes/:noteId | Delete note |
-| POST | /api/worksheets/:id/notes/:noteId/to-kb | Convert note to KB article |
-| POST | /api/worksheets/:id/follow-ups | Create follow-up |
-| PATCH | /api/worksheets/:id/follow-ups/:followUpId | Update follow-up |
-| DELETE | /api/worksheets/:id/follow-ups/:followUpId | Delete follow-up |
-| POST | /api/worksheets/:id/signature | Save signature |
+### New i18n Keys (7 added to both fr.ts and en.ts)
+- `worksheet.approvedAt` — "Approuvee le" / "Approved on"
+- `worksheet.billedAt` — "Facturee le" / "Billed on"
+- `worksheet.notFound` — "Feuille de travail introuvable" / "Worksheet not found"
+- `worksheet.warrantyMonthsShort` — "mois" / "mo"
+- `worksheet.confirmApprove` — confirm dialog text
+- `worksheet.confirmCancel` — confirm dialog text
 
-### Frontend Routes
-
-| Path | Page |
-|------|------|
-| /technicien/feuilles-travail | Tech worksheet list |
-| /technicien/feuilles-travail/:id | Tech worksheet fill-in |
-| /admin/feuilles-travail | Admin worksheet list |
-| /admin/feuilles-travail/:id | Admin worksheet detail/review |
+### Files Changed (8)
+- `backend/src/services/worksheet.service.ts` — updateFollowUp signature + ownership
+- `backend/src/routes/worksheet.routes.ts` — delete guard + updateFollowUp param
+- `frontend/src/pages/technician/WorksheetDetail.tsx` — isDraft gates, notFound, convertToKb invalidation
+- `frontend/src/pages/admin/WorksheetDetail.tsx` — date labels, warranty i18n, confirm dialogs
+- `frontend/src/pages/technician/Worksheets.tsx` — pagination threshold
+- `frontend/src/pages/admin/Worksheets.tsx` — pagination threshold
+- `frontend/src/lib/i18n/locales/fr.ts` — 6 new keys
+- `frontend/src/lib/i18n/locales/en.ts` — 6 new keys
 
 ### Build Status
 - Backend tsc: PASS
