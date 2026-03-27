@@ -139,6 +139,28 @@ enum DataBackupConsent {
   NON_APPLICABLE       // Not applicable (e.g., printer)
 }
 
+// ─── Knowledge Base ───
+
+enum KbCategory {
+  MATERIEL
+  LOGICIEL
+  RESEAU
+  PROCEDURE
+  FAQ
+  AUTRE
+}
+
+enum KbVisibility {
+  INTERNAL
+  PUBLIC
+}
+
+enum KbLinkEntityType {
+  TICKET
+  WORKORDER
+  CUSTOMER
+}
+
 model User {
   id           String        @id @default(uuid())
   email        String        @unique
@@ -169,6 +191,10 @@ model User {
   technicianWorkOrders WorkOrder[]     @relation("TechnicianWorkOrders")
   intakeByWorkOrders   WorkOrder[]     @relation("IntakeByWorkOrders")
   workOrderNotes       WorkOrderNote[]
+  kbArticles           KbArticle[]        @relation("KbArticleAuthor")
+  kbArticleLinks       KbArticleLink[]    @relation("KbLinkCreator")
+  customerNotesAuthored CustomerNote[]    @relation("CustomerNoteAuthor")
+  customerNotesReceived CustomerNote[]    @relation("CustomerNoteTarget")
 
   @@index([role, isActive])
   @@index([deletedAt])
@@ -451,4 +477,61 @@ model BackupRecord {
 
   @@index([createdAt])
   @@index([status])
+}
+
+// ─── Knowledge Base (Base de connaissances) ───
+
+model KbArticle {
+  id         String       @id @default(uuid())
+  title      String
+  slug       String       @unique
+  content    String       // Markdown
+  category   KbCategory   @default(AUTRE)
+  tags       Json?        // Array of strings
+  visibility KbVisibility @default(INTERNAL)
+  authorId   String
+  deletedAt  DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  author User            @relation("KbArticleAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  links  KbArticleLink[]
+
+  @@index([category, createdAt])
+  @@index([visibility])
+  @@index([deletedAt])
+}
+
+model KbArticleLink {
+  id         String           @id @default(uuid())
+  articleId  String
+  entityType KbLinkEntityType
+  entityId   String
+  linkedById String
+  createdAt  DateTime         @default(now())
+
+  article  KbArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  linkedBy User      @relation("KbLinkCreator", fields: [linkedById], references: [id], onDelete: Restrict)
+
+  @@unique([articleId, entityType, entityId])
+  @@index([entityType, entityId])
+}
+
+// ─── Customer Notes (Notes client) ───
+
+model CustomerNote {
+  id         String    @id @default(uuid())
+  customerId String
+  authorId   String
+  content    String
+  isPinned   Boolean   @default(false)
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  customer User @relation("CustomerNoteTarget", fields: [customerId], references: [id], onDelete: Restrict)
+  author   User @relation("CustomerNoteAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([customerId, isPinned, createdAt])
+  @@index([deletedAt])
 }

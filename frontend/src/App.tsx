@@ -20,6 +20,9 @@ const AdminClients = lazy(() => import('./pages/admin/Clients'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const AdminBackups = lazy(() => import('./pages/admin/Backups'));
 const AdminTechnicians = lazy(() => import('./pages/admin/Technicians'));
+const AdminKnowledgeBase = lazy(() => import('./pages/admin/KnowledgeBase'));
+const AdminKbArticleDetail = lazy(() => import('./pages/admin/KbArticleDetail'));
+const AdminClientDetail = lazy(() => import('./pages/admin/ClientDetail'));
 
 // Work Order pages (shared between admin + tech)
 const WorkOrdersDashboard = lazy(() => import('./pages/workorders/WorkOrdersDashboard'));
@@ -100,6 +103,9 @@ export const router = createBrowserRouter([
           { path: 'billets/kanban', element: <KanbanBoard /> },
           { path: 'calendrier', element: <AdminCalendar /> },
           { path: 'clients', element: <AdminClients /> },
+          { path: 'clients/:id', element: <AdminClientDetail /> },
+          { path: 'base-connaissances', element: <AdminKnowledgeBase /> },
+          { path: 'base-connaissances/:id', element: <AdminKbArticleDetail /> },
           { path: 'parametres', element: <AdminSettings /> },
           { path: 'sauvegardes', element: <AdminBackups /> },
           { path: 'techniciens', element: <AdminTechnicians /> },

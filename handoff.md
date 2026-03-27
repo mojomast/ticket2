@@ -262,3 +262,89 @@ Added an inline file viewer/previewer to the attachment system. Previously, the 
 - `frontend/src/components/shared/AttachmentSection.tsx` — rewritten with thumbnails + FileViewer integration
 - `frontend/src/lib/i18n/locales/fr.ts` — 10 new fileViewer.* keys
 - `frontend/src/lib/i18n/locales/en.ts` — matching 10 English keys
+
+### Session 4 — Knowledge Base + Customer Notes + Client Detail
+
+Implemented the complete Knowledge Base (Base de connaissances) system, Customer Notes, and Client Detail page. This adds three major capabilities: a searchable article wiki for internal documentation, per-customer notes for staff, and a comprehensive customer history page.
+
+#### Backend — Prisma Schema (3 new models, 3 new enums)
+- **KbArticle**: id, title, slug (unique), content (Markdown), category (KbCategory enum), tags (Json), visibility (KbVisibility enum), authorId FK, soft delete
+- **KbArticleLink**: polymorphic join table — links articles to any entity (TICKET, WORKORDER, CUSTOMER) via entityType + entityId. Unique constraint on [articleId, entityType, entityId]
+- **CustomerNote**: id, customerId FK, authorId FK, content, isPinned, soft delete
+- **New enums**: KbCategory (MATERIEL, LOGICIEL, RESEAU, PROCEDURE, FAQ, AUTRE), KbVisibility (INTERNAL, PUBLIC), KbLinkEntityType (TICKET, WORKORDER, CUSTOMER)
+
+#### Backend — Services
+- **knowledgebase.service.ts** (287 lines): Article CRUD with auto-generated unique slugs (accent-safe), full-text search (title + content, case-insensitive), article linking/unlinking to any entity, paginated lists with category/visibility/search filters
+- **customer-note.service.ts** (156 lines): Note CRUD with customer role validation, pin/unpin toggle, paginated lists ordered by isPinned DESC + createdAt DESC
+- Both services use fire-and-forget audit logging, AppError throws, getPagination/buildPaginatedResponse helpers
+
+#### Backend — Routes
+- **knowledgebase.routes.ts**: GET/POST /api/kb/articles, GET/PATCH/DELETE /api/kb/articles/:id, GET /api/kb/articles/by-slug/:slug, GET /api/kb/articles/:id/links, GET/POST/DELETE /api/kb/links
+- **customer-note.routes.ts**: GET/POST /api/customer-notes, PATCH/DELETE /api/customer-notes/:id, PATCH /api/customer-notes/:id/toggle-pin
+- Both route sets require authentication; mounted in index.ts
+
+#### Backend — Validations
+- **knowledgebase.ts**: Zod schemas for create/update article, article list query, create link, link list query, create/update customer note, customer note list query. French error messages. 8 exported type inferences.
+
+#### Frontend — API Client
+- Added 6 interfaces: KbArticleAuthor, KbArticle, KbArticleLink, CustomerNote
+- Added api.kb.articles.* (list, get, getBySlug, create, update, delete, links)
+- Added api.kb.links.* (forEntity, create, delete)
+- Added api.customerNotes.* (list, create, update, togglePin, delete)
+
+#### Frontend — KnowledgeBase.tsx (Article List Page)
+- Debounced search (300ms), category filter dropdown, visibility filter dropdown
+- Article table: title (clickable → detail), category badge, visibility badge, author, updated date, delete action
+- Create dialog with title, content textarea, category select, visibility select, comma-separated tags input
+- Paginated (20 per page)
+
+#### Frontend — KbArticleDetail.tsx (Article Detail/Edit Page)
+- 3-column grid layout: main content (2 cols) + sidebar (1 col)
+- View mode: title, content (whitespace-pre-wrap), category/visibility/tag badges, author, dates
+- Edit mode: inline form with all fields editable
+- Sidebar: article info card + linked entities card (grouped by entity type) with link/unlink actions
+- Delete with confirmation
+
+#### Frontend — ClientDetail.tsx (Customer History Page)
+- Customer info card (email, phone, type, company, address, member since, active/inactive badge)
+- Customer notes section with create form (textarea + pin checkbox), pinned-first list, pin toggle, delete
+- Ticket history table (ticket#, title, status/priority badges, created date) with pagination, rows link to ticket detail
+- Work order history table (order#, device, status/priority, intake date), rows link to WO detail
+- Linked KB articles section with link/unlink functionality
+
+#### Frontend — Navigation
+- Added "Base de connaissances" link with BookOpen icon to admin sidebar (AppSidebar.tsx)
+- Added "View" button to Clients table rows → navigates to /admin/clients/:id
+- Routes wired in App.tsx: /admin/base-connaissances, /admin/base-connaissances/:id, /admin/clients/:id
+
+#### i18n
+- 83 new keys added to both fr.ts and en.ts:
+  - 20 kb.* keys (article list page)
+  - 23 kb.detail.* keys (article detail page)
+  - 38 clientDetail.* keys (client detail page)
+  - 1 nav.knowledgeBase key
+  - 2 admin.clients.viewDetail/viewDetailTooltip keys
+
+#### Files Created
+- `backend/src/validations/knowledgebase.ts`
+- `backend/src/services/knowledgebase.service.ts`
+- `backend/src/services/customer-note.service.ts`
+- `backend/src/routes/knowledgebase.routes.ts`
+- `backend/src/routes/customer-note.routes.ts`
+- `frontend/src/pages/admin/KnowledgeBase.tsx`
+- `frontend/src/pages/admin/KbArticleDetail.tsx`
+- `frontend/src/pages/admin/ClientDetail.tsx`
+
+#### Files Modified
+- `backend/prisma/schema.prisma` — 3 new models + 3 new enums + User relation back-references
+- `backend/src/index.ts` — mounted KB and customer-note routes with requireAuth
+- `frontend/src/api/client.ts` — types + api methods for KB and customer notes
+- `frontend/src/App.tsx` — lazy imports + 3 new admin routes
+- `frontend/src/components/shared/AppSidebar.tsx` — KB nav link with BookOpen icon
+- `frontend/src/pages/admin/Clients.tsx` — added navigate import + "View" detail button
+- `frontend/src/lib/i18n/locales/fr.ts` — 83 new keys
+- `frontend/src/lib/i18n/locales/en.ts` — 83 new English keys
+
+#### Build Verification
+- `tsc --noEmit` passes on both backend and frontend (zero errors)
+- `vite build` succeeds (2592 modules)

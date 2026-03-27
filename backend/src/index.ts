@@ -24,6 +24,8 @@ import healthRoutes from './routes/health.routes.js';
 import workorderRoutes from './routes/workorder.routes.js';
 import serviceRequestRoutes from './routes/service-request.routes.js';
 import attachmentRoutes from './routes/attachment.routes.js';
+import kbRoutes from './routes/knowledgebase.routes.js';
+import customerNoteRoutes from './routes/customer-note.routes.js';
 
 const app = new Hono();
 
@@ -63,6 +65,8 @@ app.use('/api/messages/*', requireAuth);
 app.use('/api/notifications/*', requireAuth);
 app.use('/api/technicians/*', requireAuth);
 app.use('/api/users/*', requireAuth);
+app.use('/api/kb/*', requireAuth);
+app.use('/api/customer-notes/*', requireAuth);
 
 app.route('/api', attachmentRoutes);
 app.route('/api/tickets', ticketRoutes);
@@ -72,6 +76,8 @@ app.route('/api/messages', messageRoutes);
 app.route('/api/notifications', notificationRoutes);
 app.route('/api/technicians', technicianRoutes);
 app.route('/api/users', profileRoutes);
+app.route('/api/kb', kbRoutes);
+app.route('/api/customer-notes', customerNoteRoutes);
 
 // ─── Admin Routes ───
 app.use('/api/admin/*', requireAuth);

@@ -291,6 +291,53 @@ export interface Attachment {
   createdAt: string;
 }
 
+// ─── Knowledge Base Types ───
+
+export interface KbArticleAuthor {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
+export interface KbArticle {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  category: string;
+  tags: string[] | null;
+  visibility: string;
+  authorId: string;
+  author: KbArticleAuthor;
+  links?: KbArticleLink[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KbArticleLink {
+  id: string;
+  articleId: string;
+  entityType: string;
+  entityId: string;
+  linkedById: string;
+  article?: KbArticle;
+  linkedBy?: KbArticleAuthor;
+  createdAt: string;
+}
+
+export interface CustomerNote {
+  id: string;
+  customerId: string;
+  authorId: string;
+  content: string;
+  isPinned: boolean;
+  author: Pick<User, 'id' | 'firstName' | 'lastName' | 'email'>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const api = {
   auth: {
     login: (data: LoginInput) =>
@@ -521,5 +568,43 @@ export const api = {
           body: JSON.stringify(data),
         }),
     },
+  },
+
+  kb: {
+    articles: {
+      list: (params?: Record<string, unknown>) =>
+        requestPaginated<KbArticle>(`/api/kb/articles${params ? `?${qs(params)}` : ''}`),
+      get: (id: string) => request<KbArticle>(`/api/kb/articles/${id}`),
+      getBySlug: (slug: string) => request<KbArticle>(`/api/kb/articles/by-slug/${slug}`),
+      create: (data: { title: string; content: string; category?: string; tags?: string[]; visibility?: string }) =>
+        request<KbArticle>('/api/kb/articles', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: { title?: string; content?: string; category?: string; tags?: string[]; visibility?: string }) =>
+        request<KbArticle>(`/api/kb/articles/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/api/kb/articles/${id}`, { method: 'DELETE' }),
+      links: (id: string, params?: Record<string, unknown>) =>
+        requestPaginated<KbArticleLink>(`/api/kb/articles/${id}/links${params ? `?${qs(params)}` : ''}`),
+    },
+    links: {
+      forEntity: (entityType: string, entityId: string) =>
+        request<KbArticleLink[]>(`/api/kb/links?${qs({ entityType, entityId })}`),
+      create: (data: { articleId: string; entityType: string; entityId: string }) =>
+        request<KbArticleLink>('/api/kb/links', { method: 'POST', body: JSON.stringify(data) }),
+      delete: (id: string) =>
+        request<{ success: boolean }>(`/api/kb/links/${id}`, { method: 'DELETE' }),
+    },
+  },
+
+  customerNotes: {
+    list: (params: { customerId: string; page?: number; limit?: number }) =>
+      requestPaginated<CustomerNote>(`/api/customer-notes?${qs(params)}`),
+    create: (data: { customerId: string; content: string; isPinned?: boolean }) =>
+      request<CustomerNote>('/api/customer-notes', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { content?: string; isPinned?: boolean }) =>
+      request<CustomerNote>(`/api/customer-notes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    togglePin: (id: string) =>
+      request<CustomerNote>(`/api/customer-notes/${id}/toggle-pin`, { method: 'PATCH' }),
+    delete: (id: string) =>
+      request<{ success: boolean }>(`/api/customer-notes/${id}`, { method: 'DELETE' }),
   },
 };

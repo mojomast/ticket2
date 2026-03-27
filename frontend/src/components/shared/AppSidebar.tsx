@@ -13,6 +13,7 @@ import {
   UserCircle,
   LogOut,
   ClipboardList,
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/use-auth';
 import { useTranslation } from '../../lib/i18n/hook';
@@ -32,6 +33,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   UserCircle,
   LogOut,
   ClipboardList,
+  BookOpen,
 };
 
 interface NavItem {
@@ -49,6 +51,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: 'nav.calendar', path: '/admin/calendrier', icon: 'Calendar' },
     { label: 'nav.clients', path: '/admin/clients', icon: 'Users' },
     { label: 'nav.technicians', path: '/admin/techniciens', icon: 'Wrench' },
+    { label: 'nav.knowledgeBase', path: '/admin/base-connaissances', icon: 'BookOpen' },
     { label: 'nav.settings', path: '/admin/parametres', icon: 'Settings' },
     { label: 'nav.profile', path: '/admin/profil', icon: 'UserCircle' },
     { label: 'nav.backups', path: '/admin/sauvegardes', icon: 'HardDrive' },

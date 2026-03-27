@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
@@ -46,6 +47,7 @@ interface ClientFormData {
 export default function AdminClients() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
   // ── Search with debounce ──
@@ -303,6 +305,16 @@ export default function AdminClients() {
                           }`}
                         >
                           {user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
+                        </button>
+                      </HelpTooltip>
+
+                      {/* View detail */}
+                      <HelpTooltip content={t('admin.clients.viewDetailTooltip')} side="bottom">
+                        <button
+                          onClick={() => navigate(`/admin/clients/${user.id}`)}
+                          className="rounded px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors"
+                        >
+                          {t('admin.clients.viewDetail')}
                         </button>
                       </HelpTooltip>
 
