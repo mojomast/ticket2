@@ -5,6 +5,18 @@ import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Badge } from '../../components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/dialog';
 
 // ─── Constants ───
 
@@ -216,23 +228,20 @@ export default function AdminClients() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('admin.clients.title')}</h1>
         <HelpTooltip content={t('admin.clients.newClientTooltip')} side="bottom">
-          <button
-            onClick={openCreate}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
+          <Button onClick={openCreate}>
             {t('admin.clients.newClient')}
-          </button>
+          </Button>
         </HelpTooltip>
       </div>
 
       {/* Search */}
       <HelpTooltip content={t('admin.clients.searchTooltip')} side="right">
-        <input
+        <Input
           type="text"
           placeholder={t('admin.clients.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="max-w-sm"
         />
       </HelpTooltip>
 
@@ -272,15 +281,16 @@ export default function AdminClients() {
                   </td>
                   <td className="p-3 text-sm">{user.companyName || '–'}</td>
                   <td className="p-3">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
+                    <Badge
+                      variant="secondary"
+                      className={
                         user.isActive
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}
+                      }
                     >
                       {user.isActive ? t('admin.clients.active') : t('admin.clients.inactive')}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="p-3 text-right">
                     <div
@@ -289,7 +299,9 @@ export default function AdminClients() {
                     >
                       {/* Toggle active */}
                       <HelpTooltip content={user.isActive ? t('admin.clients.deactivateTooltip') : t('admin.clients.activateTooltip')} side="bottom">
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() =>
                             toggleActiveMutation.mutate({
                               id: user.id,
@@ -298,63 +310,73 @@ export default function AdminClients() {
                           }
                           disabled={toggleActiveMutation.isPending}
                           title={user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
-                          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                          className={`h-7 ${
                             user.isActive
                               ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                               : 'bg-green-100 text-green-800 hover:bg-green-200'
                           }`}
                         >
                           {user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
-                        </button>
+                        </Button>
                       </HelpTooltip>
 
                       {/* View detail */}
                       <HelpTooltip content={t('admin.clients.viewDetailTooltip')} side="bottom">
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => navigate(`/admin/clients/${user.id}`)}
-                          className="rounded px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition-colors"
+                          className="h-7 bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
                         >
                           {t('admin.clients.viewDetail')}
-                        </button>
+                        </Button>
                       </HelpTooltip>
 
                       {/* Edit */}
                       <HelpTooltip content={t('admin.clients.editTooltip')} side="bottom">
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => openEdit(user)}
                           title={t('common.edit')}
-                          className="rounded px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                          className="h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
                         >
                           {t('common.edit')}
-                        </button>
+                        </Button>
                       </HelpTooltip>
 
                       {/* Delete */}
                       {deleteConfirmId === user.id ? (
                         <span className="flex items-center gap-1">
-                          <button
+                          <Button
+                            variant="destructive"
+                            size="sm"
                             onClick={() => deleteMutation.mutate(user.id)}
                             disabled={deleteMutation.isPending}
-                            className="rounded px-2 py-1 text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            className="h-7"
                           >
                             {deleteMutation.isPending ? '...' : t('common.confirm')}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => setDeleteConfirmId(null)}
-                            className="rounded px-2 py-1 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                            className="h-7"
                           >
                             {t('common.cancel')}
-                          </button>
+                          </Button>
                         </span>
                       ) : (
                         <HelpTooltip content={t('admin.clients.deleteTooltip')} side="bottom">
-                          <button
+                          <Button
+                            variant="secondary"
+                            size="sm"
                             onClick={() => setDeleteConfirmId(user.id)}
                             title={t('common.delete')}
-                            className="rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                            className="h-7 bg-red-100 text-red-800 hover:bg-red-200"
                           >
                             {t('common.delete')}
-                          </button>
+                          </Button>
                         </HelpTooltip>
                       )}
                     </div>
@@ -376,181 +398,160 @@ export default function AdminClients() {
             {t('common.pageOf', { page, total: totalPages })}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('common.previous_arrow')}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setPage((p) => p + 1)}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('common.next_arrow')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ── Create / Edit Dialog Overlay ── */}
-      {dialogMode !== 'closed' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={closeDialog}
-          />
+      {/* ── Create / Edit Dialog ── */}
+      <Dialog open={dialogMode !== 'closed'} onOpenChange={(open) => { if (!open) closeDialog(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {dialogMode === 'create' ? t('admin.clients.dialogTitleCreate') : t('admin.clients.dialogTitleEdit')}
+            </DialogTitle>
+          </DialogHeader>
 
-          {/* Panel */}
-          <div className="relative z-10 w-full max-w-lg mx-4 bg-card border rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">
-                {dialogMode === 'create' ? t('admin.clients.dialogTitleCreate') : t('admin.clients.dialogTitleEdit')}
-              </h2>
-              <button
-                onClick={closeDialog}
-                className="text-muted-foreground hover:text-foreground text-xl leading-none"
-                aria-label={t('admin.clients.closeDialog')}
-              >
-                &times;
-              </button>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* First name / Last name */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>{t('admin.clients.firstName')}</Label>
+                <Input
+                  type="text"
+                  required
+                  value={form.firstName}
+                  onChange={handleFieldChange('firstName')}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>{t('admin.clients.lastName')}</Label>
+                <Input
+                  type="text"
+                  required
+                  value={form.lastName}
+                  onChange={handleFieldChange('lastName')}
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              {/* First name / Last name */}
-              <div className="grid grid-cols-2 gap-4">
-                <label className="space-y-1">
-                  <span className="text-sm font-medium">{t('admin.clients.firstName')}</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.firstName}
-                    onChange={handleFieldChange('firstName')}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="space-y-1">
-                  <span className="text-sm font-medium">{t('admin.clients.lastName')}</span>
-                  <input
-                    type="text"
-                    required
-                    value={form.lastName}
-                    onChange={handleFieldChange('lastName')}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                </label>
-              </div>
+            {/* Email */}
+            <div className="space-y-1">
+              <Label>{t('admin.clients.email')}</Label>
+              <Input
+                type="email"
+                required
+                value={form.email}
+                onChange={handleFieldChange('email')}
+              />
+            </div>
 
-              {/* Email */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('admin.clients.email')}</span>
-                <input
-                  type="email"
-                  required
-                  value={form.email}
-                  onChange={handleFieldChange('email')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </label>
+            {/* Phone */}
+            <div className="space-y-1">
+              <Label>{t('admin.clients.phone')}</Label>
+              <Input
+                type="tel"
+                value={form.phone}
+                onChange={handleFieldChange('phone')}
+              />
+            </div>
 
-              {/* Phone */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('admin.clients.phone')}</span>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={handleFieldChange('phone')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </label>
+            {/* Customer type */}
+            <div className="space-y-1">
+              <Label>{t('admin.clients.customerType')}</Label>
+              <select
+                value={form.customerType}
+                onChange={handleFieldChange('customerType')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {CUSTOMER_TYPE_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              {/* Customer type */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('admin.clients.customerType')}</span>
-                <select
-                  value={form.customerType}
-                  onChange={handleFieldChange('customerType')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            {/* Company name */}
+            <div className="space-y-1">
+              <Label>{t('admin.clients.companyName')}</Label>
+              <Input
+                type="text"
+                value={form.companyName}
+                onChange={handleFieldChange('companyName')}
+              />
+            </div>
+
+            {/* Address */}
+            <div className="space-y-1">
+              <Label>{t('admin.clients.address')}</Label>
+              <Textarea
+                value={form.address}
+                onChange={handleFieldChange('address')}
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1">
+              <Label>
+                {t('admin.clients.password')}
+                {dialogMode === 'edit' && (
+                  <span className="text-muted-foreground font-normal">
+                    {t('admin.clients.passwordEditHint')}
+                  </span>
+                )}
+              </Label>
+              <Input
+                type="password"
+                required={dialogMode === 'create'}
+                value={form.password}
+                onChange={handleFieldChange('password')}
+                minLength={dialogMode === 'create' ? 8 : undefined}
+              />
+            </div>
+
+            {/* Actions */}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeDialog}
+              >
+                {t('common.cancel')}
+              </Button>
+              <HelpTooltip content={dialogMode === 'create' ? t('admin.clients.createSubmitTooltip') : t('admin.clients.editSubmitTooltip')} side="top">
+                <Button
+                  type="submit"
+                  disabled={isSaving}
                 >
-                  {CUSTOMER_TYPE_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {/* Company name */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('admin.clients.companyName')}</span>
-                <input
-                  type="text"
-                  value={form.companyName}
-                  onChange={handleFieldChange('companyName')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </label>
-
-              {/* Address */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('admin.clients.address')}</span>
-                <textarea
-                  value={form.address}
-                  onChange={handleFieldChange('address')}
-                  rows={2}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                />
-              </label>
-
-              {/* Password */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">
-                  {t('admin.clients.password')}
-                  {dialogMode === 'edit' && (
-                    <span className="text-muted-foreground font-normal">
-                      {t('admin.clients.passwordEditHint')}
-                    </span>
-                  )}
-                </span>
-                <input
-                  type="password"
-                  required={dialogMode === 'create'}
-                  value={form.password}
-                  onChange={handleFieldChange('password')}
-                  minLength={dialogMode === 'create' ? 8 : undefined}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </label>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={closeDialog}
-                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <HelpTooltip content={dialogMode === 'create' ? t('admin.clients.createSubmitTooltip') : t('admin.clients.editSubmitTooltip')} side="top">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                  >
-                    {isSaving
-                      ? t('common.saving')
-                      : dialogMode === 'create'
-                        ? t('admin.clients.createButton')
-                        : t('common.save')}
-                  </button>
-                </HelpTooltip>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  {isSaving
+                    ? t('common.saving')
+                    : dialogMode === 'create'
+                      ? t('admin.clients.createButton')
+                      : t('common.save')}
+                </Button>
+              </HelpTooltip>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

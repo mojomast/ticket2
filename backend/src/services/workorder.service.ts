@@ -146,6 +146,7 @@ export async function getWorkOrders(query: WorkOrderListQuery, userId: string, r
   if (query.status) where.status = query.status;
   if (query.priority) where.priority = query.priority;
   if (query.technicianId) where.technicianId = query.technicianId;
+  if (query.customerId) where.customerId = query.customerId;
   if (query.search) {
     conditions.push({
       OR: [

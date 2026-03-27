@@ -56,6 +56,7 @@ async function generateUniqueSlug(title: string, excludeId?: string): Promise<st
     const existing = await prisma.kbArticle.findFirst({
       where: {
         slug: candidate,
+        deletedAt: null,
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
       select: { id: true },
@@ -135,7 +136,7 @@ export async function updateArticle(id: string, input: UpdateArticleInput, userI
   return article;
 }
 
-export async function getArticle(id: string) {
+export async function getArticle(id: string, userRole?: string) {
   const article = await prisma.kbArticle.findFirst({
     where: { id, deletedAt: null },
     include: ARTICLE_DETAIL_INCLUDE,
@@ -143,10 +144,15 @@ export async function getArticle(id: string) {
 
   if (!article) throw AppError.notFound('Article introuvable');
 
+  // Customers can only see PUBLIC articles
+  if (userRole === 'CUSTOMER' && article.visibility !== 'PUBLIC') {
+    throw AppError.forbidden('Article non accessible');
+  }
+
   return article;
 }
 
-export async function getArticleBySlug(slug: string) {
+export async function getArticleBySlug(slug: string, userRole?: string) {
   const article = await prisma.kbArticle.findFirst({
     where: { slug, deletedAt: null },
     include: ARTICLE_DETAIL_INCLUDE,
@@ -154,16 +160,22 @@ export async function getArticleBySlug(slug: string) {
 
   if (!article) throw AppError.notFound('Article introuvable');
 
+  if (userRole === 'CUSTOMER' && article.visibility !== 'PUBLIC') {
+    throw AppError.forbidden('Article non accessible');
+  }
+
   return article;
 }
 
-export async function listArticles(query: ArticleListQuery) {
+export async function listArticles(query: ArticleListQuery, userRole?: string) {
   const { page, limit, skip } = getPagination({ page: query.page, limit: query.limit });
 
   const where: Prisma.KbArticleWhereInput = { deletedAt: null };
 
   if (query.category) where.category = query.category;
   if (query.visibility) where.visibility = query.visibility;
+  // Customers can only see PUBLIC articles
+  if (userRole === 'CUSTOMER') where.visibility = 'PUBLIC';
   if (query.search) {
     where.OR = [
       { title: { contains: query.search, mode: 'insensitive' } },
@@ -210,6 +222,13 @@ export async function deleteArticle(id: string, userId: string) {
 // ─── Article Links ───
 
 export async function linkArticle(input: CreateLinkInput, linkedById: string) {
+  // Verify article exists and is not soft-deleted
+  const article = await prisma.kbArticle.findFirst({
+    where: { id: input.articleId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!article) throw AppError.notFound('Article introuvable');
+
   try {
     const link = await prisma.kbArticleLink.create({
       data: {
@@ -236,7 +255,7 @@ export async function linkArticle(input: CreateLinkInput, linkedById: string) {
   }
 }
 
-export async function unlinkArticle(linkId: string) {
+export async function unlinkArticle(linkId: string, userId: string) {
   const link = await prisma.kbArticleLink.findUnique({
     where: { id: linkId },
   });
@@ -246,6 +265,15 @@ export async function unlinkArticle(linkId: string) {
   await prisma.kbArticleLink.delete({
     where: { id: linkId },
   });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'KB_ARTICLE',
+    entityId: link.articleId,
+    action: 'UNLINK',
+    userId,
+    oldValue: { linkId, entityType: link.entityType, entityId: link.entityId },
+  }).catch(() => {});
 }
 
 export async function getLinksForEntity(entityType: string, entityId: string) {
@@ -266,6 +294,13 @@ export async function getLinksForEntity(entityType: string, entityId: string) {
 }
 
 export async function getLinksForArticle(articleId: string, page: number, limit: number) {
+  // Verify article exists and is not soft-deleted
+  const article = await prisma.kbArticle.findFirst({
+    where: { id: articleId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!article) throw AppError.notFound('Article introuvable');
+
   const { page: safePage, limit: safeLimit, skip } = getPagination({ page, limit });
 
   const where: Prisma.KbArticleLinkWhereInput = { articleId };

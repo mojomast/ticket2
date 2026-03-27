@@ -8,6 +8,8 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
 import {
   startOfMonth,
   endOfMonth,
@@ -245,39 +247,33 @@ export default function TechSchedule() {
       <div className="flex flex-wrap items-center gap-2">
         {/* View mode tabs */}
         <div className="inline-flex rounded-md border bg-muted p-0.5">
-          <button
+          <Button
+            variant={viewMode === 'month' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setViewMode('month')}
-            className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === 'month'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className="gap-1"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
             {t('tech.schedule.viewMonth')}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={viewMode === 'week' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setViewMode('week')}
-            className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === 'week'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className="gap-1"
           >
             <CalendarDays className="h-3.5 w-3.5" />
             {t('tech.schedule.viewWeek')}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={viewMode === 'day' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setViewMode('day')}
-            className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === 'day'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className="gap-1"
           >
             <Clock className="h-3.5 w-3.5" />
             {t('tech.schedule.viewDay')}
-          </button>
+          </Button>
         </div>
 
         {/* Spacer */}
@@ -285,32 +281,35 @@ export default function TechSchedule() {
 
         {/* Navigation */}
         <HelpTooltip content={getPrevTooltip()} side="bottom">
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={goToPrev}
-            className="inline-flex items-center justify-center rounded-md border p-1.5 hover:bg-accent"
             aria-label={getPrevTooltip()}
           >
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </Button>
         </HelpTooltip>
 
         <HelpTooltip content={t('tech.schedule.todayTooltip')} side="bottom">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={goToToday}
-            className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
           >
             {t('tech.schedule.today')}
-          </button>
+          </Button>
         </HelpTooltip>
 
         <HelpTooltip content={getNextTooltip()} side="bottom">
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={goToNext}
-            className="inline-flex items-center justify-center rounded-md border p-1.5 hover:bg-accent"
             aria-label={getNextTooltip()}
           >
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </Button>
         </HelpTooltip>
 
         <HelpTooltip content={t('tech.schedule.datePickTooltip')} side="bottom">
@@ -318,7 +317,7 @@ export default function TechSchedule() {
             type="date"
             value={toDateString(selectedDate)}
             onChange={handleDatePick}
-            className="rounded-md border px-2 py-1.5 text-sm bg-background"
+            className="flex h-9 rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </HelpTooltip>
 
@@ -413,7 +412,7 @@ function MonthView({
   ];
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b">
         {dayHeaders.map((dh) => (
@@ -481,7 +480,7 @@ function MonthView({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -511,7 +510,7 @@ function WeekView({
   });
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Header row with day labels */}
       <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b">
         <div className="border-r" />
@@ -595,7 +594,7 @@ function WeekView({
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -655,15 +654,15 @@ function DayView({
 
   if (!hasAppointments) {
     return (
-      <div className="bg-card border rounded-lg p-8 text-center text-muted-foreground">
+      <Card className="p-8 text-center text-muted-foreground">
         <Calendar className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
         {t('appointment.noAppointmentsToday')}
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Summary bar */}
       <div className="px-4 py-2 border-b bg-muted/30">
         <span className="text-sm text-muted-foreground">
@@ -705,7 +704,7 @@ function DayView({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -775,15 +774,16 @@ function AppointmentCard({
         <div className="flex items-center gap-2 flex-shrink-0">
           {canStart(apt.status) && (
             <HelpTooltip content={t('tech.schedule.startTooltip')} side="top">
-              <button
+              <Button
+                size="sm"
                 disabled={statusMutation.isPending}
                 onClick={() =>
                   statusMutation.mutate({ id: apt.id, status: 'EN_COURS' })
                 }
-                className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-xs bg-blue-600 hover:bg-blue-700"
               >
                 {t('tech.schedule.start')}
-              </button>
+              </Button>
             </HelpTooltip>
           )}
 
@@ -792,15 +792,16 @@ function AppointmentCard({
               content={t('tech.schedule.completeTooltip')}
               side="top"
             >
-              <button
+              <Button
+                size="sm"
                 disabled={statusMutation.isPending}
                 onClick={() =>
                   statusMutation.mutate({ id: apt.id, status: 'TERMINE' })
                 }
-                className="inline-flex items-center rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-xs bg-green-600 hover:bg-green-700"
               >
                 {t('tech.schedule.complete')}
-              </button>
+              </Button>
             </HelpTooltip>
           )}
 
@@ -809,15 +810,17 @@ function AppointmentCard({
               content={t('tech.schedule.cancelTooltip')}
               side="top"
             >
-              <button
+              <Button
+                size="sm"
+                variant="destructive"
                 disabled={statusMutation.isPending}
                 onClick={() =>
                   statusMutation.mutate({ id: apt.id, status: 'ANNULE' })
                 }
-                className="inline-flex items-center rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-xs"
               >
                 {t('common.cancel')}
-              </button>
+              </Button>
             </HelpTooltip>
           )}
         </div>

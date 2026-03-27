@@ -7,6 +7,8 @@ import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
 
 /** Appointment statuses that allow cancellation */
 const CANCELLABLE_STATUSES = ['PLANIFIE', 'CONFIRME'];
@@ -65,17 +67,14 @@ export default function PortalAppointments() {
 
   // ─── Filter tab button helper ───
   const filterButton = (mode: FilterMode, label: string) => (
-    <button
+    <Button
       type="button"
+      variant={filter === mode ? 'default' : 'ghost'}
+      size="sm"
       onClick={() => setFilter(mode)}
-      className={
-        filter === mode
-          ? 'px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground'
-          : 'px-4 py-2 text-sm font-medium rounded-md text-muted-foreground hover:bg-muted'
-      }
     >
       {label}
-    </button>
+    </Button>
   );
 
   // ─── Render ───
@@ -118,14 +117,15 @@ export default function PortalAppointments() {
       {!isLoading && !isError && (
         <>
           {sorted.length === 0 ? (
-            <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
+            <Card className="p-12 text-center text-muted-foreground">
               {filter === 'upcoming' && t('appointment.noUpcoming')}
               {filter === 'past' && t('appointment.noPast')}
               {filter === 'all' && t('appointment.noAppointments')}
-            </div>
+            </Card>
           ) : (
-            <div className="bg-card border rounded-lg divide-y">
-              {sorted.map((apt) => (
+            <Card>
+              <CardContent className="p-0 divide-y">
+                {sorted.map((apt) => (
                 <div key={apt.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                   {/* Left: appointment info */}
                   <div className="flex-1 min-w-0">
@@ -159,20 +159,23 @@ export default function PortalAppointments() {
 
                     {isCancellable(apt.status) && (
                       <HelpTooltip content={t('portal.appointments.cancelTooltip')} side="left">
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => cancelMutation.mutate(apt.id)}
                           disabled={cancelMutation.isPending}
-                          className="px-3 py-1.5 text-xs font-medium rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="border-destructive/30 text-destructive hover:bg-destructive/10"
                         >
                           {cancelMutation.isPending ? t('appointment.cancelling') : t('common.cancel')}
-                        </button>
+                        </Button>
                       </HelpTooltip>
                     )}
                   </div>
                 </div>
               ))}
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Summary count */}

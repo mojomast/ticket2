@@ -5,6 +5,18 @@ import { api, type KbArticle } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
 import { formatDateTime } from '../../lib/utils';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Badge } from '../../components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../../components/ui/dialog';
 
 // ─── Constants ───
 
@@ -173,22 +185,19 @@ export default function KnowledgeBase() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('kb.title')}</h1>
-        <button
-          onClick={openCreate}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
+        <Button onClick={openCreate}>
           {t('kb.newArticle')}
-        </button>
+        </Button>
       </div>
 
       {/* Filters row */}
       <div className="flex items-center gap-3 flex-wrap">
-        <input
+        <Input
           type="text"
           placeholder={t('kb.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="max-w-sm"
         />
         <select
           value={categoryFilter}
@@ -253,20 +262,21 @@ export default function KnowledgeBase() {
                     </button>
                   </td>
                   <td className="p-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                       {CATEGORY_LABELS[article.category] ?? article.category}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="p-3">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
+                    <Badge
+                      variant="secondary"
+                      className={
                         article.visibility === 'PUBLIC'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
-                      }`}
+                      }
                     >
                       {article.visibility === 'PUBLIC' ? t('kb.public') : t('kb.internal')}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="p-3 text-sm">
                     {article.author.firstName} {article.author.lastName}
@@ -277,37 +287,45 @@ export default function KnowledgeBase() {
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       {/* Edit */}
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => navigate(`/admin/base-connaissances/${article.id}`)}
-                        className="rounded px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                        className="h-7 bg-blue-100 text-blue-800 hover:bg-blue-200"
                       >
                         {t('common.edit')}
-                      </button>
+                      </Button>
 
                       {/* Delete */}
                       {deleteConfirmId === article.id ? (
                         <span className="flex items-center gap-1">
-                          <button
+                          <Button
+                            variant="destructive"
+                            size="sm"
                             onClick={() => deleteMutation.mutate(article.id)}
                             disabled={deleteMutation.isPending}
-                            className="rounded px-2 py-1 text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            className="h-7"
                           >
                             {deleteMutation.isPending ? '...' : t('common.confirm')}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => setDeleteConfirmId(null)}
-                            className="rounded px-2 py-1 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                            className="h-7"
                           >
                             {t('common.cancel')}
-                          </button>
+                          </Button>
                         </span>
                       ) : (
-                        <button
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => setDeleteConfirmId(article.id)}
-                          className="rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                          className="h-7 bg-red-100 text-red-800 hover:bg-red-200"
                         >
                           {t('common.delete')}
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </td>
@@ -328,138 +346,119 @@ export default function KnowledgeBase() {
             {t('common.pageOf', { page, total: totalPages })}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('common.previous_arrow')}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setPage((p) => p + 1)}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('common.next_arrow')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ── Create Dialog Overlay ── */}
-      {dialogMode !== 'closed' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={closeDialog}
-          />
+      {/* ── Create Dialog ── */}
+      <Dialog open={dialogMode !== 'closed'} onOpenChange={(open) => { if (!open) closeDialog(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('kb.createTitle')}</DialogTitle>
+          </DialogHeader>
 
-          {/* Panel */}
-          <div className="relative z-10 w-full max-w-lg mx-4 bg-card border rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">
-                {t('kb.createTitle')}
-              </h2>
-              <button
-                onClick={closeDialog}
-                className="text-muted-foreground hover:text-foreground text-xl leading-none"
-                aria-label="Close"
-              >
-                &times;
-              </button>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Title */}
+            <div className="space-y-1">
+              <Label>{t('kb.titleField')}</Label>
+              <Input
+                type="text"
+                required
+                value={form.title}
+                onChange={handleFieldChange('title')}
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              {/* Title */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('kb.titleField')}</span>
-                <input
-                  type="text"
-                  required
-                  value={form.title}
-                  onChange={handleFieldChange('title')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </label>
+            {/* Content */}
+            <div className="space-y-1">
+              <Label>{t('kb.content')}</Label>
+              <Textarea
+                required
+                value={form.content}
+                onChange={handleFieldChange('content')}
+                rows={6}
+                className="resize-none"
+              />
+            </div>
 
-              {/* Content */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('kb.content')}</span>
-                <textarea
-                  required
-                  value={form.content}
-                  onChange={handleFieldChange('content')}
-                  rows={6}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                />
-              </label>
+            {/* Category */}
+            <div className="space-y-1">
+              <Label>{t('kb.category')}</Label>
+              <select
+                value={form.category}
+                onChange={handleFieldChange('category')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {CATEGORY_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              {/* Category */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('kb.category')}</span>
-                <select
-                  value={form.category}
-                  onChange={handleFieldChange('category')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {CATEGORY_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {/* Visibility */}
+            <div className="space-y-1">
+              <Label>{t('kb.visibility')}</Label>
+              <select
+                value={form.visibility}
+                onChange={handleFieldChange('visibility')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {VISIBILITY_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              {/* Visibility */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('kb.visibility')}</span>
-                <select
-                  value={form.visibility}
-                  onChange={handleFieldChange('visibility')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {VISIBILITY_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {/* Tags */}
+            <div className="space-y-1">
+              <Label>{t('kb.tags')}</Label>
+              <Input
+                type="text"
+                value={form.tags}
+                onChange={handleFieldChange('tags')}
+                placeholder={t('kb.tagsHelp')}
+              />
+            </div>
 
-              {/* Tags */}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">{t('kb.tags')}</span>
-                <input
-                  type="text"
-                  value={form.tags}
-                  onChange={handleFieldChange('tags')}
-                  placeholder={t('kb.tagsHelp')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </label>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={closeDialog}
-                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                >
-                  {isSaving ? t('common.saving') : t('kb.newArticle')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            {/* Actions */}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeDialog}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSaving}
+              >
+                {isSaving ? t('common.saving') : t('kb.newArticle')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

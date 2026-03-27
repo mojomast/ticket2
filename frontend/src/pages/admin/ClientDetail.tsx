@@ -12,23 +12,14 @@ import {
 import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
 import { formatDateTime } from '../../lib/utils';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import { Badge } from '../../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import StatusBadge from '../../components/shared/StatusBadge';
 
 // ─── Constants ───
-
-const TICKET_STATUS_COLORS: Record<string, string> = {
-  NOUVELLE: 'bg-blue-100 text-blue-800',
-  EN_COURS: 'bg-yellow-100 text-yellow-800',
-  TERMINEE: 'bg-green-100 text-green-800',
-  FERMEE: 'bg-gray-100 text-gray-800',
-  ANNULEE: 'bg-red-100 text-red-800',
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  BASSE: 'bg-gray-100 text-gray-700',
-  NORMALE: 'bg-blue-100 text-blue-700',
-  HAUTE: 'bg-orange-100 text-orange-700',
-  URGENTE: 'bg-red-100 text-red-700',
-};
 
 const CUSTOMER_TYPE_LABELS: Record<string, string> = {
   PARTICULIER: 'Résidentiel',
@@ -227,22 +218,19 @@ export default function ClientDetail() {
         <h1 className="text-2xl font-bold">
           {user.firstName} {user.lastName}
         </h1>
-        <span
-          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-            user.isActive
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
+        <Badge
+          variant={user.isActive ? 'default' : 'destructive'}
         >
           {user.isActive ? t('clientDetail.active') : t('clientDetail.inactive')}
-        </span>
+        </Badge>
       </div>
 
       {/* ─── Section 1: Customer Info Card ─── */}
-      <div className="bg-card border rounded-lg p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-sm">{t('clientDetail.customerInfo')}</h2>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">{t('clientDetail.customerInfo')}</CardTitle>
+        </CardHeader>
+        <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div>
             <span className="text-muted-foreground">{t('clientDetail.email')}:</span>{' '}
@@ -270,28 +258,28 @@ export default function ClientDetail() {
             <span className="text-muted-foreground">{t('clientDetail.memberSince')}:</span>{' '}
             {formatDateTime(user.createdAt)}
           </div>
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ─── Section 2: Customer Notes ─── */}
-      <div className="bg-card border rounded-lg p-4 space-y-4">
-        <div className="flex items-center justify-between">
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-sm">{t('clientDetail.notes')}</h2>
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-              {noteTotal}
-            </span>
+            <CardTitle className="text-sm">{t('clientDetail.notes')}</CardTitle>
+            <Badge variant="secondary">{noteTotal}</Badge>
           </div>
-        </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
 
         {/* Note creation form */}
         <form onSubmit={handleCreateNote} className="space-y-3 border rounded-md p-3 bg-muted/30">
-          <textarea
+          <Textarea
             value={noteForm.content}
             onChange={(e) => setNoteForm((prev) => ({ ...prev, content: e.target.value }))}
             placeholder={t('clientDetail.notePlaceholder')}
             rows={3}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+            className="resize-none"
           />
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-sm">
@@ -305,13 +293,13 @@ export default function ClientDetail() {
               />
               {t('clientDetail.pinNote')}
             </label>
-            <button
+            <Button
               type="submit"
+              size="sm"
               disabled={createNoteMutation.isPending || !noteForm.content.trim()}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {createNoteMutation.isPending ? '...' : t('clientDetail.newNote')}
-            </button>
+            </Button>
           </div>
         </form>
 
@@ -337,43 +325,49 @@ export default function ClientDetail() {
                   <p className="text-sm whitespace-pre-wrap flex-1">{note.content}</p>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {/* Pin toggle */}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => togglePinMutation.mutate(note.id)}
                       disabled={togglePinMutation.isPending}
                       title={t('clientDetail.pinNote')}
-                      className={`rounded px-1.5 py-0.5 text-xs transition-colors ${
+                      className={
                         note.isPinned
                           ? 'bg-yellow-200 text-yellow-800 hover:bg-yellow-300'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
+                          : ''
+                      }
                     >
                       📌
-                    </button>
+                    </Button>
 
                     {/* Delete */}
                     {deleteNoteConfirmId === note.id ? (
                       <span className="flex items-center gap-1">
-                        <button
+                        <Button
+                          variant="destructive"
+                          size="sm"
                           onClick={() => deleteNoteMutation.mutate(note.id)}
                           disabled={deleteNoteMutation.isPending}
-                          className="rounded px-2 py-0.5 text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
                         >
                           {deleteNoteMutation.isPending ? '...' : t('common.confirm')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setDeleteNoteConfirmId(null)}
-                          className="rounded px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
                         >
                           {t('common.cancel')}
-                        </button>
+                        </Button>
                       </span>
                     ) : (
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setDeleteNoteConfirmId(note.id)}
-                        className="rounded px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                        className="text-red-800 bg-red-100 hover:bg-red-200 border-red-200"
                       >
                         {t('common.delete')}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -402,33 +396,35 @@ export default function ClientDetail() {
               {t('common.pageOf', { page: notePage, total: noteTotalPages })}
             </p>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setNotePage((p) => Math.max(1, p - 1))}
                 disabled={notePage <= 1}
-                className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.previous_arrow')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setNotePage((p) => p + 1)}
                 disabled={notePage >= noteTotalPages}
-                className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.next_arrow')}
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* ─── Section 3: Ticket History ─── */}
-      <div className="bg-card border rounded-lg p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-sm">{t('clientDetail.ticketHistory')}</h2>
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-            {ticketTotal}
-          </span>
-        </div>
+      <Card>
+        <CardHeader className="flex-row items-center gap-2 space-y-0">
+          <CardTitle className="text-sm">{t('clientDetail.ticketHistory')}</CardTitle>
+          <Badge variant="secondary">{ticketTotal}</Badge>
+        </CardHeader>
+        <CardContent className="space-y-4">
 
         {ticketsLoading ? (
           <div className="text-center py-4 text-sm text-muted-foreground">
@@ -470,22 +466,10 @@ export default function ClientDetail() {
                     <td className="p-3 text-sm font-medium">{tk.ticketNumber}</td>
                     <td className="p-3 text-sm">{tk.title}</td>
                     <td className="p-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          TICKET_STATUS_COLORS[tk.status] || 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {tk.status}
-                      </span>
+                      <StatusBadge status={tk.status} />
                     </td>
                     <td className="p-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          PRIORITY_COLORS[tk.priority] || 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {tk.priority}
-                      </span>
+                      <StatusBadge status={tk.priority} type="priority" />
                     </td>
                     <td className="p-3 text-sm text-muted-foreground">
                       {formatDateTime(tk.createdAt)}
@@ -504,33 +488,35 @@ export default function ClientDetail() {
               {t('common.pageOf', { page: ticketPage, total: ticketTotalPages })}
             </p>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setTicketPage((p) => Math.max(1, p - 1))}
                 disabled={ticketPage <= 1}
-                className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.previous_arrow')}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setTicketPage((p) => p + 1)}
                 disabled={ticketPage >= ticketTotalPages}
-                className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.next_arrow')}
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* ─── Section 4: Work Order History ─── */}
-      <div className="bg-card border rounded-lg p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-sm">{t('clientDetail.workOrderHistory')}</h2>
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-            {woList.length}
-          </span>
-        </div>
+      <Card>
+        <CardHeader className="flex-row items-center gap-2 space-y-0">
+          <CardTitle className="text-sm">{t('clientDetail.workOrderHistory')}</CardTitle>
+          <Badge variant="secondary">{woList.length}</Badge>
+        </CardHeader>
+        <CardContent className="space-y-4">
 
         {workOrdersLoading ? (
           <div className="text-center py-4 text-sm text-muted-foreground">
@@ -574,22 +560,10 @@ export default function ClientDetail() {
                       {wo.deviceBrand} {wo.deviceModel}
                     </td>
                     <td className="p-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          TICKET_STATUS_COLORS[wo.status] || 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {wo.status}
-                      </span>
+                      <StatusBadge status={wo.status} type="workorder" />
                     </td>
                     <td className="p-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          PRIORITY_COLORS[wo.priority] || 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {wo.priority}
-                      </span>
+                      <StatusBadge status={wo.priority} type="priority" />
                     </td>
                     <td className="p-3 text-sm text-muted-foreground">
                       {formatDateTime(wo.intakeDate)}
@@ -600,33 +574,33 @@ export default function ClientDetail() {
             </table>
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* ─── Section 5: Linked KB Articles ─── */}
-      <div className="bg-card border rounded-lg p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-sm">{t('clientDetail.linkedArticles')}</h2>
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-            {linkList.length}
-          </span>
-        </div>
+      <Card>
+        <CardHeader className="flex-row items-center gap-2 space-y-0">
+          <CardTitle className="text-sm">{t('clientDetail.linkedArticles')}</CardTitle>
+          <Badge variant="secondary">{linkList.length}</Badge>
+        </CardHeader>
+        <CardContent className="space-y-4">
 
         {/* Link article form */}
         <form onSubmit={handleLinkArticle} className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={linkArticleId}
             onChange={(e) => setLinkArticleId(e.target.value)}
             placeholder={t('clientDetail.articleIdPlaceholder')}
-            className="flex-1 max-w-sm rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+            className="flex-1 max-w-sm"
           />
-          <button
+          <Button
             type="submit"
+            size="sm"
             disabled={linkArticleMutation.isPending || !linkArticleId.trim()}
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {linkArticleMutation.isPending ? '...' : t('clientDetail.linkArticle')}
-          </button>
+          </Button>
         </form>
 
         {/* Linked articles list */}
@@ -653,42 +627,47 @@ export default function ClientDetail() {
                     {lk.article?.title || lk.articleId}
                   </Link>
                   {lk.article?.category && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground flex-shrink-0">
+                    <Badge variant="secondary" className="flex-shrink-0">
                       {lk.article.category}
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 <div className="flex-shrink-0 ml-2">
                   {unlinkConfirmId === lk.id ? (
                     <span className="flex items-center gap-1">
-                      <button
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() => unlinkArticleMutation.mutate(lk.id)}
                         disabled={unlinkArticleMutation.isPending}
-                        className="rounded px-2 py-0.5 text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
                       >
                         {unlinkArticleMutation.isPending ? '...' : t('common.confirm')}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setUnlinkConfirmId(null)}
-                        className="rounded px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
                       >
                         {t('common.cancel')}
-                      </button>
+                      </Button>
                     </span>
                   ) : (
-                    <button
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setUnlinkConfirmId(lk.id)}
-                      className="rounded px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                      className="text-red-800 bg-red-100 hover:bg-red-200 border-red-200"
                     >
                       {t('common.delete')}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

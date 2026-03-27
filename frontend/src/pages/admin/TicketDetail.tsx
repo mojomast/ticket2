@@ -14,6 +14,11 @@ import {
   SERVICE_MODE_LABELS,
   APPOINTMENT_STATUS_LABELS,
 } from '../../lib/constants';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
 // ─── Admin Status Transitions (mirrors backend ALLOWED_TRANSITIONS for ADMIN role) ───
 
@@ -332,16 +337,23 @@ function ProposalsSection({
 
   if (isLoading) {
     return (
-      <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-2">Propositions de rendez-vous</h3>
-        <p className="text-sm text-muted-foreground">Chargement...</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Propositions de rendez-vous</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-card border rounded-lg p-6 space-y-4">
-      <h3 className="font-semibold">Propositions de rendez-vous</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Propositions de rendez-vous</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
 
       {proposalList.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -423,13 +435,14 @@ function ProposalsSection({
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {/* Accept button */}
                   <HelpTooltip content="Accepter cette proposition — un rendez-vous sera créé automatiquement" side="top">
-                    <button
+                    <Button
+                      size="sm"
                       onClick={() => acceptMutation.mutate({ id: proposal.id })}
                       disabled={acceptMutation.isPending}
-                      className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                      className="bg-green-600 hover:bg-green-700"
                     >
                       {acceptMutation.isPending ? 'Acceptation...' : 'Accepter'}
-                    </button>
+                    </Button>
                   </HelpTooltip>
 
                   {/* Reject button / form toggle */}
@@ -438,42 +451,46 @@ function ProposalsSection({
                       onSubmit={(e) => handleRejectSubmit(e, proposal.id)}
                       className="flex items-center gap-2 flex-1"
                     >
-                      <input
+                      <Input
                         type="text"
                         value={rejectMessage}
                         onChange={(e) => setRejectMessage(e.target.value)}
                         placeholder="Raison du refus (optionnel)..."
-                        className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                        className="flex-1 h-8 text-xs"
                       />
-                      <button
+                      <Button
                         type="submit"
+                        size="sm"
+                        variant="destructive"
                         disabled={rejectMutation.isPending}
-                        className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
                       >
                         {rejectMutation.isPending ? '...' : 'Confirmer refus'}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           setRejectFor(null);
                           setRejectMessage('');
                         }}
-                        className="text-xs text-muted-foreground hover:underline"
                       >
                         Annuler
-                      </button>
+                      </Button>
                     </form>
                   ) : (
                     <HelpTooltip content="Refuser cette proposition de rendez-vous" side="top">
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setRejectFor(proposal.id);
                           setCounterProposeFor(null);
                         }}
-                        className="rounded-md border border-red-300 bg-background px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
                       >
                         Refuser
-                      </button>
+                      </Button>
                     </HelpTooltip>
                   )}
 
@@ -486,45 +503,45 @@ function ProposalsSection({
                       <p className="text-xs font-semibold">Contre-proposition</p>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="block text-[10px] text-muted-foreground mb-0.5">Date</label>
+                          <Label className="text-[10px] text-muted-foreground">Date</Label>
                           <input
                             type="date"
                             value={counterDate}
                             onChange={(e) => setCounterDate(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
                             required
-                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                            className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-muted-foreground mb-0.5">Début</label>
-                          <input
+                          <Label className="text-[10px] text-muted-foreground">Début</Label>
+                          <Input
                             type="time"
                             value={counterStart}
                             onChange={(e) => setCounterStart(e.target.value)}
                             required
-                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                            className="h-8 text-xs"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-muted-foreground mb-0.5">Fin</label>
-                          <input
+                          <Label className="text-[10px] text-muted-foreground">Fin</Label>
+                          <Input
                             type="time"
                             value={counterEnd}
                             onChange={(e) => setCounterEnd(e.target.value)}
                             required
-                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                            className="h-8 text-xs"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] text-muted-foreground mb-0.5">Message (optionnel)</label>
-                        <input
+                        <Label className="text-[10px] text-muted-foreground">Message (optionnel)</Label>
+                        <Input
                           type="text"
                           value={counterMessage}
                           onChange={(e) => setCounterMessage(e.target.value)}
                           placeholder="Proposition alternative..."
-                          className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                          className="h-8 text-xs"
                         />
                       </div>
 
@@ -535,16 +552,18 @@ function ProposalsSection({
 
                       <div className="flex gap-2">
                         <HelpTooltip content="Envoyer cette contre-proposition au client" side="top">
-                          <button
+                          <Button
                             type="submit"
+                            size="sm"
                             disabled={counterProposeMutation.isPending}
-                            className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                           >
                             {counterProposeMutation.isPending ? 'Envoi...' : 'Envoyer la contre-proposition'}
-                          </button>
+                          </Button>
                         </HelpTooltip>
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           onClick={() => {
                             setCounterProposeFor(null);
                             setCounterDate('');
@@ -552,23 +571,24 @@ function ProposalsSection({
                             setCounterEnd('');
                             setCounterMessage('');
                           }}
-                          className="text-xs text-muted-foreground hover:underline"
                         >
                           Annuler
-                        </button>
+                        </Button>
                       </div>
                     </form>
                   ) : (
                     <HelpTooltip content="Proposer un autre créneau horaire en réponse" side="top">
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setCounterProposeFor(proposal.id);
                           setRejectFor(null);
                         }}
-                        className="rounded-md border border-primary/50 bg-background px-3 py-1 text-xs font-medium text-primary hover:bg-accent"
+                        className="border-primary/50 text-primary"
                       >
                         Contre-proposer
-                      </button>
+                      </Button>
                     </HelpTooltip>
                   )}
                 </div>
@@ -577,7 +597,8 @@ function ProposalsSection({
           ))}
         </div>
       )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -839,32 +860,38 @@ export default function AdminTicketDetail() {
         {/* ─── Main Content (2 cols) ─── */}
         <div className="lg:col-span-2 space-y-6">
           {/* Ticket description */}
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="font-semibold mb-2">{t.title}</h2>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {t.description}
-            </p>
-          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <h2 className="font-semibold mb-2">{t.title}</h2>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {t.description}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Quote info (if exists) */}
           {t.quotedPrice && (
-            <div className="bg-card border rounded-lg p-6">
-              <h3 className="font-semibold mb-2">Devis</h3>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Prix:</span>{' '}
-                  {formatCurrency(t.quotedPrice)}
+            <Card>
+              <CardHeader>
+                <CardTitle>Devis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Prix:</span>{' '}
+                    {formatCurrency(t.quotedPrice)}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Durée:</span>{' '}
+                    {t.quoteDuration}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Description:</span>{' '}
+                    {t.quoteDescription}
+                  </div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Durée:</span>{' '}
-                  {t.quoteDuration}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Description:</span>{' '}
-                  {t.quoteDescription}
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Blocker banner */}
@@ -880,20 +907,23 @@ export default function AdminTicketDetail() {
 
           {/* ─── Appointments Section ─── */}
           {canSchedule && (
-            <div className="bg-card border rounded-lg p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Rendez-vous</h3>
-                {!showAppointmentForm && (
-                  <HelpTooltip content="Planifier un nouveau rendez-vous pour ce billet avec un technicien" side="left">
-                    <button
-                      onClick={() => setShowAppointmentForm(true)}
-                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                      Planifier un rendez-vous
-                    </button>
-                  </HelpTooltip>
-                )}
-              </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Rendez-vous</CardTitle>
+                  {!showAppointmentForm && (
+                    <HelpTooltip content="Planifier un nouveau rendez-vous pour ce billet avec un technicien" side="left">
+                      <Button
+                        size="sm"
+                        onClick={() => setShowAppointmentForm(true)}
+                      >
+                        Planifier un rendez-vous
+                      </Button>
+                    </HelpTooltip>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
 
               {/* Existing appointments list */}
               {(appointments as any[])?.length > 0 ? (
@@ -940,7 +970,7 @@ export default function AdminTicketDetail() {
                                 }
                               }}
                               disabled={changeAppointmentStatusMutation.isPending}
-                              className="rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
+                              className="flex h-8 rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                             >
                               <option value="">Changer le statut...</option>
                               {apt.status === 'PLANIFIE' && (
@@ -955,13 +985,15 @@ export default function AdminTicketDetail() {
                             </select>
                           </HelpTooltip>
                           <HelpTooltip content="Annuler ce rendez-vous" side="top">
-                            <button
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => cancelAppointmentMutation.mutate(apt.id)}
                               disabled={cancelAppointmentMutation.isPending}
-                              className="rounded-md border border-red-300 bg-background px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              className="border-red-300 text-red-700 hover:bg-red-50"
                             >
                               {cancelAppointmentMutation.isPending ? 'Annulation...' : 'Annuler'}
-                            </button>
+                            </Button>
                           </HelpTooltip>
                         </div>
                       )}
@@ -984,9 +1016,9 @@ export default function AdminTicketDetail() {
 
                   {/* Date picker */}
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">
+                    <Label className="text-xs text-muted-foreground">
                       Date
-                    </label>
+                    </Label>
                     <input
                       type="date"
                       value={selectedDate}
@@ -996,7 +1028,7 @@ export default function AdminTicketDetail() {
                       }}
                       min={new Date().toISOString().split('T')[0]}
                       required
-                      className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
                   </div>
 
@@ -1008,9 +1040,9 @@ export default function AdminTicketDetail() {
                   {/* Availability slots grid */}
                   {selectedDate && (
                     <div>
-                      <label className="block text-xs text-muted-foreground mb-2">
+                      <Label className="text-xs text-muted-foreground mb-2">
                         Créneaux disponibles
-                      </label>
+                      </Label>
                       {!t.technicianId ? (
                         <p className="text-xs text-amber-600">
                           Veuillez d&apos;abord assigner un technicien pour voir les disponibilités.
@@ -1028,23 +1060,23 @@ export default function AdminTicketDetail() {
                               selectedSlot?.start === slot.start &&
                               selectedSlot?.end === slot.end;
                             return (
-                              <button
+                              <Button
                                 key={idx}
                                 type="button"
+                                variant={isSelected ? 'default' : 'outline'}
+                                size="sm"
                                 disabled={!slot.available}
                                 onClick={() =>
                                   setSelectedSlot({ start: slot.start, end: slot.end })
                                 }
-                                className={`rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${
+                                className={
                                   !slot.available
                                     ? 'border-muted bg-muted text-muted-foreground/50 cursor-not-allowed'
-                                    : isSelected
-                                      ? 'border-primary bg-primary text-primary-foreground'
-                                      : 'border-input bg-background hover:bg-accent cursor-pointer'
-                                }`}
+                                    : undefined
+                                }
                               >
                                 {formatSlotTime(slot.start)}
-                              </button>
+                              </Button>
                             );
                           })}
                         </div>
@@ -1064,33 +1096,34 @@ export default function AdminTicketDetail() {
 
                   {/* Notes textarea */}
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">
+                    <Label className="text-xs text-muted-foreground">
                       Notes (optionnel)
-                    </label>
-                    <textarea
+                    </Label>
+                    <Textarea
                       value={appointmentNotes}
                       onChange={(e) => setAppointmentNotes(e.target.value)}
                       placeholder="Notes pour le rendez-vous..."
                       rows={2}
-                      className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm resize-none"
+                      className="resize-none"
                     />
                   </div>
 
                   {/* Submit / Cancel buttons */}
                   <div className="flex gap-2">
                     <HelpTooltip content="Valider et créer le rendez-vous au créneau sélectionné" side="top">
-                      <button
+                      <Button
                         type="submit"
                         disabled={createAppointmentMutation.isPending || !selectedSlot}
-                        className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                        className="flex-1"
                       >
                         {createAppointmentMutation.isPending
                           ? 'Planification...'
                           : 'Confirmer le rendez-vous'}
-                      </button>
+                      </Button>
                     </HelpTooltip>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={() => {
                         setShowAppointmentForm(false);
                         setSelectedDate('');
@@ -1098,32 +1131,38 @@ export default function AdminTicketDetail() {
                         setAppointmentNotes('');
                       }}
                       disabled={createAppointmentMutation.isPending}
-                      className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
                     >
                       Annuler
-                    </button>
+                    </Button>
                   </div>
                 </form>
               )}
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* ─── Attachments Section ─── */}
           <AttachmentSection ticketId={id!} canUpload={true} isAdmin={true} />
 
           {/* Messages */}
-          <div className="bg-card border rounded-lg p-6">
-            <h3 className="font-semibold mb-4">Messages</h3>
-            <MessageThread ticketId={id!} />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Messages</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MessageThread ticketId={id!} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* ─── Sidebar (1 col) ─── */}
         <div className="space-y-4">
           {/* Details card */}
-          <div className="bg-card border rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Détails</h3>
-            <div className="text-sm space-y-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Détails</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
               <HelpTooltip content="Type de service demandé par le client" side="left">
                 <div>
                   <span className="text-muted-foreground">Catégorie:</span>{' '}
@@ -1144,230 +1183,257 @@ export default function AdminTicketDetail() {
                 <span className="text-muted-foreground">Modifié:</span>{' '}
                 {formatDateTime(t.updatedAt)}
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Client card */}
-          <div className="bg-card border rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Client</h3>
-            <p className="text-sm">
-              {t.customer?.firstName} {t.customer?.lastName}
-            </p>
-            <p className="text-xs text-muted-foreground">{t.customer?.email}</p>
-          </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Client</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">
+                {t.customer?.firstName} {t.customer?.lastName}
+              </p>
+              <p className="text-xs text-muted-foreground">{t.customer?.email}</p>
+            </CardContent>
+          </Card>
 
           {/* Technician card — always allow (re)assignment */}
-          <div className="bg-card border rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Technicien</h3>
-            {t.technician && (
-              <p className="text-sm mb-1">
-                {t.technician.firstName} {t.technician.lastName}
-              </p>
-            )}
-            <HelpTooltip content="Assigner ou réassigner un technicien à ce billet" side="left">
-              <select
-                value=""
-                onChange={(e) => e.target.value && assignMutation.mutate(e.target.value)}
-                disabled={assignMutation.isPending}
-                className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
-              >
-                <option value="">
-                  {t.technician ? 'Réassigner...' : 'Assigner...'}
-                </option>
-                {(technicians as User[] | undefined)?.map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.firstName} {tech.lastName}
-                  </option>
-                ))}
-              </select>
-            </HelpTooltip>
-          </div>
-
-          {/* ─── Status Change ─── */}
-          {allowedNextStatuses.length > 0 && (
-            <div className="bg-card border rounded-lg p-4 space-y-3">
-              <h3 className="font-semibold text-sm">Changer le statut</h3>
-              <HelpTooltip content="Faire avancer le billet vers l'étape suivante de son cycle de vie" side="left">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Technicien</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {t.technician && (
+                <p className="text-sm mb-1">
+                  {t.technician.firstName} {t.technician.lastName}
+                </p>
+              )}
+              <HelpTooltip content="Assigner ou réassigner un technicien à ce billet" side="left">
                 <select
                   value=""
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  disabled={statusMutation.isPending}
-                  className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
+                  onChange={(e) => e.target.value && assignMutation.mutate(e.target.value)}
+                  disabled={assignMutation.isPending}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                 >
-                  <option value="">Sélectionner un statut...</option>
-                  {allowedNextStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {STATUS_LABELS[status] || status}
+                  <option value="">
+                    {t.technician ? 'Réassigner...' : 'Assigner...'}
+                  </option>
+                  {(technicians as User[] | undefined)?.map((tech) => (
+                    <option key={tech.id} value={tech.id}>
+                      {tech.firstName} {tech.lastName}
                     </option>
                   ))}
                 </select>
               </HelpTooltip>
-              {statusMutation.isPending && (
-                <p className="text-xs text-muted-foreground">Mise à jour...</p>
-              )}
-            </div>
+            </CardContent>
+          </Card>
+
+          {/* ─── Status Change ─── */}
+          {allowedNextStatuses.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Changer le statut</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <HelpTooltip content="Faire avancer le billet vers l'étape suivante de son cycle de vie" side="left">
+                  <select
+                    value=""
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    disabled={statusMutation.isPending}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                  >
+                    <option value="">Sélectionner un statut...</option>
+                    {allowedNextStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {STATUS_LABELS[status] || status}
+                      </option>
+                    ))}
+                  </select>
+                </HelpTooltip>
+                {statusMutation.isPending && (
+                  <p className="text-xs text-muted-foreground">Mise à jour...</p>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {/* ─── Send Quote ─── */}
           {canSendQuote && (
-            <div className="bg-card border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">Envoyer un devis</h3>
-                {!showQuoteForm && (
-                  <HelpTooltip content="Créer ou modifier le devis à envoyer au client pour approbation" side="left">
-                    <button
-                      onClick={() => setShowQuoteForm(true)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      {t.quotedPrice ? 'Modifier' : 'Créer'}
-                    </button>
-                  </HelpTooltip>
-                )}
-              </div>
-
-              {showQuoteForm && (
-                <form onSubmit={handleQuoteSubmit} className="space-y-3">
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">
-                      Prix ($)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={quotedPrice}
-                      onChange={(e) => setQuotedPrice(e.target.value)}
-                      placeholder="0.00"
-                      required
-                      className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">
-                      Description du devis
-                    </label>
-                    <textarea
-                      value={quoteDescription}
-                      onChange={(e) => setQuoteDescription(e.target.value)}
-                      placeholder="Détails du travail à effectuer..."
-                      required
-                      rows={3}
-                      className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">
-                      Durée estimée
-                    </label>
-                    <input
-                      type="text"
-                      value={quoteDuration}
-                      onChange={(e) => setQuoteDuration(e.target.value)}
-                      placeholder="ex: 2 heures, 1 jour..."
-                      required
-                      className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <HelpTooltip content="Envoyer ce devis au client — il recevra une notification pour l'approuver" side="top">
-                      <button
-                        type="submit"
-                        disabled={quoteMutation.isPending}
-                        className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Envoyer un devis</CardTitle>
+                  {!showQuoteForm && (
+                    <HelpTooltip content="Créer ou modifier le devis à envoyer au client pour approbation" side="left">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setShowQuoteForm(true)}
+                        className="h-auto p-0 text-xs"
                       >
-                        {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
-                      </button>
+                        {t.quotedPrice ? 'Modifier' : 'Créer'}
+                      </Button>
                     </HelpTooltip>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowQuoteForm(false);
-                        setQuotedPrice('');
-                        setQuoteDescription('');
-                        setQuoteDuration('');
-                      }}
-                      disabled={quoteMutation.isPending}
-                      className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
-                    >
-                      Annuler
-                    </button>
-                  </div>
-                </form>
+                  )}
+                </div>
+              </CardHeader>
+              {showQuoteForm && (
+                <CardContent>
+                  <form onSubmit={handleQuoteSubmit} className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">
+                        Prix ($)
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={quotedPrice}
+                        onChange={(e) => setQuotedPrice(e.target.value)}
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">
+                        Description du devis
+                      </Label>
+                      <Textarea
+                        value={quoteDescription}
+                        onChange={(e) => setQuoteDescription(e.target.value)}
+                        placeholder="Détails du travail à effectuer..."
+                        required
+                        rows={3}
+                        className="resize-none"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">
+                        Durée estimée
+                      </Label>
+                      <Input
+                        type="text"
+                        value={quoteDuration}
+                        onChange={(e) => setQuoteDuration(e.target.value)}
+                        placeholder="ex: 2 heures, 1 jour..."
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <HelpTooltip content="Envoyer ce devis au client — il recevra une notification pour l'approuver" side="top">
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={quoteMutation.isPending}
+                          className="flex-1"
+                        >
+                          {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
+                        </Button>
+                      </HelpTooltip>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowQuoteForm(false);
+                          setQuotedPrice('');
+                          setQuoteDescription('');
+                          setQuoteDuration('');
+                        }}
+                        disabled={quoteMutation.isPending}
+                      >
+                        Annuler
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
               )}
-            </div>
+            </Card>
           )}
 
           {/* ─── Blocker Management ─── */}
-          <div className="bg-card border rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Gestion des blocages</h3>
-
-            {hasBlocker ? (
-              <div className="space-y-2">
-                <div className="rounded-md bg-red-50 border border-red-200 p-2">
-                  <p className="text-xs text-red-700">{t.blockerReason}</p>
-                </div>
-                <HelpTooltip content="Retirer le blocage et permettre la reprise du travail sur ce billet" side="left">
-                  <button
-                    onClick={() => removeBlockerMutation.mutate()}
-                    disabled={removeBlockerMutation.isPending || anyMutationPending}
-                    className="w-full rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {removeBlockerMutation.isPending
-                      ? 'Retrait...'
-                      : 'Retirer le blocage'}
-                  </button>
-                </HelpTooltip>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {!showBlockerForm ? (
-                  <HelpTooltip content="Signaler un blocage qui empêche l'avancement du billet" side="left">
-                    <button
-                      onClick={() => setShowBlockerForm(true)}
-                      className="w-full rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Gestion des blocages</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {hasBlocker ? (
+                <div className="space-y-2">
+                  <div className="rounded-md bg-red-50 border border-red-200 p-2">
+                    <p className="text-xs text-red-700">{t.blockerReason}</p>
+                  </div>
+                  <HelpTooltip content="Retirer le blocage et permettre la reprise du travail sur ce billet" side="left">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removeBlockerMutation.mutate()}
+                      disabled={removeBlockerMutation.isPending || anyMutationPending}
+                      className="w-full"
                     >
-                      Ajouter un blocage
-                    </button>
+                      {removeBlockerMutation.isPending
+                        ? 'Retrait...'
+                        : 'Retirer le blocage'}
+                    </Button>
                   </HelpTooltip>
-                ) : (
-                  <form onSubmit={handleAddBlocker} className="space-y-2">
-                    <textarea
-                      value={blockerReason}
-                      onChange={(e) => setBlockerReason(e.target.value)}
-                      placeholder="Raison du blocage..."
-                      required
-                      rows={3}
-                      className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm resize-none"
-                    />
-                    <div className="flex gap-2">
-                      <HelpTooltip content="Confirmer le blocage — le billet passera en statut Blocage" side="top">
-                        <button
-                          type="submit"
-                          disabled={addBlockerMutation.isPending}
-                          className="flex-1 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                        >
-                          {addBlockerMutation.isPending
-                            ? 'Ajout...'
-                            : 'Confirmer le blocage'}
-                        </button>
-                      </HelpTooltip>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowBlockerForm(false);
-                          setBlockerReason('');
-                        }}
-                        disabled={addBlockerMutation.isPending}
-                        className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {!showBlockerForm ? (
+                    <HelpTooltip content="Signaler un blocage qui empêche l'avancement du billet" side="left">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowBlockerForm(true)}
+                        className="w-full border-red-300 text-red-700 hover:bg-red-50"
                       >
-                        Annuler
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
-          </div>
+                        Ajouter un blocage
+                      </Button>
+                    </HelpTooltip>
+                  ) : (
+                    <form onSubmit={handleAddBlocker} className="space-y-2">
+                      <Textarea
+                        value={blockerReason}
+                        onChange={(e) => setBlockerReason(e.target.value)}
+                        placeholder="Raison du blocage..."
+                        required
+                        rows={3}
+                        className="resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <HelpTooltip content="Confirmer le blocage — le billet passera en statut Blocage" side="top">
+                          <Button
+                            type="submit"
+                            variant="destructive"
+                            size="sm"
+                            disabled={addBlockerMutation.isPending}
+                            className="flex-1"
+                          >
+                            {addBlockerMutation.isPending
+                              ? 'Ajout...'
+                              : 'Confirmer le blocage'}
+                          </Button>
+                        </HelpTooltip>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowBlockerForm(false);
+                            setBlockerReason('');
+                          }}
+                          disabled={addBlockerMutation.isPending}
+                        >
+                          Annuler
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -5,6 +5,12 @@ import { api, type KbArticle, type KbArticleLink } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
 import { formatDateTime } from '../../lib/utils';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Badge } from '../../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
 // ─── Label Maps ───
 
@@ -256,179 +262,177 @@ export default function KbArticleDetail() {
         <div className="lg:col-span-2 space-y-6">
           {isEditing ? (
             /* ─── Edit Mode ─── */
-            <form onSubmit={handleSave} className="bg-card border rounded-lg p-6 space-y-4">
-              <h2 className="font-semibold">{t('kb.detail.edit')}</h2>
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <h2 className="font-semibold">{t('kb.detail.edit')}</h2>
 
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('kb.detail.titleLabel')}
-                </label>
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  required
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </div>
+                <form onSubmit={handleSave} className="space-y-4">
+                  {/* Title */}
+                  <div>
+                    <Label className="mb-1">
+                      {t('kb.detail.titleLabel')}
+                    </Label>
+                    <Input
+                      type="text"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                      required
+                    />
+                  </div>
 
-              {/* Content */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('kb.detail.contentLabel')}
-                </label>
-                <textarea
-                  value={editForm.content}
-                  onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                  required
-                  rows={20}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y font-mono"
-                />
-              </div>
+                  {/* Content */}
+                  <div>
+                    <Label className="mb-1">
+                      {t('kb.detail.contentLabel')}
+                    </Label>
+                    <Textarea
+                      value={editForm.content}
+                      onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                      required
+                      rows={20}
+                      className="resize-y font-mono"
+                    />
+                  </div>
 
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('kb.detail.categoryLabel')}
-                </label>
-                <select
-                  value={editForm.category}
-                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {CATEGORY_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {/* Category */}
+                  <div>
+                    <Label className="mb-1">
+                      {t('kb.detail.categoryLabel')}
+                    </Label>
+                    <select
+                      value={editForm.category}
+                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {CATEGORY_OPTIONS.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* Visibility */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('kb.detail.visibilityLabel')}
-                </label>
-                <select
-                  value={editForm.visibility}
-                  onChange={(e) => setEditForm({ ...editForm, visibility: e.target.value })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {VISIBILITY_OPTIONS.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {/* Visibility */}
+                  <div>
+                    <Label className="mb-1">
+                      {t('kb.detail.visibilityLabel')}
+                    </Label>
+                    <select
+                      value={editForm.visibility}
+                      onChange={(e) => setEditForm({ ...editForm, visibility: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {VISIBILITY_OPTIONS.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {t('kb.detail.tagsLabel')}
-                </label>
-                <input
-                  type="text"
-                  value={editForm.tags}
-                  onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
-                  placeholder={t('kb.detail.tagsPlaceholder')}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('kb.detail.tagsHint')}
-                </p>
-              </div>
+                  {/* Tags */}
+                  <div>
+                    <Label className="mb-1">
+                      {t('kb.detail.tagsLabel')}
+                    </Label>
+                    <Input
+                      type="text"
+                      value={editForm.tags}
+                      onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+                      placeholder={t('kb.detail.tagsPlaceholder')}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('kb.detail.tagsHint')}
+                    </p>
+                  </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {updateMutation.isPending ? t('common.saving') : t('kb.detail.save')}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelEditing}
-                  disabled={updateMutation.isPending}
-                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
-                >
-                  {t('kb.detail.cancel')}
-                </button>
-              </div>
-            </form>
+                  {/* Actions */}
+                  <div className="flex items-center gap-3 pt-2">
+                    <Button
+                      type="submit"
+                      disabled={updateMutation.isPending}
+                    >
+                      {updateMutation.isPending ? t('common.saving') : t('kb.detail.save')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={cancelEditing}
+                      disabled={updateMutation.isPending}
+                    >
+                      {t('kb.detail.cancel')}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           ) : (
             /* ─── View Mode ─── */
-            <div className="bg-card border rounded-lg p-6 space-y-4">
-              {/* Header row: title + edit/delete buttons */}
-              <div className="flex items-start justify-between gap-4">
-                <h1 className="text-2xl font-bold">{a.title}</h1>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={startEditing}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    {t('kb.detail.edit')}
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={deleteMutation.isPending}
-                    className="rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    {deleteMutation.isPending ? t('common.deleting') : t('kb.detail.delete')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Badges row */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                  {CATEGORY_LABELS[a.category] || a.category}
-                </span>
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    a.visibility === 'PUBLIC'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}
-                >
-                  {VISIBILITY_LABELS[a.visibility] || a.visibility}
-                </span>
-                {a.tags &&
-                  a.tags.map((tk) => (
-                    <span
-                      key={tk}
-                      className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                {/* Header row: title + edit/delete buttons */}
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="text-2xl font-bold">{a.title}</h1>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={startEditing}
                     >
-                      {tk}
-                    </span>
-                  ))}
-              </div>
+                      {t('kb.detail.edit')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDelete}
+                      disabled={deleteMutation.isPending}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      {deleteMutation.isPending ? t('common.deleting') : t('kb.detail.delete')}
+                    </Button>
+                  </div>
+                </div>
 
-              {/* Author + dates */}
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>
-                  {a.author.firstName} {a.author.lastName}
-                </span>
-                <span>{formatDateTime(a.createdAt)}</span>
-              </div>
+                {/* Badges row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge>
+                    {CATEGORY_LABELS[a.category] || a.category}
+                  </Badge>
+                  <Badge variant={a.visibility === 'PUBLIC' ? 'default' : 'secondary'}>
+                    {VISIBILITY_LABELS[a.visibility] || a.visibility}
+                  </Badge>
+                  {a.tags &&
+                    a.tags.map((tk) => (
+                      <Badge key={tk} variant="outline">
+                        {tk}
+                      </Badge>
+                    ))}
+                </div>
 
-              {/* Article content */}
-              <div className="whitespace-pre-wrap text-sm leading-relaxed pt-2 border-t">
-                {a.content}
-              </div>
-            </div>
+                {/* Author + dates */}
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span>
+                    {a.author.firstName} {a.author.lastName}
+                  </span>
+                  <span>{formatDateTime(a.createdAt)}</span>
+                </div>
+
+                {/* Article content */}
+                <div className="whitespace-pre-wrap text-sm leading-relaxed pt-2 border-t">
+                  {a.content}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
         {/* ─── Sidebar (1 col) ─── */}
         <div className="space-y-4">
           {/* ─── Article Info Card ─── */}
-          <div className="bg-card border rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">{t('kb.detail.articleInfo')}</h3>
-            <div className="text-sm space-y-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">{t('kb.detail.articleInfo')}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
               <div>
                 <span className="text-muted-foreground">{t('kb.detail.author')}:</span>{' '}
                 {a.author.firstName} {a.author.lastName}
@@ -443,133 +447,130 @@ export default function KbArticleDetail() {
               </div>
               <div>
                 <span className="text-muted-foreground">{t('kb.detail.categoryLabel')}:</span>{' '}
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                <Badge variant="default">
                   {CATEGORY_LABELS[a.category] || a.category}
-                </span>
+                </Badge>
               </div>
               <div>
                 <span className="text-muted-foreground">{t('kb.detail.visibilityLabel')}:</span>{' '}
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                    a.visibility === 'PUBLIC'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}
-                >
+                <Badge variant={a.visibility === 'PUBLIC' ? 'default' : 'secondary'}>
                   {VISIBILITY_LABELS[a.visibility] || a.visibility}
-                </span>
+                </Badge>
               </div>
               {a.tags && a.tags.length > 0 && (
                 <div>
                   <span className="text-muted-foreground">{t('kb.detail.tagsLabel')}:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {a.tags.map((tk) => (
-                      <span
-                        key={tk}
-                        className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                      >
+                      <Badge key={tk} variant="outline">
                         {tk}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* ─── Linked Entities Card ─── */}
-          <div className="bg-card border rounded-lg p-4 space-y-3">
-            <h3 className="font-semibold text-sm">{t('kb.detail.linkedEntities')}</h3>
-
-            {links.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('kb.detail.noLinks')}</p>
-            ) : (
-              <div className="space-y-3">
-                {ENTITY_TYPE_OPTIONS.map(([typeKey, typeLabel]) => {
-                  const typeLinks = linksByType[typeKey];
-                  if (!typeLinks || typeLinks.length === 0) return null;
-                  return (
-                    <div key={typeKey}>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">
-                        {typeLabel}
-                      </p>
-                      <div className="space-y-1">
-                        {typeLinks.map((link) => (
-                          <div
-                            key={link.id}
-                            className="flex items-center justify-between gap-2 rounded-md border bg-background px-2 py-1.5"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-xs font-medium text-muted-foreground">
-                                {typeLabel}
-                              </span>
-                              <span
-                                className="text-xs font-mono truncate max-w-[120px]"
-                                title={link.entityId}
-                              >
-                                {link.entityId}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => handleUnlink(link.id)}
-                              disabled={unlinkMutation.isPending}
-                              className="flex-shrink-0 rounded-md px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-                              title={t('kb.detail.unlink')}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">{t('kb.detail.linkedEntities')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {links.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t('kb.detail.noLinks')}</p>
+              ) : (
+                <div className="space-y-3">
+                  {ENTITY_TYPE_OPTIONS.map(([typeKey, typeLabel]) => {
+                    const typeLinks = linksByType[typeKey];
+                    if (!typeLinks || typeLinks.length === 0) return null;
+                    return (
+                      <div key={typeKey}>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          {typeLabel}
+                        </p>
+                        <div className="space-y-1">
+                          {typeLinks.map((link) => (
+                            <div
+                              key={link.id}
+                              className="flex items-center justify-between gap-2 rounded-md border bg-background px-2 py-1.5"
                             >
-                              &times;
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  {typeLabel}
+                                </span>
+                                <span
+                                  className="text-xs font-mono truncate max-w-[120px]"
+                                  title={link.entityId}
+                                >
+                                  {link.entityId}
+                                </span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleUnlink(link.id)}
+                                disabled={unlinkMutation.isPending}
+                                className="flex-shrink-0 h-auto px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                                title={t('kb.detail.unlink')}
+                              >
+                                &times;
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
 
-            {/* ─── Link Entity Form ─── */}
-            <div className="border-t pt-3">
-              <p className="text-xs font-medium mb-2">{t('kb.detail.linkEntity')}</p>
-              <form onSubmit={handleLinkEntity} className="space-y-2">
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-0.5">
-                    {t('kb.detail.entityType')}
-                  </label>
-                  <select
-                    value={linkEntityType}
-                    onChange={(e) => setLinkEntityType(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+              {/* ─── Link Entity Form ─── */}
+              <div className="border-t pt-3">
+                <p className="text-xs font-medium mb-2">{t('kb.detail.linkEntity')}</p>
+                <form onSubmit={handleLinkEntity} className="space-y-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      {t('kb.detail.entityType')}
+                    </Label>
+                    <select
+                      value={linkEntityType}
+                      onChange={(e) => setLinkEntityType(e.target.value)}
+                      className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      {ENTITY_TYPE_OPTIONS.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      {t('kb.detail.entityId')}
+                    </Label>
+                    <Input
+                      type="text"
+                      value={linkEntityId}
+                      onChange={(e) => setLinkEntityId(e.target.value)}
+                      placeholder="ID"
+                      required
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={linkMutation.isPending || !linkEntityId.trim()}
+                    size="sm"
+                    className="w-full"
                   >
-                    {ENTITY_TYPE_OPTIONS.map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-0.5">
-                    {t('kb.detail.entityId')}
-                  </label>
-                  <input
-                    type="text"
-                    value={linkEntityId}
-                    onChange={(e) => setLinkEntityId(e.target.value)}
-                    placeholder="ID"
-                    required
-                    className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={linkMutation.isPending || !linkEntityId.trim()}
-                  className="w-full rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {linkMutation.isPending ? t('common.saving') : t('kb.detail.linkEntity')}
-                </button>
-              </form>
-            </div>
-          </div>
+                    {linkMutation.isPending ? t('common.saving') : t('kb.detail.linkEntity')}
+                  </Button>
+                </form>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

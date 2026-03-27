@@ -16,6 +16,7 @@ const AUTHOR_SELECT = {
   firstName: true,
   lastName: true,
   email: true,
+  role: true,
 };
 
 const NOTE_INCLUDE = {

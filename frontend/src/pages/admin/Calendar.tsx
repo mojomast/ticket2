@@ -7,6 +7,11 @@ import { useToast } from '../../hooks/use-toast';
 import { useTranslation } from '../../lib/i18n/hook';
 import { APPOINTMENT_STATUS_COLORS, APPOINTMENT_STATUS_LABELS } from '../../lib/constants';
 import type { AppointmentStatus } from '../../types';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import {
   startOfMonth,
   endOfMonth,
@@ -360,13 +365,12 @@ export default function AdminCalendar() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('admin.calendar.title')}</h1>
         <HelpTooltip content={t('admin.calendar.newAppointmentTooltip')} side="left">
-          <button
+          <Button
             type="button"
             onClick={() => setShowForm((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
             {showForm ? t('admin.calendar.closeForm') : t('admin.calendar.newAppointment')}
-          </button>
+          </Button>
         </HelpTooltip>
       </div>
 
@@ -374,39 +378,33 @@ export default function AdminCalendar() {
       <div className="flex flex-wrap items-center gap-2">
         {/* View mode tabs */}
         <div className="inline-flex rounded-md border bg-muted p-0.5">
-          <button
+          <Button
+            variant={viewMode === 'month' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setViewMode('month')}
-            className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === 'month'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className="gap-1"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
             {t('admin.calendar.viewMonth')}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={viewMode === 'week' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setViewMode('week')}
-            className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === 'week'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className="gap-1"
           >
             <CalendarDays className="h-3.5 w-3.5" />
             {t('admin.calendar.viewWeek')}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={viewMode === 'day' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setViewMode('day')}
-            className={`inline-flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-              viewMode === 'day'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className="gap-1"
           >
             <Clock className="h-3.5 w-3.5" />
             {t('admin.calendar.viewDay')}
-          </button>
+          </Button>
         </div>
 
         {/* Spacer */}
@@ -414,32 +412,35 @@ export default function AdminCalendar() {
 
         {/* Navigation */}
         <HelpTooltip content={getPrevTooltip()} side="bottom">
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={goToPrev}
-            className="inline-flex items-center justify-center rounded-md border p-1.5 hover:bg-accent"
             aria-label={getPrevTooltip()}
           >
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </Button>
         </HelpTooltip>
 
         <HelpTooltip content={t('admin.calendar.todayTooltip')} side="bottom">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={goToToday}
-            className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
           >
             {t('admin.calendar.today')}
-          </button>
+          </Button>
         </HelpTooltip>
 
         <HelpTooltip content={getNextTooltip()} side="bottom">
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={goToNext}
-            className="inline-flex items-center justify-center rounded-md border p-1.5 hover:bg-accent"
             aria-label={getNextTooltip()}
           >
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </Button>
         </HelpTooltip>
 
         <HelpTooltip content={t('admin.calendar.datePickTooltip')} side="bottom">
@@ -447,7 +448,7 @@ export default function AdminCalendar() {
             type="date"
             value={toDateString(selectedDate)}
             onChange={handleDatePick}
-            className="rounded-md border px-2 py-1.5 text-sm bg-background"
+            className="flex h-9 rounded-md border border-input bg-background px-2 py-1.5 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </HelpTooltip>
 
@@ -553,178 +554,182 @@ function CreationForm({
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   return (
-    <div className="bg-card border rounded-lg p-4">
-      <h2 className="text-lg font-semibold mb-4">{t('admin.calendar.formTitle')}</h2>
-      <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-        {/* Ticket select */}
-        <div className="space-y-1">
-          <label htmlFor="apt-ticket" className="text-sm font-medium">
-            {t('admin.calendar.ticketLabel')} <span className="text-destructive">{t('admin.calendar.ticketRequired')}</span>
-          </label>
-          <HelpTooltip content={t('admin.calendar.selectTicketTooltip')} side="bottom">
-            <select
-              id="apt-ticket"
-              value={form.ticketId}
-              onChange={(e) => onFormChange('ticketId', e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('admin.calendar.formTitle')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+          {/* Ticket select */}
+          <div className="space-y-1">
+            <Label htmlFor="apt-ticket">
+              {t('admin.calendar.ticketLabel')} <span className="text-destructive">{t('admin.calendar.ticketRequired')}</span>
+            </Label>
+            <HelpTooltip content={t('admin.calendar.selectTicketTooltip')} side="bottom">
+              <select
+                id="apt-ticket"
+                value={form.ticketId}
+                onChange={(e) => onFormChange('ticketId', e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                required
+              >
+                <option value="">{t('admin.calendar.selectTicket')}</option>
+                {openTickets.map((tk) => (
+                  <option key={tk.id} value={tk.id}>
+                    {tk.ticketNumber} — {tk.title}
+                  </option>
+                ))}
+              </select>
+            </HelpTooltip>
+          </div>
+
+          {/* Technician select */}
+          <div className="space-y-1">
+            <Label htmlFor="apt-tech">
+              {t('admin.calendar.technicianLabel')}
+            </Label>
+            <HelpTooltip content={t('admin.calendar.techTooltip')} side="bottom">
+              <select
+                id="apt-tech"
+                value={form.technicianId}
+                onChange={(e) => onFormChange('technicianId', e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">{t('admin.calendar.techNone')}</option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.firstName} {tech.lastName}
+                  </option>
+                ))}
+              </select>
+            </HelpTooltip>
+          </div>
+
+          {/* Availability slots */}
+          <div className="space-y-2 sm:col-span-2">
+            <Label>{t('admin.calendar.slotsLabel')}</Label>
+            {!form.technicianId ? (
+              <p className="text-xs text-muted-foreground italic">
+                {t('admin.calendar.slotsSelectTech')}
+              </p>
+            ) : loadingAvailability ? (
+              <p className="text-xs text-muted-foreground animate-pulse">
+                {t('admin.calendar.slotsLoading')}
+              </p>
+            ) : availabilitySlots && availabilitySlots.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {availabilitySlots.map((slot) => (
+                  <Button
+                    key={slot.start}
+                    type="button"
+                    variant={slot.available ? 'outline' : 'ghost'}
+                    size="sm"
+                    onClick={() => onSlotClick(slot)}
+                    disabled={!slot.available}
+                    className={
+                      slot.available
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-300'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50 border-gray-200'
+                    }
+                    title={
+                      slot.available
+                        ? t('admin.calendar.slotAvailable')
+                        : t('admin.calendar.slotUnavailable')
+                    }
+                  >
+                    {formatSlotTime(slot.start)} – {formatSlotTime(slot.end)}
+                  </Button>
+                ))}
+              </div>
+            ) : availabilitySlots && availabilitySlots.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">
+                {t('admin.calendar.slotsNone')}
+              </p>
+            ) : null}
+          </div>
+
+          {/* Scheduled start */}
+          <div className="space-y-1">
+            <Label htmlFor="apt-start">
+              {t('admin.calendar.startLabel')} <span className="text-destructive">*</span>
+            </Label>
+            <input
+              id="apt-start"
+              type="datetime-local"
+              value={form.scheduledStart}
+              onChange={(e) => onFormChange('scheduledStart', e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               required
+            />
+          </div>
+
+          {/* Scheduled end */}
+          <div className="space-y-1">
+            <Label htmlFor="apt-end">
+              {t('admin.calendar.endLabel')} <span className="text-destructive">*</span>
+            </Label>
+            <input
+              id="apt-end"
+              type="datetime-local"
+              value={form.scheduledEnd}
+              onChange={(e) => onFormChange('scheduledEnd', e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              required
+            />
+          </div>
+
+          {/* Travel buffer */}
+          <div className="space-y-1">
+            <Label htmlFor="apt-buffer">
+              {t('admin.calendar.travelBuffer')}
+            </Label>
+            <Input
+              id="apt-buffer"
+              type="number"
+              min={0}
+              value={form.travelBuffer}
+              onChange={(e) =>
+                onFormChange('travelBuffer', parseInt(e.target.value, 10) || 0)
+              }
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="apt-notes">
+              {t('admin.calendar.notesLabel')}
+            </Label>
+            <Textarea
+              id="apt-notes"
+              rows={3}
+              value={form.notes}
+              onChange={(e) => onFormChange('notes', e.target.value)}
+              className="resize-y"
+              placeholder={t('admin.calendar.notesPlaceholder')}
+            />
+          </div>
+
+          {/* Submit */}
+          <div className="sm:col-span-2 flex gap-2">
+            <HelpTooltip content={t('admin.calendar.submitTooltip')} side="top">
+              <Button
+                type="submit"
+                disabled={isPending}
+              >
+                {isPending ? t('admin.calendar.creating') : t('admin.calendar.createButton')}
+              </Button>
+            </HelpTooltip>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
             >
-              <option value="">{t('admin.calendar.selectTicket')}</option>
-              {openTickets.map((tk) => (
-                <option key={tk.id} value={tk.id}>
-                  {tk.ticketNumber} — {tk.title}
-                </option>
-              ))}
-            </select>
-          </HelpTooltip>
-        </div>
-
-        {/* Technician select */}
-        <div className="space-y-1">
-          <label htmlFor="apt-tech" className="text-sm font-medium">
-            {t('admin.calendar.technicianLabel')}
-          </label>
-          <HelpTooltip content={t('admin.calendar.techTooltip')} side="bottom">
-            <select
-              id="apt-tech"
-              value={form.technicianId}
-              onChange={(e) => onFormChange('technicianId', e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">{t('admin.calendar.techNone')}</option>
-              {technicians.map((tech) => (
-                <option key={tech.id} value={tech.id}>
-                  {tech.firstName} {tech.lastName}
-                </option>
-              ))}
-            </select>
-          </HelpTooltip>
-        </div>
-
-        {/* Availability slots */}
-        <div className="space-y-2 sm:col-span-2">
-          <label className="text-sm font-medium">{t('admin.calendar.slotsLabel')}</label>
-          {!form.technicianId ? (
-            <p className="text-xs text-muted-foreground italic">
-              {t('admin.calendar.slotsSelectTech')}
-            </p>
-          ) : loadingAvailability ? (
-            <p className="text-xs text-muted-foreground animate-pulse">
-              {t('admin.calendar.slotsLoading')}
-            </p>
-          ) : availabilitySlots && availabilitySlots.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {availabilitySlots.map((slot) => (
-                <button
-                  key={slot.start}
-                  type="button"
-                  onClick={() => onSlotClick(slot)}
-                  disabled={!slot.available}
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                    slot.available
-                      ? 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer border border-green-300'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50 border border-gray-200'
-                  }`}
-                  title={
-                    slot.available
-                      ? t('admin.calendar.slotAvailable')
-                      : t('admin.calendar.slotUnavailable')
-                  }
-                >
-                  {formatSlotTime(slot.start)} – {formatSlotTime(slot.end)}
-                </button>
-              ))}
-            </div>
-          ) : availabilitySlots && availabilitySlots.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">
-              {t('admin.calendar.slotsNone')}
-            </p>
-          ) : null}
-        </div>
-
-        {/* Scheduled start */}
-        <div className="space-y-1">
-          <label htmlFor="apt-start" className="text-sm font-medium">
-            {t('admin.calendar.startLabel')} <span className="text-destructive">*</span>
-          </label>
-          <input
-            id="apt-start"
-            type="datetime-local"
-            value={form.scheduledStart}
-            onChange={(e) => onFormChange('scheduledStart', e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            required
-          />
-        </div>
-
-        {/* Scheduled end */}
-        <div className="space-y-1">
-          <label htmlFor="apt-end" className="text-sm font-medium">
-            {t('admin.calendar.endLabel')} <span className="text-destructive">*</span>
-          </label>
-          <input
-            id="apt-end"
-            type="datetime-local"
-            value={form.scheduledEnd}
-            onChange={(e) => onFormChange('scheduledEnd', e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            required
-          />
-        </div>
-
-        {/* Travel buffer */}
-        <div className="space-y-1">
-          <label htmlFor="apt-buffer" className="text-sm font-medium">
-            {t('admin.calendar.travelBuffer')}
-          </label>
-          <input
-            id="apt-buffer"
-            type="number"
-            min={0}
-            value={form.travelBuffer}
-            onChange={(e) =>
-              onFormChange('travelBuffer', parseInt(e.target.value, 10) || 0)
-            }
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          />
-        </div>
-
-        {/* Notes */}
-        <div className="space-y-1 sm:col-span-2">
-          <label htmlFor="apt-notes" className="text-sm font-medium">
-            {t('admin.calendar.notesLabel')}
-          </label>
-          <textarea
-            id="apt-notes"
-            rows={3}
-            value={form.notes}
-            onChange={(e) => onFormChange('notes', e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
-            placeholder={t('admin.calendar.notesPlaceholder')}
-          />
-        </div>
-
-        {/* Submit */}
-        <div className="sm:col-span-2 flex gap-2">
-          <HelpTooltip content={t('admin.calendar.submitTooltip')} side="top">
-            <button
-              type="submit"
-              disabled={isPending}
-              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {isPending ? t('admin.calendar.creating') : t('admin.calendar.createButton')}
-            </button>
-          </HelpTooltip>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            {t('common.cancel')}
-          </button>
-        </div>
-      </form>
-    </div>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -761,7 +766,7 @@ function MonthView({
   ];
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b">
         {dayHeaders.map((dh) => (
@@ -830,7 +835,7 @@ function MonthView({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -858,7 +863,7 @@ function WeekView({
   });
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Header row with day labels */}
       <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b">
         <div className="border-r" />
@@ -948,7 +953,7 @@ function WeekView({
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -1001,15 +1006,15 @@ function AdminDayView({
 
   if (!hasAppointments) {
     return (
-      <div className="bg-card border rounded-lg p-8 text-center text-muted-foreground">
+      <Card className="p-8 text-center text-muted-foreground">
         <CalendarIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
         {t('appointment.noAppointmentsToday')}
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Summary bar */}
       <div className="px-4 py-2 border-b bg-muted/30">
         <span className="text-sm text-muted-foreground">
@@ -1051,7 +1056,7 @@ function AdminDayView({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -1137,7 +1142,7 @@ function AdminAppointmentCard({
                   }
                 }}
                 disabled={statusMutation.isPending || cancelMutation.isPending}
-                className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+                className="flex h-8 rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                 aria-label={t('admin.calendar.changeStatusLabel')}
               >
                 <option value="">{t('admin.calendar.changeStatusOption')}</option>
@@ -1153,15 +1158,17 @@ function AdminAppointmentCard({
           {/* Cancel button */}
           {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
             <HelpTooltip content={t('admin.calendar.cancelTooltip')} side="top">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => handleCancel(apt.id)}
                 disabled={cancelMutation.isPending}
-                className="inline-flex items-center rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50 transition-colors"
+                className="border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20"
                 title={t('admin.calendar.cancelTitle')}
               >
                 {t('common.cancel')}
-              </button>
+              </Button>
             </HelpTooltip>
           )}
         </div>

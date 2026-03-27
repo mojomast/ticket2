@@ -162,6 +162,7 @@ export const workOrderListQuerySchema = z.object({
   status: workOrderStatusEnum.optional(),
   priority: priorityEnum.optional(),
   technicianId: z.string().uuid().optional(),
+  customerId: z.string().uuid().optional(),
   search: z.string().optional(),
   sortBy: z.enum(['createdAt', 'intakeDate', 'estimatedPickupDate', 'priority', 'status']).optional().default('intakeDate'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),

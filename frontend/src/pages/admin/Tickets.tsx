@@ -13,6 +13,10 @@ import {
   SERVICE_CATEGORY_LABELS,
   SERVICE_MODE_LABELS,
 } from '../../lib/constants';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 
 /** Shape of the admin "New Ticket" form data. */
 interface CreateTicketForm {
@@ -94,13 +98,12 @@ export default function AdminTickets() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('ticket.list')}</h1>
         <HelpTooltip content={t('admin.tickets.newTooltip')} side="left">
-          <button
+          <Button
             type="button"
             onClick={() => setShowForm((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
             {showForm ? t('common.cancel') : t('ticket.newButton')}
-          </button>
+          </Button>
         </HelpTooltip>
       </div>
 
@@ -114,15 +117,15 @@ export default function AdminTickets() {
 
           {/* Customer select */}
           <div className="space-y-1">
-            <label htmlFor="admin-ticket-customer" className="text-sm font-medium">
+            <Label htmlFor="admin-ticket-customer">
               {t('ticket.customer')}
-            </label>
+            </Label>
             <select
               id="admin-ticket-customer"
               value={form.customerId}
               onChange={(e) => updateField('customerId', e.target.value)}
               required
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <option value="">{t('ticket.selectClient')}</option>
               {(customers as any[]).map((c: any) => (
@@ -135,47 +138,46 @@ export default function AdminTickets() {
 
           {/* Title */}
           <div className="space-y-1">
-            <label htmlFor="admin-ticket-title" className="text-sm font-medium">
+            <Label htmlFor="admin-ticket-title">
               {t('ticket.title')}
-            </label>
-            <input
+            </Label>
+            <Input
               id="admin-ticket-title"
               type="text"
               required
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
               placeholder={t('ticket.titlePlaceholder')}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-1">
-            <label htmlFor="admin-ticket-description" className="text-sm font-medium">
+            <Label htmlFor="admin-ticket-description">
               {t('ticket.description')}
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               id="admin-ticket-description"
               required
               rows={4}
               value={form.description}
               onChange={(e) => updateField('description', e.target.value)}
               placeholder={t('ticket.descriptionPlaceholder')}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+              className="resize-y"
             />
           </div>
 
           {/* Priority / Category / Mode */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <label htmlFor="admin-ticket-priority" className="text-sm font-medium">
+              <Label htmlFor="admin-ticket-priority">
                 {t('ticket.priority')}
-              </label>
+              </Label>
               <select
                 id="admin-ticket-priority"
                 value={form.priority}
                 onChange={(e) => updateField('priority', e.target.value)}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -184,14 +186,14 @@ export default function AdminTickets() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="admin-ticket-category" className="text-sm font-medium">
+              <Label htmlFor="admin-ticket-category">
                 {t('ticket.category')}
-              </label>
+              </Label>
               <select
                 id="admin-ticket-category"
                 value={form.serviceCategory}
                 onChange={(e) => updateField('serviceCategory', e.target.value)}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {Object.entries(SERVICE_CATEGORY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -200,14 +202,14 @@ export default function AdminTickets() {
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="admin-ticket-mode" className="text-sm font-medium">
+              <Label htmlFor="admin-ticket-mode">
                 {t('ticket.mode')}
-              </label>
+              </Label>
               <select
                 id="admin-ticket-mode"
                 value={form.serviceMode}
                 onChange={(e) => updateField('serviceMode', e.target.value)}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {Object.entries(SERVICE_MODE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -219,13 +221,12 @@ export default function AdminTickets() {
           {/* Submit */}
           <div className="flex justify-end">
             <HelpTooltip content={t('admin.tickets.createTooltip')} side="left">
-              <button
+              <Button
                 type="submit"
                 disabled={createMutation.isPending}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createMutation.isPending ? t('ticket.creating') : t('ticket.createButton')}
-              </button>
+              </Button>
             </HelpTooltip>
           </div>
         </form>
@@ -233,12 +234,12 @@ export default function AdminTickets() {
 
       <div className="flex gap-4">
         <HelpTooltip content={t('admin.tickets.searchTooltip')} side="bottom">
-          <input
+          <Input
             type="text"
             placeholder={t('common.searchPlaceholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="flex-1 max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="flex-1 max-w-sm"
           />
         </HelpTooltip>
         <HelpTooltip content={t('admin.tickets.filterStatusTooltip')} side="bottom">
@@ -322,20 +323,22 @@ export default function AdminTickets() {
             {t('common.pageOf', { page: String(page), total: String(totalPages) })}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('common.previous_arrow')}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setPage((p) => p + 1)}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t('common.next_arrow')}
-            </button>
+            </Button>
           </div>
         </div>
       )}

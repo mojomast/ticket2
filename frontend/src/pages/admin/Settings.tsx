@@ -6,6 +6,12 @@ import { useAuthStore } from '../../stores/auth-store';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
 import { Mail, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
 
 export default function AdminSettings() {
   const toast = useToast();
@@ -147,8 +153,10 @@ export default function AdminSettings() {
   // ── Render ──────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <span className="text-muted-foreground text-sm">{t('settings.loadingSettings')}</span>
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-48 max-w-xl rounded-lg" />
+        <Skeleton className="h-64 max-w-xl rounded-lg" />
       </div>
     );
   }
@@ -168,63 +176,63 @@ export default function AdminSettings() {
       <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
 
       {/* ── Language Toggle ── */}
-      <div className="bg-card border rounded-lg p-6 max-w-xl">
-        <h2 className="font-semibold mb-4">{t('settings.language')}</h2>
-        <div className="flex items-center gap-3">
-          <HelpTooltip content={t('settings.languageTooltip')} side="right">
-            <div className="flex rounded-md border border-input overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setLocale('fr')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  locale === 'fr'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-foreground hover:bg-muted'
-                }`}
-              >
-                {t('settings.french')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocale('en')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  locale === 'en'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-foreground hover:bg-muted'
-                }`}
-              >
-                {t('settings.english')}
-              </button>
-            </div>
-          </HelpTooltip>
-          <span className="text-sm text-muted-foreground">
-            {locale === 'fr' ? t('settings.activeLangFr') : t('settings.activeLangEn')}
-          </span>
-        </div>
-      </div>
+      <Card className="max-w-xl">
+        <CardHeader>
+          <CardTitle className="text-base">{t('settings.language')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <HelpTooltip content={t('settings.languageTooltip')} side="right">
+              <div className="flex rounded-md border border-input overflow-hidden">
+                <Button
+                  type="button"
+                  variant={locale === 'fr' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setLocale('fr')}
+                  className="rounded-none"
+                >
+                  {t('settings.french')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={locale === 'en' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setLocale('en')}
+                  className="rounded-none"
+                >
+                  {t('settings.english')}
+                </Button>
+              </div>
+            </HelpTooltip>
+            <span className="text-sm text-muted-foreground">
+              {locale === 'fr' ? t('settings.activeLangFr') : t('settings.activeLangEn')}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Branding ── */}
-      <div className="bg-card border rounded-lg p-6 max-w-xl">
-        <h2 className="font-semibold mb-4">{t('settings.branding')}</h2>
-
-        <div className="space-y-4">
+      <Card className="max-w-xl">
+        <CardHeader>
+          <CardTitle className="text-base">{t('settings.branding')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {/* Company name */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.companyName')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.companyName')}</Label>
             <HelpTooltip content={t('settings.companyNameTooltip')} side="right">
-              <input
+              <Input
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Valitek"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </HelpTooltip>
           </div>
 
           {/* Primary colour */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.primaryColor')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.primaryColor')}</Label>
             <HelpTooltip content={t('settings.primaryColorTooltip')} side="right">
               <div className="flex items-center gap-3">
                 <input
@@ -233,243 +241,237 @@ export default function AdminSettings() {
                   onChange={(e) => setPrimaryColor(e.target.value)}
                   className="h-9 w-12 cursor-pointer rounded border border-input p-0.5"
                 />
-                <input
+                <Input
                   type="text"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
                   maxLength={7}
-                  className="w-28 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                  className="w-28 font-mono"
                 />
               </div>
             </HelpTooltip>
           </div>
 
           {/* Logo URL */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.logoUrl')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.logoUrl')}</Label>
             <HelpTooltip content={t('settings.logoUrlTooltip')} side="right">
-              <input
+              <Input
                 type="url"
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
                 placeholder="https://example.com/logo.png"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </HelpTooltip>
           </div>
 
           {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.phone')}</label>
-            <input
+          <div className="space-y-1">
+            <Label>{t('settings.phone')}</Label>
+            <Input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+33 1 23 45 67 89"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </div>
 
           {/* Email */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.email')}</label>
-            <input
+          <div className="space-y-1">
+            <Label>{t('settings.email')}</Label>
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="contact@entreprise.fr"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </div>
 
           {/* Address */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.address')}</label>
-            <textarea
+          <div className="space-y-1">
+            <Label>{t('settings.address')}</Label>
+            <Textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               rows={2}
               placeholder="123 rue Exemple, 75001 Paris"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
+              className="resize-y"
             />
           </div>
 
           {/* Save button */}
           <HelpTooltip content={t('settings.saveTooltip')} side="right">
-            <button
+            <Button
               onClick={() => saveBrandingMutation.mutate()}
               disabled={saveBrandingMutation.isPending}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
             >
               {saveBrandingMutation.isPending ? t('common.saving') : t('common.save')}
-            </button>
+            </Button>
           </HelpTooltip>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* ── Email Configuration (Microsoft 365) ── */}
-      <div className="bg-card border rounded-lg p-6 max-w-xl">
-        <div className="flex items-center gap-3 mb-2">
-          <Mail className="h-5 w-5 text-muted-foreground" />
-          <h2 className="font-semibold">{t('settings.emailConfig')}</h2>
-          {emailConfigured ? (
-            <span className="inline-flex items-center gap-1 text-xs text-green-600">
-              <CheckCircle className="h-3.5 w-3.5" />
-              {t('settings.configured')}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <XCircle className="h-3.5 w-3.5" />
-              {t('settings.notConfigured')}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t('settings.emailConfigDesc')}
-        </p>
-
-        <div className="space-y-4">
+      <Card className="max-w-xl">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Mail className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">{t('settings.emailConfig')}</CardTitle>
+            {emailConfigured ? (
+              <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                <CheckCircle className="h-3.5 w-3.5" />
+                {t('settings.configured')}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <XCircle className="h-3.5 w-3.5" />
+                {t('settings.notConfigured')}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t('settings.emailConfigDesc')}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {/* Tenant ID */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.m365TenantId')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.m365TenantId')}</Label>
             <HelpTooltip content={t('settings.m365TenantIdTooltip')} side="right">
-              <input
+              <Input
                 type="text"
                 value={m365TenantId}
                 onChange={(e) => setM365TenantId(e.target.value)}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                className="font-mono"
               />
             </HelpTooltip>
           </div>
 
           {/* Client ID */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.m365ClientId')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.m365ClientId')}</Label>
             <HelpTooltip content={t('settings.m365ClientIdTooltip')} side="right">
-              <input
+              <Input
                 type="text"
                 value={m365ClientId}
                 onChange={(e) => setM365ClientId(e.target.value)}
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                className="font-mono"
               />
             </HelpTooltip>
           </div>
 
           {/* Client Secret */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.m365ClientSecret')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.m365ClientSecret')}</Label>
             <HelpTooltip content={t('settings.m365ClientSecretTooltip')} side="right">
-              <input
+              <Input
                 type="password"
                 value={m365ClientSecret}
                 onChange={(e) => setM365ClientSecret(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                className="font-mono"
               />
             </HelpTooltip>
           </div>
 
           {/* Sender Email */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.m365SenderEmail')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.m365SenderEmail')}</Label>
             <HelpTooltip content={t('settings.m365SenderEmailTooltip')} side="right">
-              <input
+              <Input
                 type="email"
                 value={m365SenderEmail}
                 onChange={(e) => setM365SenderEmail(e.target.value)}
                 placeholder="noreply@entreprise.com"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </HelpTooltip>
           </div>
 
           {/* Save button */}
-          <button
+          <Button
             onClick={() => saveEmailMutation.mutate()}
             disabled={saveEmailMutation.isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
           >
             {saveEmailMutation.isPending ? t('common.saving') : t('settings.saveEmailConfig')}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* ── SMS Configuration (VoIP.ms) ── */}
-      <div className="bg-card border rounded-lg p-6 max-w-xl">
-        <div className="flex items-center gap-3 mb-2">
-          <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          <h2 className="font-semibold">{t('settings.smsConfig')}</h2>
-          {smsConfigured ? (
-            <span className="inline-flex items-center gap-1 text-xs text-green-600">
-              <CheckCircle className="h-3.5 w-3.5" />
-              {t('settings.configured')}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <XCircle className="h-3.5 w-3.5" />
-              {t('settings.notConfigured')}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          {t('settings.smsConfigDesc')}
-        </p>
-
-        <div className="space-y-4">
+      <Card className="max-w-xl">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">{t('settings.smsConfig')}</CardTitle>
+            {smsConfigured ? (
+              <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                <CheckCircle className="h-3.5 w-3.5" />
+                {t('settings.configured')}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <XCircle className="h-3.5 w-3.5" />
+                {t('settings.notConfigured')}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t('settings.smsConfigDesc')}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {/* Username */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.voipmsUsername')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.voipmsUsername')}</Label>
             <HelpTooltip content={t('settings.voipmsUsernameTooltip')} side="right">
-              <input
+              <Input
                 type="text"
                 value={voipmsUsername}
                 onChange={(e) => setVoipmsUsername(e.target.value)}
                 placeholder="user@example.com"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </HelpTooltip>
           </div>
 
           {/* Password */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.voipmsPassword')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.voipmsPassword')}</Label>
             <HelpTooltip content={t('settings.voipmsPasswordTooltip')} side="right">
-              <input
+              <Input
                 type="password"
                 value={voipmsPassword}
                 onChange={(e) => setVoipmsPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                className="font-mono"
               />
             </HelpTooltip>
           </div>
 
           {/* DID */}
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('settings.voipmsDid')}</label>
+          <div className="space-y-1">
+            <Label>{t('settings.voipmsDid')}</Label>
             <HelpTooltip content={t('settings.voipmsDidTooltip')} side="right">
-              <input
+              <Input
                 type="tel"
                 value={voipmsDid}
                 onChange={(e) => setVoipmsDid(e.target.value)}
                 placeholder="15141234567"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                className="font-mono"
               />
             </HelpTooltip>
           </div>
 
           {/* Save button */}
-          <button
+          <Button
             onClick={() => saveSmsMutation.mutate()}
             disabled={saveSmsMutation.isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
           >
             {saveSmsMutation.isPending ? t('common.saving') : t('settings.saveSmsConfig')}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

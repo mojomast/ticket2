@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
 /** Active (non-terminal) ticket statuses */
 const ACTIVE_STATUSES = [
@@ -78,7 +79,7 @@ export default function PortalDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <HelpTooltip key={stat.label} content={stat.tooltip} side="bottom">
-            <div className="bg-card border rounded-lg p-4 flex items-center gap-3">
+            <Card className="p-4 flex items-center gap-3">
               <span className="text-2xl" role="img" aria-label={stat.label}>
                 {stat.icon}
               </span>
@@ -86,49 +87,51 @@ export default function PortalDashboard() {
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
                 <p className={`text-2xl font-bold ${stat.color}`}>{stat.count}</p>
               </div>
-            </div>
+            </Card>
           </HelpTooltip>
         ))}
       </div>
 
       {/* Recent Tickets */}
-      <div className="bg-card border rounded-lg">
-        <div className="p-4 border-b flex justify-between">
-          <h2 className="font-semibold">{t('ticket.myRecentTickets')}</h2>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0 pb-0">
+          <CardTitle className="text-base">{t('ticket.myRecentTickets')}</CardTitle>
           <HelpTooltip content={t('portal.dashboard.viewAllTooltip')} side="left">
             <Link to="/portail/billets" className="text-sm text-primary hover:underline">
               {t('common.viewAllFull')}
             </Link>
           </HelpTooltip>
-        </div>
-        <div className="divide-y">
-          {recentTickets.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">
-              {t('ticket.noTicketsCreate')}
-            </div>
-          ) : (
-            recentTickets.map((tk) => (
-              <Link
-                key={tk.id}
-                to={`/portail/billets/${tk.id}`}
-                className="p-4 flex justify-between hover:bg-muted/30 block"
-              >
-                <div>
-                  <span className="text-sm font-mono text-muted-foreground mr-2">
-                    {tk.ticketNumber}
-                  </span>
-                  <span className="text-sm">{tk.title}</span>
-                </div>
-                <HelpTooltip content={t('portal.dashboard.statusTooltip')} side="left">
-                  <span>
-                    <StatusBadge status={tk.status} />
-                  </span>
-                </HelpTooltip>
-              </Link>
-            ))
-          )}
-        </div>
-      </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {recentTickets.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">
+                {t('ticket.noTicketsCreate')}
+              </div>
+            ) : (
+              recentTickets.map((tk) => (
+                <Link
+                  key={tk.id}
+                  to={`/portail/billets/${tk.id}`}
+                  className="p-4 flex justify-between hover:bg-muted/30 block"
+                >
+                  <div>
+                    <span className="text-sm font-mono text-muted-foreground mr-2">
+                      {tk.ticketNumber}
+                    </span>
+                    <span className="text-sm">{tk.title}</span>
+                  </div>
+                  <HelpTooltip content={t('portal.dashboard.statusTooltip')} side="left">
+                    <span>
+                      <StatusBadge status={tk.status} />
+                    </span>
+                  </HelpTooltip>
+                </Link>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

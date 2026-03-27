@@ -11,6 +11,9 @@ import {
 } from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
+import { Button } from '../../components/ui/button';
+import { Textarea } from '../../components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
 export default function PortalWorkOrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -92,17 +95,19 @@ export default function PortalWorkOrderDetail() {
       </div>
 
       {/* Status explanation */}
-      <div className="bg-card border rounded-lg p-4">
-        <p className="text-sm">
-          <span className="font-medium">{t('portal.woDetail.currentStatus')}</span>{' '}
-          {WO_STATUS_LABELS[wo.status] || wo.status}
-        </p>
-        <HelpTooltip content={t('portal.woDetail.timelineTooltip')} side="bottom">
-          <div>
-            <StatusTimeline status={wo.status} />
-          </div>
-        </HelpTooltip>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-sm">
+            <span className="font-medium">{t('portal.woDetail.currentStatus')}</span>{' '}
+            {WO_STATUS_LABELS[wo.status] || wo.status}
+          </p>
+          <HelpTooltip content={t('portal.woDetail.timelineTooltip')} side="bottom">
+            <div>
+              <StatusTimeline status={wo.status} />
+            </div>
+          </HelpTooltip>
+        </CardContent>
+      </Card>
 
       {/* Quote approval section */}
       {pendingApproval && wo.estimatedCost && (
@@ -122,66 +127,78 @@ export default function PortalWorkOrderDetail() {
           </div>
           <div className="flex gap-3 pt-2">
             <HelpTooltip content={t('portal.woDetail.approveTooltip')} side="bottom">
-              <button
+              <Button
                 onClick={() => {
                   if (confirm(t('portal.woDetail.approveConfirm'))) {
                     approveMutation.mutate();
                   }
                 }}
                 disabled={approveMutation.isPending || declineMutation.isPending}
-                className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 bg-green-600 hover:bg-green-700"
               >
                 {approveMutation.isPending ? t('portal.woDetail.approving') : t('portal.woDetail.approveButton')}
-              </button>
+              </Button>
             </HelpTooltip>
             <HelpTooltip content={t('portal.woDetail.declineTooltip')} side="bottom">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => {
                   if (confirm(t('portal.woDetail.declineConfirm'))) {
                     declineMutation.mutate();
                   }
                 }}
                 disabled={approveMutation.isPending || declineMutation.isPending}
-                className="flex-1 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
               >
                 {declineMutation.isPending ? t('portal.woDetail.declining') : t('portal.woDetail.declineButton')}
-              </button>
+              </Button>
             </HelpTooltip>
           </div>
         </div>
       )}
 
       {/* Device info */}
-      <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-3">{t('portal.woDetail.device')}</h3>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceType')}</span>
-            <p>{DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType}</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('portal.woDetail.device')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceType')}</span>
+              <p>{DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType}</p>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceBrandModel')}</span>
+              <p>{wo.deviceBrand} {wo.deviceModel}</p>
+            </div>
           </div>
-          <div>
-            <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceBrandModel')}</span>
-            <p>{wo.deviceBrand} {wo.deviceModel}</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Problem */}
-      <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-2">{t('portal.woDetail.reportedIssue')}</h3>
-        <p className="text-sm whitespace-pre-wrap">{wo.reportedIssue}</p>
-        {wo.serviceCategory && (
-          <p className="text-xs text-muted-foreground mt-2">
-            {t('portal.woDetail.categoryLabel', { category: SERVICE_CATEGORY_LABELS[wo.serviceCategory] || wo.serviceCategory })}
-          </p>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('portal.woDetail.reportedIssue')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm whitespace-pre-wrap">{wo.reportedIssue}</p>
+          {wo.serviceCategory && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {t('portal.woDetail.categoryLabel', { category: SERVICE_CATEGORY_LABELS[wo.serviceCategory] || wo.serviceCategory })}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Financial info */}
       {(wo.estimatedCost || wo.finalCost || wo.depositAmount) && (
-        <div className="bg-card border rounded-lg p-6">
-          <h3 className="font-semibold mb-3">{t('portal.woDetail.costs')}</h3>
-          <div className="text-sm space-y-1.5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('portal.woDetail.costs')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm space-y-1.5">
             {wo.estimatedCost != null && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('portal.woDetail.quoteLabel')}</span>
@@ -207,13 +224,17 @@ export default function PortalWorkOrderDetail() {
               </div>
             )}
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Dates */}
-      <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-3">{t('portal.woDetail.dates')}</h3>
-        <div className="text-sm space-y-1.5">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('portal.woDetail.dates')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm space-y-1.5">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t('portal.woDetail.receptionDate')}</span>
             <span>{formatDateTime(wo.intakeDate)}</span>
@@ -243,11 +264,15 @@ export default function PortalWorkOrderDetail() {
             </div>
           )}
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Notes (non-internal only) */}
-      <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-3">{t('portal.woDetail.messages')}</h3>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('portal.woDetail.messages')}</CardTitle>
+        </CardHeader>
+        <CardContent>
         {(notes as WorkOrderNote[]).length > 0 ? (
           <div className="space-y-3">
             {(notes as WorkOrderNote[]).map((note) => (
@@ -271,25 +296,25 @@ export default function PortalWorkOrderDetail() {
         {/* Reply form — only visible for non-terminal WOs */}
         {!isTerminal && (
           <form onSubmit={handleAddNote} className="space-y-2 border-t pt-3 mt-3">
-            <textarea
+            <Textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
               placeholder={t('portal.woDetail.messagePlaceholder')}
               rows={3}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="resize-none"
             />
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
                 disabled={addNoteMutation.isPending || !noteContent.trim()}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 {addNoteMutation.isPending ? t('common.sending') : t('common.send')}
-              </button>
+              </Button>
             </div>
           </form>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

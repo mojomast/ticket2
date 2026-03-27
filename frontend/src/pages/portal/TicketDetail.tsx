@@ -9,6 +9,10 @@ import { useAuth } from '../../hooks/use-auth';
 import { useToast } from '../../hooks/use-toast';
 import { formatCurrency, formatDateTime } from '../../lib/utils';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { Button } from '../../components/ui/button';
+import { Textarea } from '../../components/ui/textarea';
+import { Label } from '../../components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 // Proposal status labels/colors used by StatusBadge (type="proposal")
 
 // Statuses where a customer can book an appointment
@@ -231,10 +235,12 @@ export default function PortalTicketDetail() {
       </div>
 
       {/* Ticket details */}
-      <div className="bg-card border rounded-lg p-6">
-        <h2 className="font-semibold mb-2">{t.title}</h2>
-        <p className="text-sm whitespace-pre-wrap">{t.description}</p>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <h2 className="font-semibold mb-2">{t.title}</h2>
+          <p className="text-sm whitespace-pre-wrap">{t.description}</p>
+        </CardContent>
+      </Card>
 
       {/* Quote approval */}
       {t.quotedPrice && t.status === 'EN_ATTENTE_APPROBATION' && (
@@ -245,10 +251,10 @@ export default function PortalTicketDetail() {
           <p className="text-sm mb-4">{t.quoteDescription}</p>
           <div className="flex gap-2">
             <HelpTooltip content="Accepter le devis et autoriser les travaux" side="bottom">
-              <button onClick={() => approveMutation.mutate()} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">Approuver</button>
+              <Button onClick={() => approveMutation.mutate()} className="bg-green-600 hover:bg-green-700">Approuver</Button>
             </HelpTooltip>
             <HelpTooltip content="Refuser le devis — le billet sera mis à jour" side="bottom">
-              <button onClick={() => declineMutation.mutate()} className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">Refuser</button>
+              <Button variant="destructive" onClick={() => declineMutation.mutate()}>Refuser</Button>
             </HelpTooltip>
           </div>
         </div>
@@ -256,42 +262,51 @@ export default function PortalTicketDetail() {
 
       {/* ─── Active Appointments ─── */}
       {activeAppointments.length > 0 && (
-        <div className="bg-card border rounded-lg p-6">
-          <h3 className="font-semibold mb-4">Rendez-vous actifs</h3>
-          <div className="space-y-3">
-            {activeAppointments.map((apt: any) => (
-              <div key={apt.id} className="flex items-center justify-between border rounded-md p-3 bg-background">
-                <div>
-                  <p className="text-sm font-medium">
-                    {formatDateTime(apt.scheduledStart)} — {formatSlotTime(apt.scheduledEnd)}
-                  </p>
-                  {apt.technician && (
-                    <p className="text-xs text-muted-foreground">
-                      Technicien: {apt.technician.firstName} {apt.technician.lastName}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Rendez-vous actifs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {activeAppointments.map((apt: any) => (
+                <div key={apt.id} className="flex items-center justify-between border rounded-md p-3 bg-background">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {formatDateTime(apt.scheduledStart)} — {formatSlotTime(apt.scheduledEnd)}
                     </p>
-                  )}
-                  {apt.notes && <p className="text-xs text-muted-foreground mt-1">{apt.notes}</p>}
-                  <StatusBadge status={apt.status} type="appointment" />
+                    {apt.technician && (
+                      <p className="text-xs text-muted-foreground">
+                        Technicien: {apt.technician.firstName} {apt.technician.lastName}
+                      </p>
+                    )}
+                    {apt.notes && <p className="text-xs text-muted-foreground mt-1">{apt.notes}</p>}
+                    <StatusBadge status={apt.status} type="appointment" />
+                  </div>
+                  <HelpTooltip content="Annuler ce rendez-vous" side="left">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => cancelAppointmentMutation.mutate(apt.id)}
+                      disabled={cancelAppointmentMutation.isPending}
+                      className="text-red-700 bg-red-100 hover:bg-red-200 border-red-200"
+                    >
+                      Annuler
+                    </Button>
+                  </HelpTooltip>
                 </div>
-                <HelpTooltip content="Annuler ce rendez-vous" side="left">
-                  <button
-                    onClick={() => cancelAppointmentMutation.mutate(apt.id)}
-                    disabled={cancelAppointmentMutation.isPending}
-                    className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50"
-                  >
-                    Annuler
-                  </button>
-                </HelpTooltip>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ─── Past Appointments ─── */}
       {pastAppointments.length > 0 && (
-        <div className="bg-card border rounded-lg p-6">
-          <h3 className="font-semibold mb-4 text-muted-foreground">Rendez-vous passes</h3>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base text-muted-foreground">Rendez-vous passes</CardTitle>
+          </CardHeader>
+          <CardContent>
           <div className="space-y-2">
             {pastAppointments.map((apt: any) => (
               <div key={apt.id} className="flex items-center justify-between border rounded-md p-3 bg-background opacity-60">
@@ -307,13 +322,17 @@ export default function PortalTicketDetail() {
               </div>
             ))}
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ─── Proposals Section ─── */}
       {(myProposals.length > 0 || counterProposals.length > 0) && (
-        <div className="bg-card border rounded-lg p-6 space-y-6">
-          <h3 className="font-semibold">Propositions de rendez-vous</h3>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Propositions de rendez-vous</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
 
           {/* My proposals */}
           {myProposals.length > 0 && (
@@ -347,13 +366,15 @@ export default function PortalTicketDetail() {
                       </div>
                       {proposal.status === 'PROPOSEE' && (
                         <HelpTooltip content="Annuler cette proposition en attente" side="left">
-                          <button
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => cancelProposalMutation.mutate(proposal.id)}
                             disabled={cancelProposalMutation.isPending}
-                            className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50 shrink-0"
+                            className="text-red-700 bg-red-100 hover:bg-red-200 border-red-200 shrink-0"
                           >
                             Annuler
-                          </button>
+                          </Button>
                         </HelpTooltip>
                       )}
                     </div>
@@ -395,16 +416,17 @@ export default function PortalTicketDetail() {
                         <div className="flex flex-col gap-2 shrink-0">
                           {respondingTo === proposal.id ? (
                             <div className="space-y-2">
-                              <textarea
+                              <Textarea
                                 value={responseMessage}
                                 onChange={(e) => setResponseMessage(e.target.value)}
                                 placeholder="Message (optionnel)..."
                                 rows={2}
-                                className="w-48 rounded-md border border-input bg-background px-2 py-1 text-xs resize-none"
+                                className="w-48 text-xs resize-none"
                               />
                               <div className="flex gap-1">
                                 <HelpTooltip content="Confirmer l'acceptation de cette contre-proposition" side="bottom">
-                                  <button
+                                  <Button
+                                    size="sm"
                                     onClick={() =>
                                       acceptProposalMutation.mutate({
                                         proposalId: proposal.id,
@@ -412,13 +434,15 @@ export default function PortalTicketDetail() {
                                       })
                                     }
                                     disabled={acceptProposalMutation.isPending}
-                                    className="px-2 py-1 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                                    className="bg-green-600 hover:bg-green-700 text-xs"
                                   >
                                     Confirmer
-                                  </button>
+                                  </Button>
                                 </HelpTooltip>
                                 <HelpTooltip content="Refuser cette contre-proposition" side="bottom">
-                                  <button
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
                                     onClick={() =>
                                       rejectProposalMutation.mutate({
                                         proposalId: proposal.id,
@@ -426,45 +450,51 @@ export default function PortalTicketDetail() {
                                       })
                                     }
                                     disabled={rejectProposalMutation.isPending}
-                                    className="px-2 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                                    className="text-xs"
                                   >
                                     Refuser
-                                  </button>
+                                  </Button>
                                 </HelpTooltip>
-                                <button
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   onClick={() => {
                                     setRespondingTo(null);
                                     setResponseMessage('');
                                   }}
-                                  className="px-2 py-1 text-xs border border-input rounded-md hover:bg-accent"
+                                  className="text-xs"
                                 >
                                   Retour
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           ) : (
                             <div className="flex gap-1">
                               <HelpTooltip content="Accepter cette contre-proposition et créer un rendez-vous" side="left">
-                                <button
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   onClick={() => {
                                     setRespondingTo(proposal.id);
                                     setResponseMessage('');
                                   }}
-                                  className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200"
+                                  className="text-green-700 bg-green-100 hover:bg-green-200 border-green-200 text-xs"
                                 >
                                   Accepter
-                                </button>
+                                </Button>
                               </HelpTooltip>
                               <HelpTooltip content="Refuser cette contre-proposition" side="left">
-                                <button
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   onClick={() => {
                                     setRespondingTo(proposal.id);
                                     setResponseMessage('');
                                   }}
-                                  className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+                                  className="text-red-700 bg-red-100 hover:bg-red-200 border-red-200 text-xs"
                                 >
                                   Refuser
-                                </button>
+                                </Button>
                               </HelpTooltip>
                             </div>
                           )}
@@ -476,56 +506,59 @@ export default function PortalTicketDetail() {
               </div>
             </div>
           )}
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ─── Appointment Booking / Proposal Section ─── */}
       {canBook && (
-        <div className="bg-card border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Prendre un rendez-vous</h3>
-            {!showBooking && (
-              <HelpTooltip content="Ouvrir le sélecteur de créneaux pour prendre rendez-vous" side="left">
-                <button
-                  onClick={() => setShowBooking(true)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
-                >
-                  Choisir un creneau
-                </button>
-              </HelpTooltip>
-            )}
-          </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Prendre un rendez-vous</h3>
+              {!showBooking && (
+                <HelpTooltip content="Ouvrir le sélecteur de créneaux pour prendre rendez-vous" side="left">
+                  <Button
+                    onClick={() => setShowBooking(true)}
+                  >
+                    Choisir un creneau
+                  </Button>
+                </HelpTooltip>
+              )}
+            </div>
 
           {showBooking && (
             <div className="space-y-4">
               {/* Tab selector: propose vs direct booking */}
               <div className="flex border-b border-input">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     setBookingTab('propose');
                     setSelectedSlot(null);
                   }}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  className={`rounded-none border-b-2 transition-colors ${
                     bookingTab === 'propose'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Proposer un creneau
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     setBookingTab('direct');
                     setSelectedSlot(null);
                   }}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  className={`rounded-none border-b-2 transition-colors ${
                     bookingTab === 'direct'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Reserver directement
-                </button>
+                </Button>
               </div>
 
               {/* Tab description */}
@@ -537,7 +570,7 @@ export default function PortalTicketDetail() {
 
               {/* Date picker */}
               <div>
-                <label className="block text-sm font-medium mb-1">Date souhaitee</label>
+                <Label className="mb-1">Date souhaitee</Label>
                 <input
                   type="date"
                   value={selectedDate}
@@ -546,16 +579,16 @@ export default function PortalTicketDetail() {
                     setSelectedSlot(null);
                   }}
                   min={new Date().toISOString().split('T')[0]}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </div>
 
               {/* Slots grid */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <Label className="mb-2">
                   Creneaux disponibles
-                  {slotsLoading && <span className="text-muted-foreground ml-2">Chargement...</span>}
-                </label>
+                  {slotsLoading && <span className="text-muted-foreground ml-2 font-normal">Chargement...</span>}
+                </Label>
 
                 {!slotsLoading && availableSlots.length === 0 && (
                   <p className="text-sm text-muted-foreground">
@@ -568,17 +601,14 @@ export default function PortalTicketDetail() {
                     {availableSlots.map((slot: any) => {
                       const isSelected = selectedSlot?.start === slot.start;
                       return (
-                        <button
+                        <Button
                           key={slot.start}
+                          variant={isSelected ? 'default' : 'outline'}
+                          size="sm"
                           onClick={() => setSelectedSlot(slot)}
-                          className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                            isSelected
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-background border-input hover:bg-accent'
-                          }`}
                         >
                           {formatSlotTime(slot.start)}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -597,24 +627,24 @@ export default function PortalTicketDetail() {
               {/* Notes / Message */}
               {bookingTab === 'propose' ? (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Message (optionnel)</label>
-                  <textarea
+                  <Label className="mb-1">Message (optionnel)</Label>
+                  <Textarea
                     value={proposalMessage}
                     onChange={(e) => setProposalMessage(e.target.value)}
                     placeholder="Ajoutez un message pour le technicien..."
                     rows={2}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                    className="resize-none"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium mb-1">Notes (optionnel)</label>
-                  <textarea
+                  <Label className="mb-1">Notes (optionnel)</Label>
+                  <Textarea
                     value={bookingNotes}
                     onChange={(e) => setBookingNotes(e.target.value)}
                     placeholder="Informations complementaires..."
                     rows={2}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                    className="resize-none"
                   />
                 </div>
               )}
@@ -623,50 +653,53 @@ export default function PortalTicketDetail() {
               <div className="flex gap-2">
                 {bookingTab === 'propose' ? (
                   <HelpTooltip content="Envoyer cette proposition de créneau au technicien" side="top">
-                    <button
+                    <Button
                       onClick={handleProposeSlot}
                       disabled={!selectedSlot || createProposalMutation.isPending}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
                     >
                       {createProposalMutation.isPending ? 'Envoi...' : 'Proposer ce creneau'}
-                    </button>
+                    </Button>
                   </HelpTooltip>
                 ) : (
                   <HelpTooltip content="Réserver directement ce créneau sans négociation" side="top">
-                    <button
+                    <Button
                       onClick={handleBookSlot}
                       disabled={!selectedSlot || bookAppointmentMutation.isPending}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
                     >
                       {bookAppointmentMutation.isPending ? 'Reservation...' : 'Reserver ce creneau'}
-                    </button>
+                    </Button>
                   </HelpTooltip>
                 )}
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setShowBooking(false);
                     setSelectedSlot(null);
                     setBookingNotes('');
                     setProposalMessage('');
                   }}
-                  className="px-4 py-2 border border-input rounded-md text-sm hover:bg-accent"
                 >
                   Annuler
-                </button>
+                </Button>
               </div>
             </div>
           )}
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ─── Attachments Section ─── */}
       <AttachmentSection ticketId={id!} canUpload={true} isAdmin={false} />
 
       {/* Messages */}
-      <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-4">Messages</h3>
-        <MessageThread ticketId={id!} />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Messages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MessageThread ticketId={id!} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
