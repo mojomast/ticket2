@@ -286,6 +286,11 @@ export const en: Record<string, string> = {
   'settings.smsSaved': 'SMS configuration saved',
   'settings.notConfigured': 'Not configured',
   'settings.configured': 'Configured',
+  'settings.worksheetThreshold': 'Worksheet alert threshold',
+  'settings.worksheetThresholdDesc': 'When a submitted worksheet exceeds this amount, an alert notification will be sent to administrators.',
+  'settings.thresholdAmount': 'Threshold amount ($)',
+  'settings.saveThreshold': 'Save threshold',
+  'settings.thresholdSaved': 'Threshold saved successfully',
 
   // ─── Backups ───
   'backup.title': 'Backups',
@@ -1316,6 +1321,10 @@ export const en: Record<string, string> = {
   'worksheet.custSignature': 'Customer signature',
   'worksheet.signedAt': 'Signed at',
   'worksheet.noSignature': 'No signature',
+  'worksheet.clearSignature': 'Clear',
+  'worksheet.saveSignature': 'Save Signature',
+  'worksheet.signatureSaved': 'Signature saved successfully',
+  'worksheet.drawSignature': 'Draw your signature below',
   'worksheet.approvedAt': 'Approved on',
   'worksheet.billedAt': 'Billed on',
   'worksheet.notFound': 'Worksheet not found',
@@ -1330,6 +1339,9 @@ export const en: Record<string, string> = {
   'worksheet.ticketRef': 'Ticket',
   'worksheet.ticketInfo': 'Ticket info',
   'worksheet.referenceLabel': 'Reference',
+  'worksheet.customerVisible': 'Visible notes',
+  'worksheet.noVisibleNotes': 'No visible notes',
+  'worksheet.portalSubtitle': 'View worksheets linked to your work orders and tickets.',
 
   // ─── Client Detail ───
   'clientDetail.backToClients': 'Back to clients',

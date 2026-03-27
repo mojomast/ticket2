@@ -39,6 +39,8 @@ const PortalTicketDetail = lazy(() => import('./pages/portal/TicketDetail'));
 const PortalAppointments = lazy(() => import('./pages/portal/Appointments'));
 const PortalWorkOrders = lazy(() => import('./pages/portal/WorkOrders'));
 const PortalWorkOrderDetail = lazy(() => import('./pages/portal/WorkOrderDetail'));
+const PortalWorksheets = lazy(() => import('./pages/portal/Worksheets'));
+const PortalWorksheetDetail = lazy(() => import('./pages/portal/WorksheetDetail'));
 
 // Technician pages
 const TechLayout = lazy(() => import('./pages/technician/TechLayout'));
@@ -134,6 +136,8 @@ export const router = createBrowserRouter([
           { path: 'rendez-vous', element: <PortalAppointments /> },
           { path: 'bons-travail', element: <PortalWorkOrders /> },
           { path: 'bons-travail/:id', element: <PortalWorkOrderDetail /> },
+          { path: 'feuilles-travail', element: <PortalWorksheets /> },
+          { path: 'feuilles-travail/:id', element: <PortalWorksheetDetail /> },
           { path: 'profil', element: <Profile /> },
         ],
       },

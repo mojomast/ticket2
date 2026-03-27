@@ -5,7 +5,7 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuthStore } from '../../stores/auth-store';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
-import { Mail, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
+import { Mail, MessageSquare, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -38,6 +38,8 @@ export default function AdminSettings() {
   const [voipmsPassword, setVoipmsPassword] = useState('');
   const [voipmsDid, setVoipmsDid] = useState('');
 
+  // ── Worksheet threshold state ───────────────────────────────────
+  const [thresholdAmount, setThresholdAmount] = useState(500);
   // ── Queries ─────────────────────────────────────────────────────
   const { data: branding, isLoading, isError } = useQuery({
     queryKey: ['config', 'branding'],
@@ -52,6 +54,11 @@ export default function AdminSettings() {
   const { data: smsConfig } = useQuery({
     queryKey: ['config', 'sms_config'],
     queryFn: () => api.admin.config.get('sms_config').catch(() => null),
+  });
+
+  const { data: thresholdConfig } = useQuery({
+    queryKey: ['config', 'worksheet_alert_threshold'],
+    queryFn: () => api.admin.config.get('worksheet_alert_threshold').catch(() => null),
   });
 
   // ── Populate branding form ──────────────────────────────────────
@@ -83,6 +90,18 @@ export default function AdminSettings() {
     if (v.password) setVoipmsPassword(v.password);
     if (v.did) setVoipmsDid(v.did);
   }, [smsConfig]);
+
+  // ── Populate worksheet threshold ────────────────────────────────
+  useEffect(() => {
+    if (!thresholdConfig?.value) return;
+    if (typeof thresholdConfig.value === 'object') {
+      const v = thresholdConfig.value as Record<string, unknown>;
+      const threshold = v.threshold ?? v.value;
+      if (typeof threshold === 'number') setThresholdAmount(threshold);
+    } else if (typeof thresholdConfig.value === 'number') {
+      setThresholdAmount(thresholdConfig.value);
+    }
+  }, [thresholdConfig]);
 
   // ── Mutations ───────────────────────────────────────────────────
   const saveBrandingMutation = useMutation({
@@ -131,6 +150,18 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config', 'sms_config'] });
       toast.success(t('settings.smsSaved'));
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || t('settings.saveError'));
+    },
+  });
+
+  const saveThresholdMutation = useMutation({
+    mutationFn: () =>
+      api.admin.config.set('worksheet_alert_threshold', { threshold: thresholdAmount }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['config', 'worksheet_alert_threshold'] });
+      toast.success(t('settings.thresholdSaved'));
     },
     onError: (err: Error) => {
       toast.error(err.message || t('settings.saveError'));
@@ -469,6 +500,38 @@ export default function AdminSettings() {
             disabled={saveSmsMutation.isPending}
           >
             {saveSmsMutation.isPending ? t('common.saving') : t('settings.saveSmsConfig')}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Worksheet Alert Threshold ── */}
+      <Card className="max-w-xl">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">{t('settings.worksheetThreshold')}</CardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t('settings.worksheetThresholdDesc')}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <Label>{t('settings.thresholdAmount')}</Label>
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              value={thresholdAmount}
+              onChange={(e) => setThresholdAmount(Number(e.target.value))}
+              className="max-w-[200px]"
+            />
+          </div>
+          <Button
+            onClick={() => saveThresholdMutation.mutate()}
+            disabled={saveThresholdMutation.isPending}
+          >
+            {saveThresholdMutation.isPending ? t('common.saving') : t('settings.saveThreshold')}
           </Button>
         </CardContent>
       </Card>

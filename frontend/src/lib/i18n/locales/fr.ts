@@ -286,6 +286,11 @@ export const fr: Record<string, string> = {
   'settings.smsSaved': 'Configuration SMS enregistrée',
   'settings.notConfigured': 'Non configuré',
   'settings.configured': 'Configuré',
+  'settings.worksheetThreshold': 'Seuil d\'alerte des feuilles de travail',
+  'settings.worksheetThresholdDesc': 'Lorsqu\'une feuille de travail soumise dépasse ce montant, une notification d\'alerte sera envoyée aux administrateurs.',
+  'settings.thresholdAmount': 'Montant seuil ($)',
+  'settings.saveThreshold': 'Enregistrer le seuil',
+  'settings.thresholdSaved': 'Seuil enregistré avec succès',
 
   // ─── Backups ───
   'backup.title': 'Sauvegardes',
@@ -1316,6 +1321,10 @@ export const fr: Record<string, string> = {
   'worksheet.custSignature': 'Signature client',
   'worksheet.signedAt': 'Signé le',
   'worksheet.noSignature': 'Aucune signature',
+  'worksheet.clearSignature': 'Effacer',
+  'worksheet.saveSignature': 'Enregistrer la signature',
+  'worksheet.signatureSaved': 'Signature enregistrée avec succès',
+  'worksheet.drawSignature': 'Dessinez votre signature ci-dessous',
   'worksheet.approvedAt': 'Approuvée le',
   'worksheet.billedAt': 'Facturée le',
   'worksheet.notFound': 'Feuille de travail introuvable',
@@ -1330,6 +1339,9 @@ export const fr: Record<string, string> = {
   'worksheet.ticketRef': 'Billet',
   'worksheet.ticketInfo': 'Informations billet',
   'worksheet.referenceLabel': 'Référence',
+  'worksheet.customerVisible': 'Notes visibles',
+  'worksheet.noVisibleNotes': 'Aucune note visible',
+  'worksheet.portalSubtitle': 'Consultez les feuilles de travail liées à vos bons de travail et billets.',
 
   // ─── Client Detail ───
   'clientDetail.backToClients': 'Retour aux clients',

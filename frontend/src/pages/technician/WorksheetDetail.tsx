@@ -14,6 +14,7 @@ import {
   FOLLOWUP_TYPE_LABELS,
 } from '../../lib/constants';
 import { formatDateTime } from '../../lib/utils';
+import SignaturePad from '../../components/shared/SignaturePad';
 
 // ─── Tab definitions ───
 type TabKey = 'labor' | 'parts' | 'travel' | 'notes' | 'followups';
@@ -281,6 +282,16 @@ export default function TechWorksheetDetail() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const saveSignatureMutation = useMutation({
+    mutationFn: ({ type, signatureData }: { type: 'tech' | 'customer'; signatureData: string }) =>
+      api.worksheets.saveSignature(id!, type, signatureData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      toast.success(t('worksheet.signatureSaved'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   // ─── Form reset helpers ───
 
   function resetLaborForm() {
@@ -426,7 +437,7 @@ export default function TechWorksheetDetail() {
     return <div className="p-8 text-center text-muted-foreground">{t('worksheet.notFound')}</div>;
   }
 
-  const isDraft = worksheet.status === 'BROUILLON';
+  const isDraft = worksheet.status === 'BROUILLON' || worksheet.status === 'REVISEE';
   const statusColor = WS_STATUS_COLORS[worksheet.status] ?? { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' };
   const wo = worksheet.workOrder;
 
@@ -1244,6 +1255,71 @@ export default function TechWorksheetDetail() {
           ))}
         </div>
       )}
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* SIGNATURES */}
+      {/* ════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Technician signature */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">{t('worksheet.techSignature')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {worksheet.techSignature ? (
+              <div className="space-y-2">
+                <img
+                  src={worksheet.techSignature}
+                  alt={t('worksheet.techSignature')}
+                  className="max-h-32 border rounded bg-white p-2"
+                />
+                {worksheet.techSignedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('worksheet.signedAt')}: {formatDateTime(worksheet.techSignedAt)}
+                  </p>
+                )}
+              </div>
+            ) : isDraft ? (
+              <SignaturePad
+                onSave={(dataUrl) => saveSignatureMutation.mutate({ type: 'tech', signatureData: dataUrl })}
+                disabled={saveSignatureMutation.isPending}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('worksheet.noSignature')}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Customer signature */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">{t('worksheet.custSignature')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {worksheet.custSignature ? (
+              <div className="space-y-2">
+                <img
+                  src={worksheet.custSignature}
+                  alt={t('worksheet.custSignature')}
+                  className="max-h-32 border rounded bg-white p-2"
+                />
+                {worksheet.custSignedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    {t('worksheet.signedAt')}: {formatDateTime(worksheet.custSignedAt)}
+                  </p>
+                )}
+              </div>
+            ) : isDraft ? (
+              <SignaturePad
+                onSave={(dataUrl) => saveSignatureMutation.mutate({ type: 'customer', signatureData: dataUrl })}
+                disabled={saveSignatureMutation.isPending}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('worksheet.noSignature')}</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* ════════════════════════════════════════════════ */}
       {/* STICKY BOTTOM BAR */}

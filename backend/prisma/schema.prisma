@@ -737,6 +737,7 @@ model FollowUp {
   completed       Boolean       @default(false)
   completedAt     DateTime?
   completedById   String?
+  remindedAt      DateTime?     // Set when a reminder notification has been sent
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

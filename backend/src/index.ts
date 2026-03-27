@@ -8,6 +8,7 @@ import { rateLimiter } from './middleware/rate-limit.middleware.js';
 import { csrfProtection } from './middleware/csrf.middleware.js';
 import { requireAuth, requireRole } from './middleware/auth.middleware.js';
 import { logger } from './lib/logger.js';
+import { processFollowUpReminders } from './services/followup-reminder.service.js';
 
 import authRoutes from './routes/auth.routes.js';
 import ticketRoutes from './routes/ticket.routes.js';
@@ -95,5 +96,20 @@ const port = parseInt(process.env.PORT || '3000', 10);
 serve({ fetch: app.fetch, port }, (info) => {
   logger.info(`Server running on http://localhost:${info.port}`);
 });
+
+// ─── Follow-Up Reminder Scheduler ───
+// Run once on startup after a 10-second delay, then every hour.
+
+async function runFollowUpReminders() {
+  try {
+    const result = await processFollowUpReminders();
+    logger.info({ result }, 'Follow-up reminder check completed');
+  } catch (err) {
+    logger.error({ err }, 'Follow-up reminder check failed');
+  }
+}
+
+setTimeout(runFollowUpReminders, 10_000);
+setInterval(runFollowUpReminders, 3_600_000); // every hour
 
 export default app;

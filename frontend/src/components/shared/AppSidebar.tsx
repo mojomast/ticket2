@@ -71,6 +71,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: 'nav.dashboard', path: '/portail', icon: 'LayoutDashboard' },
     { label: 'nav.tickets', path: '/portail/billets', icon: 'Ticket' },
     { label: 'nav.workorders', path: '/portail/bons-travail', icon: 'ClipboardList' },
+    { label: 'nav.worksheets', path: '/portail/feuilles-travail', icon: 'FileText' },
     { label: 'nav.appointments', path: '/portail/rendez-vous', icon: 'Calendar' },
     { label: 'nav.profile', path: '/portail/profil', icon: 'UserCircle' },
   ],
