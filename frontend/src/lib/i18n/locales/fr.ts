@@ -1316,6 +1316,12 @@ export const fr: Record<string, string> = {
   'worksheet.custSignature': 'Signature client',
   'worksheet.signedAt': 'Signé le',
   'worksheet.noSignature': 'Aucune signature',
+  'worksheet.approvedAt': 'Approuvée le',
+  'worksheet.billedAt': 'Facturée le',
+  'worksheet.notFound': 'Feuille de travail introuvable',
+  'worksheet.warrantyMonthsShort': 'mois',
+  'worksheet.confirmApprove': 'Êtes-vous sûr de vouloir approuver cette feuille de travail ?',
+  'worksheet.confirmCancel': 'Êtes-vous sûr de vouloir annuler cette feuille de travail ?',
 
   // ─── Client Detail ───
   'clientDetail.backToClients': 'Retour aux clients',

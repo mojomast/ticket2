@@ -44,7 +44,7 @@ app.patch('/:id', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updateWorkshe
   return c.json({ data: worksheet, error: null });
 });
 
-app.delete('/:id', requireRole('ADMIN', 'TECHNICIAN'), async (c) => {
+app.delete('/:id', requireRole('ADMIN'), async (c) => {
   const session = c.get('session');
   await worksheetService.deleteWorksheet(c.req.param('id'), session.user.id, session.user.role);
   return c.json({ data: { success: true }, error: null });
@@ -177,7 +177,7 @@ app.post('/:id/follow-ups', requireRole('ADMIN', 'TECHNICIAN'), validateBody(cre
 app.patch('/:id/follow-ups/:followUpId', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updateFollowUpSchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const followUp = await worksheetService.updateFollowUp(c.req.param('followUpId'), data, session.user.id);
+  const followUp = await worksheetService.updateFollowUp(c.req.param('id'), c.req.param('followUpId'), data, session.user.id);
   return c.json({ data: followUp, error: null });
 });
 

@@ -82,6 +82,7 @@ export default function AdminWorksheetDetail() {
   // ─── Action handlers ───
   const handleApprove = () => {
     if (isChangingStatus) return;
+    if (!window.confirm(t('worksheet.confirmApprove'))) return;
     setIsChangingStatus(true);
     statusMutation.mutate({ status: 'APPROUVEE' });
   };
@@ -101,6 +102,7 @@ export default function AdminWorksheetDetail() {
 
   const handleCancel = () => {
     if (isChangingStatus) return;
+    if (!window.confirm(t('worksheet.confirmCancel'))) return;
     setIsChangingStatus(true);
     statusMutation.mutate({ status: 'ANNULEE' });
   };
@@ -233,13 +235,13 @@ export default function AdminWorksheetDetail() {
             )}
             {ws.approvedAt && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('worksheet.approve')}</span>
+                <span className="text-muted-foreground">{t('worksheet.approvedAt')}</span>
                 <span>{formatDateTime(ws.approvedAt)}</span>
               </div>
             )}
             {ws.billedAt && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('worksheet.markBilled')}</span>
+                <span className="text-muted-foreground">{t('worksheet.billedAt')}</span>
                 <span>{formatDateTime(ws.billedAt)}</span>
               </div>
             )}
@@ -424,7 +426,7 @@ export default function AdminWorksheetDetail() {
                         </td>
                         <td className="p-3 text-right tabular-nums font-medium">{money(part.lineTotal)}</td>
                         <td className="p-3 text-center text-muted-foreground">
-                          {part.warrantyMonths != null ? `${part.warrantyMonths} mo` : '—'}
+                          {part.warrantyMonths != null ? `${part.warrantyMonths} ${t('worksheet.warrantyMonthsShort')}` : '—'}
                         </td>
                       </tr>
                     );

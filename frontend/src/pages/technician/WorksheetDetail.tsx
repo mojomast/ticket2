@@ -245,6 +245,7 @@ export default function TechWorksheetDetail() {
   const convertToKbMutation = useMutation({
     mutationFn: (noteId: string) => api.worksheets.notes.toKb(id!, noteId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
       toast.success(t('worksheet.kbCreated'));
     },
     onError: (err: Error) => toast.error(err.message),
@@ -422,7 +423,7 @@ export default function TechWorksheetDetail() {
   }
 
   if (!worksheet) {
-    return <div className="p-8 text-center text-muted-foreground">{t('worksheet.title')}</div>;
+    return <div className="p-8 text-center text-muted-foreground">{t('worksheet.notFound')}</div>;
   }
 
   const isDraft = worksheet.status === 'BROUILLON';
@@ -1041,14 +1042,16 @@ export default function TechWorksheetDetail() {
                       {t('worksheet.convertToKb')}
                     </Button>
                   )}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteNoteMutation.mutate(note.id)}
-                    disabled={deleteNoteMutation.isPending}
-                  >
-                    {t('common.delete')}
-                  </Button>
+                   {isDraft && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteNoteMutation.mutate(note.id)}
+                      disabled={deleteNoteMutation.isPending}
+                    >
+                      {t('common.delete')}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1059,7 +1062,7 @@ export default function TechWorksheetDetail() {
           )}
 
           {/* Add note form */}
-          {!showNoteForm ? (
+          {isDraft && (!showNoteForm ? (
             <Button variant="outline" className="w-full" onClick={() => setShowNoteForm(true)}>
               + {t('worksheet.addNote')}
             </Button>
@@ -1103,7 +1106,7 @@ export default function TechWorksheetDetail() {
                 </form>
               </CardContent>
             </Card>
-          )}
+           ))}
         </div>
       )}
 
@@ -1140,14 +1143,16 @@ export default function TechWorksheetDetail() {
                   >
                     {fu.completed ? '↩' : '✓'} {t('worksheet.markComplete')}
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteFollowUpMutation.mutate(fu.id)}
-                    disabled={deleteFollowUpMutation.isPending}
-                  >
-                    {t('common.delete')}
-                  </Button>
+                  {isDraft && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteFollowUpMutation.mutate(fu.id)}
+                      disabled={deleteFollowUpMutation.isPending}
+                    >
+                      {t('common.delete')}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1158,7 +1163,7 @@ export default function TechWorksheetDetail() {
           )}
 
           {/* Add follow-up form */}
-          {!showFollowUpForm ? (
+          {isDraft && (!showFollowUpForm ? (
             <Button variant="outline" className="w-full" onClick={() => setShowFollowUpForm(true)}>
               + {t('worksheet.addFollowUp')}
             </Button>
@@ -1211,7 +1216,7 @@ export default function TechWorksheetDetail() {
                 </form>
               </CardContent>
             </Card>
-          )}
+          ))}
         </div>
       )}
 

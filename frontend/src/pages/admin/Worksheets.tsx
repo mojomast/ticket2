@@ -141,7 +141,7 @@ export default function AdminWorksheets() {
       )}
 
       {/* ─── Pagination controls ─── */}
-      {!isLoading && totalPages > 0 && (
+      {!isLoading && totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <p className="text-sm text-muted-foreground">
             {t('common.pageOf', { page: String(page), total: String(totalPages) })}

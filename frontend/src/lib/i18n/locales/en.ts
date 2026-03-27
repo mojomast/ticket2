@@ -1316,6 +1316,12 @@ export const en: Record<string, string> = {
   'worksheet.custSignature': 'Customer signature',
   'worksheet.signedAt': 'Signed at',
   'worksheet.noSignature': 'No signature',
+  'worksheet.approvedAt': 'Approved on',
+  'worksheet.billedAt': 'Billed on',
+  'worksheet.notFound': 'Worksheet not found',
+  'worksheet.warrantyMonthsShort': 'mo',
+  'worksheet.confirmApprove': 'Are you sure you want to approve this worksheet?',
+  'worksheet.confirmCancel': 'Are you sure you want to cancel this worksheet?',
 
   // ─── Client Detail ───
   'clientDetail.backToClients': 'Back to clients',

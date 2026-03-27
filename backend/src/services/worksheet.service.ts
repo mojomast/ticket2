@@ -898,9 +898,9 @@ export async function createFollowUp(worksheetId: string, data: CreateFollowUpIn
   return followUp;
 }
 
-export async function updateFollowUp(followUpId: string, data: UpdateFollowUpInput, userId: string) {
-  const existing = await prisma.followUp.findUnique({
-    where: { id: followUpId },
+export async function updateFollowUp(worksheetId: string, followUpId: string, data: UpdateFollowUpInput, userId: string) {
+  const existing = await prisma.followUp.findFirst({
+    where: { id: followUpId, worksheetId },
   });
   if (!existing) throw AppError.notFound('Suivi introuvable');
 
