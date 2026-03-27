@@ -40,6 +40,40 @@ app.get('/attachments/:id/download', async (c) => {
   });
 });
 
+// ─── GET /api/attachments/:id/view — inline view (Content-Disposition: inline) ───
+
+app.get('/attachments/:id/view', async (c) => {
+  const attachment = await attachmentService.getAttachment(c.req.param('id'));
+  const filePath = attachmentService.getAttachmentFilePath(attachment.storagePath);
+
+  if (!existsSync(filePath)) {
+    throw new Error('Fichier introuvable sur le serveur');
+  }
+
+  const fileStat = await stat(filePath);
+
+  c.header('Content-Type', attachment.mimeType);
+  c.header('Content-Length', String(fileStat.size));
+  c.header('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.fileName)}"`);
+  // Allow embedding in iframes from the frontend origin
+  c.header('X-Frame-Options', 'SAMEORIGIN');
+
+  return stream(c, async (s) => {
+    const nodeStream = createReadStream(filePath);
+    const webReadable = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+    const reader = webReadable.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await s.write(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  });
+});
+
 // ─── DELETE /api/attachments/:id — delete attachment (admin or author) ───
 
 app.delete('/attachments/:id', async (c) => {

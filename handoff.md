@@ -217,3 +217,48 @@ Rebuilt the admin Calendar page (`frontend/src/pages/admin/Calendar.tsx`) from a
 - `frontend/src/pages/admin/Calendar.tsx` — complete rewrite (~700 lines, was 609)
 - `frontend/src/lib/i18n/locales/fr.ts` — 17 new admin.calendar keys (viewMonth/Week/Day, prevMonth/nextMonth, prevWeek/nextWeek, mon-sun, appointmentsCount, loadError)
 - `frontend/src/lib/i18n/locales/en.ts` — matching 17 English keys
+
+### Session 3 (continued) — Uploaded File Viewer
+
+Added an inline file viewer/previewer to the attachment system. Previously, the only action for uploaded files was to download them — now users can view images, PDFs, and text files directly in the browser without leaving the page.
+
+#### Backend Changes
+- **New endpoint**: `GET /api/attachments/:id/view` in `attachment.routes.ts`
+  - Streams file with `Content-Disposition: inline` (browser displays instead of downloading)
+  - Sets `X-Frame-Options: SAMEORIGIN` to allow embedding in iframes
+  - Same authentication requirement as the download endpoint
+  - Complements the existing `GET /api/attachments/:id/download` endpoint
+
+#### Frontend — FileViewer Modal Component (NEW)
+- `frontend/src/components/shared/FileViewer.tsx` — new Radix Dialog-based modal
+- **Image preview**: Full-size image with zoom (25%–500%) and rotation controls
+- **PDF preview**: Embedded iframe using the inline view endpoint
+- **Text/CSV/JSON preview**: Fetches content and renders in a `<pre>` block with monospace font
+- **Non-previewable files**: Shows file icon + "download to open" message with download button
+- **Navigation**: Prev/Next arrows to cycle through attachments in the same ticket
+- **Keyboard shortcuts**: Arrow keys (prev/next), +/- (zoom), 0 (reset zoom/rotation), Escape (close)
+- Uses Radix Dialog primitives from `components/ui/dialog.tsx`
+
+#### Frontend — AttachmentSection Rewrite
+- **Image thumbnail grid**: Images are displayed in a responsive grid (2/3/4 columns) with aspect-square thumbnails
+- **Hover overlay**: Shows View, Download, and Delete (if permitted) action buttons on hover
+- **Filename overlay**: Semi-transparent gradient at bottom of each thumbnail showing filename
+- **Click to view**: Clicking a thumbnail opens the FileViewer modal
+- **Non-image files**: Displayed in the existing list format but now with a "View" button for previewable types (PDFs, text)
+- **"Click to view" hint**: Non-image previewable files show a small blue hint text next to the filename
+- All existing functionality preserved: drag-and-drop upload, download, delete with confirm dialog
+
+#### API Client
+- Added `api.attachments.viewUrl(id)` → returns `{BASE_URL}/api/attachments/{id}/view`
+
+#### i18n
+- 10 new keys added to both `fr.ts` and `en.ts` under the `fileViewer.*` prefix
+- Keys: view, viewTooltip, clickToView, zoomIn, zoomOut, rotate, previous, next, noPreview, loadError
+
+#### Files Modified
+- `backend/src/routes/attachment.routes.ts` — added `/attachments/:id/view` endpoint
+- `frontend/src/api/client.ts` — added `viewUrl()` method
+- `frontend/src/components/shared/FileViewer.tsx` — NEW: modal file viewer component
+- `frontend/src/components/shared/AttachmentSection.tsx` — rewritten with thumbnails + FileViewer integration
+- `frontend/src/lib/i18n/locales/fr.ts` — 10 new fileViewer.* keys
+- `frontend/src/lib/i18n/locales/en.ts` — matching 10 English keys

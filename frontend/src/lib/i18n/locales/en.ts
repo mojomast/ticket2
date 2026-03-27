@@ -360,6 +360,18 @@ export const en: Record<string, string> = {
   'attachment.sizeKb': '{size} KB',
   'attachment.sizeMb': '{size} MB',
 
+  // ─── File Viewer ───
+  'fileViewer.view': 'View',
+  'fileViewer.viewTooltip': 'Open file preview',
+  'fileViewer.clickToView': 'click to view',
+  'fileViewer.zoomIn': 'Zoom in',
+  'fileViewer.zoomOut': 'Zoom out',
+  'fileViewer.rotate': 'Rotate',
+  'fileViewer.previous': 'Previous file',
+  'fileViewer.next': 'Next file',
+  'fileViewer.noPreview': 'Preview not available for this file type. Download it to open.',
+  'fileViewer.loadError': 'Unable to load file content.',
+
   // ─── Messages (thread component) ───
   'message.saving': 'Saving...',
 

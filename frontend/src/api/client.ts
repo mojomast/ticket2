@@ -483,6 +483,7 @@ export const api = {
     delete: (id: string) =>
       request<{ message: string }>(`/api/attachments/${id}`, { method: 'DELETE' }),
     downloadUrl: (id: string) => `${BASE_URL}/api/attachments/${id}/download`,
+    viewUrl: (id: string) => `${BASE_URL}/api/attachments/${id}/view`,
   },
 
   config: {
