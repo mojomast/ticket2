@@ -1049,6 +1049,52 @@ export async function deleteFollowUp(worksheetId: string, followUpId: string, us
 }
 
 // ═══════════════════════════════════════════════════════
+//  FOLLOW-UPS FOR SCHEDULE
+// ═══════════════════════════════════════════════════════
+
+export async function getFollowUpsForSchedule(
+  userId: string,
+  role: UserRole,
+  from: string,
+  to: string,
+) {
+  const where: any = {
+    completed: false,
+    scheduledDate: {
+      gte: new Date(from),
+      lte: new Date(to),
+    },
+    worksheet: {
+      deletedAt: null,
+    },
+  };
+
+  // Technicians only see their own follow-ups
+  if (role === 'TECHNICIAN') {
+    where.worksheet.technicianId = userId;
+  }
+  // ADMIN sees all follow-ups
+  // CUSTOMER should not access this endpoint (enforced in route)
+
+  const followUps = await prisma.followUp.findMany({
+    where,
+    include: {
+      worksheet: {
+        select: {
+          id: true,
+          workOrder: { select: { id: true, orderNumber: true, customerName: true } },
+          ticket: { select: { id: true, ticketNumber: true, title: true } },
+          technician: { select: { id: true, firstName: true, lastName: true } },
+        },
+      },
+    },
+    orderBy: { scheduledDate: 'asc' },
+  });
+
+  return followUps;
+}
+
+// ═══════════════════════════════════════════════════════
 //  SIGNATURE
 // ═══════════════════════════════════════════════════════
 

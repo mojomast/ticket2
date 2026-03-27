@@ -5,13 +5,14 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuthStore } from '../../stores/auth-store';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useTranslation } from '../../lib/i18n/hook';
-import { Mail, MessageSquare, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Mail, MessageSquare, CheckCircle, XCircle, AlertTriangle, Settings } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
+import { Checkbox } from '../../components/ui/checkbox';
 
 export default function AdminSettings() {
   const toast = useToast();
@@ -40,6 +41,18 @@ export default function AdminSettings() {
 
   // ── Worksheet threshold state ───────────────────────────────────
   const [thresholdAmount, setThresholdAmount] = useState(500);
+
+  // ── Worksheet config state ─────────────────────────────────────
+  const [wsDefaultHourlyRate, setWsDefaultHourlyRate] = useState(85);
+  const [wsDefaultRatePerKm, setWsDefaultRatePerKm] = useState(0.68);
+  const [wsTravelChargeMode, setWsTravelChargeMode] = useState<'per_km' | 'hourly' | 'flat'>('per_km');
+  const [wsTravelHourlyRate, setWsTravelHourlyRate] = useState(65);
+  const [wsTravelFlatRate, setWsTravelFlatRate] = useState(50);
+  const [wsEnableLabor, setWsEnableLabor] = useState(true);
+  const [wsEnableParts, setWsEnableParts] = useState(true);
+  const [wsEnableTravel, setWsEnableTravel] = useState(true);
+  const [wsEnableNotes, setWsEnableNotes] = useState(true);
+  const [wsEnableFollowUps, setWsEnableFollowUps] = useState(true);
   // ── Queries ─────────────────────────────────────────────────────
   const { data: branding, isLoading, isError } = useQuery({
     queryKey: ['config', 'branding'],
@@ -59,6 +72,11 @@ export default function AdminSettings() {
   const { data: thresholdConfig } = useQuery({
     queryKey: ['config', 'worksheet_alert_threshold'],
     queryFn: () => api.admin.config.get('worksheet_alert_threshold').catch(() => null),
+  });
+
+  const { data: worksheetConfigData } = useQuery({
+    queryKey: ['config', 'worksheet_config'],
+    queryFn: () => api.admin.config.get('worksheet_config').catch(() => null),
   });
 
   // ── Populate branding form ──────────────────────────────────────
@@ -102,6 +120,24 @@ export default function AdminSettings() {
       setThresholdAmount(thresholdConfig.value);
     }
   }, [thresholdConfig]);
+
+  // ── Populate worksheet config ──────────────────────────────────
+  useEffect(() => {
+    if (!worksheetConfigData?.value || typeof worksheetConfigData.value !== 'object') return;
+    const v = worksheetConfigData.value as Record<string, unknown>;
+    if (typeof v.defaultHourlyRate === 'number') setWsDefaultHourlyRate(v.defaultHourlyRate);
+    if (typeof v.defaultRatePerKm === 'number') setWsDefaultRatePerKm(v.defaultRatePerKm);
+    if (v.travelChargeMode === 'per_km' || v.travelChargeMode === 'hourly' || v.travelChargeMode === 'flat') {
+      setWsTravelChargeMode(v.travelChargeMode);
+    }
+    if (typeof v.travelHourlyRate === 'number') setWsTravelHourlyRate(v.travelHourlyRate);
+    if (typeof v.travelFlatRate === 'number') setWsTravelFlatRate(v.travelFlatRate);
+    if (typeof v.enableLabor === 'boolean') setWsEnableLabor(v.enableLabor);
+    if (typeof v.enableParts === 'boolean') setWsEnableParts(v.enableParts);
+    if (typeof v.enableTravel === 'boolean') setWsEnableTravel(v.enableTravel);
+    if (typeof v.enableNotes === 'boolean') setWsEnableNotes(v.enableNotes);
+    if (typeof v.enableFollowUps === 'boolean') setWsEnableFollowUps(v.enableFollowUps);
+  }, [worksheetConfigData]);
 
   // ── Mutations ───────────────────────────────────────────────────
   const saveBrandingMutation = useMutation({
@@ -162,6 +198,29 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config', 'worksheet_alert_threshold'] });
       toast.success(t('settings.thresholdSaved'));
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || t('settings.saveError'));
+    },
+  });
+
+  const saveWorksheetConfigMutation = useMutation({
+    mutationFn: () =>
+      api.admin.config.set('worksheet_config', {
+        defaultHourlyRate: wsDefaultHourlyRate,
+        defaultRatePerKm: wsDefaultRatePerKm,
+        travelChargeMode: wsTravelChargeMode,
+        travelHourlyRate: wsTravelHourlyRate,
+        travelFlatRate: wsTravelFlatRate,
+        enableLabor: wsEnableLabor,
+        enableParts: wsEnableParts,
+        enableTravel: wsEnableTravel,
+        enableNotes: wsEnableNotes,
+        enableFollowUps: wsEnableFollowUps,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['config', 'worksheet_config'] });
+      toast.success(t('settings.worksheetConfigSaved'));
     },
     onError: (err: Error) => {
       toast.error(err.message || t('settings.saveError'));
@@ -532,6 +591,128 @@ export default function AdminSettings() {
             disabled={saveThresholdMutation.isPending}
           >
             {saveThresholdMutation.isPending ? t('common.saving') : t('settings.saveThreshold')}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Worksheet Configuration ── */}
+      <Card className="max-w-xl">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">{t('settings.worksheetConfig')}</CardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t('settings.worksheetConfigDesc')}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Default hourly rate */}
+          <div className="space-y-1">
+            <Label>{t('settings.defaultHourlyRate')}</Label>
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              value={wsDefaultHourlyRate}
+              onChange={(e) => setWsDefaultHourlyRate(Number(e.target.value))}
+              className="max-w-[200px]"
+            />
+          </div>
+
+          {/* Travel charge mode */}
+          <div className="space-y-1">
+            <Label>{t('settings.travelChargeMode')}</Label>
+            <select
+              value={wsTravelChargeMode}
+              onChange={(e) => setWsTravelChargeMode(e.target.value as 'per_km' | 'hourly' | 'flat')}
+              className="flex h-9 w-full max-w-[300px] rounded-md border border-input bg-background px-3 py-1 text-sm"
+            >
+              <option value="per_km">{t('settings.travelModePerKm')}</option>
+              <option value="hourly">{t('settings.travelModeHourly')}</option>
+              <option value="flat">{t('settings.travelModeFlat')}</option>
+            </select>
+          </div>
+
+          {/* Rate per km (shown when mode is per_km) */}
+          {wsTravelChargeMode === 'per_km' && (
+            <div className="space-y-1">
+              <Label>{t('settings.defaultRatePerKm')}</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={wsDefaultRatePerKm}
+                onChange={(e) => setWsDefaultRatePerKm(Number(e.target.value))}
+                className="max-w-[200px]"
+              />
+            </div>
+          )}
+
+          {/* Travel hourly rate (shown when mode is hourly) */}
+          {wsTravelChargeMode === 'hourly' && (
+            <div className="space-y-1">
+              <Label>{t('settings.travelHourlyRate')}</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={wsTravelHourlyRate}
+                onChange={(e) => setWsTravelHourlyRate(Number(e.target.value))}
+                className="max-w-[200px]"
+              />
+            </div>
+          )}
+
+          {/* Travel flat rate (shown when mode is flat) */}
+          {wsTravelChargeMode === 'flat' && (
+            <div className="space-y-1">
+              <Label>{t('settings.travelFlatRate')}</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={wsTravelFlatRate}
+                onChange={(e) => setWsTravelFlatRate(Number(e.target.value))}
+                className="max-w-[200px]"
+              />
+            </div>
+          )}
+
+          {/* Enabled sections */}
+          <div className="space-y-2">
+            <Label>{t('settings.enabledSections')}</Label>
+            <div className="space-y-2">
+              {([
+                { key: 'labor', state: wsEnableLabor, setter: setWsEnableLabor, label: t('settings.enableLabor') },
+                { key: 'parts', state: wsEnableParts, setter: setWsEnableParts, label: t('settings.enableParts') },
+                { key: 'travel', state: wsEnableTravel, setter: setWsEnableTravel, label: t('settings.enableTravel') },
+                { key: 'notes', state: wsEnableNotes, setter: setWsEnableNotes, label: t('settings.enableNotes') },
+                { key: 'followups', state: wsEnableFollowUps, setter: setWsEnableFollowUps, label: t('settings.enableFollowUps') },
+              ] as const).map((section) => (
+                <div key={section.key} className="flex items-center gap-2">
+                  <Checkbox
+                    id={`ws-enable-${section.key}`}
+                    checked={section.state}
+                    onCheckedChange={(checked) => section.setter(checked === true)}
+                  />
+                  <label
+                    htmlFor={`ws-enable-${section.key}`}
+                    className="text-sm cursor-pointer"
+                  >
+                    {section.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Save button */}
+          <Button
+            onClick={() => saveWorksheetConfigMutation.mutate()}
+            disabled={saveWorksheetConfigMutation.isPending}
+          >
+            {saveWorksheetConfigMutation.isPending ? t('common.saving') : t('settings.saveWorksheetConfig')}
           </Button>
         </CardContent>
       </Card>

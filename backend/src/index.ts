@@ -58,6 +58,22 @@ app.get('/api/config/branding', async (c) => {
   return c.json({ data: branding?.value || {}, error: null });
 });
 
+// ─── Authenticated config read (non-sensitive keys only) ───
+// Allows any logged-in user to read specific config keys like worksheet_config
+const PUBLIC_CONFIG_KEYS = new Set(['worksheet_config', 'worksheet_alert_threshold']);
+app.get('/api/config/:key', requireAuth, async (c) => {
+  const key = c.req.param('key');
+  if (!PUBLIC_CONFIG_KEYS.has(key)) {
+    return c.json({ data: null, error: { message: 'Configuration introuvable', code: 'NOT_FOUND' } }, 404);
+  }
+  const { prisma } = await import('./lib/prisma.js');
+  const config = await prisma.systemConfig.findUnique({ where: { key } });
+  if (!config) {
+    return c.json({ data: { key, value: null }, error: null });
+  }
+  return c.json({ data: { key: config.key, value: config.value }, error: null });
+});
+
 // ─── Authenticated Routes ───
 app.use('/api/tickets/*', requireAuth);
 app.use('/api/attachments/*', requireAuth);

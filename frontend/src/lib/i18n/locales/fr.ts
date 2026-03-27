@@ -292,6 +292,30 @@ export const fr: Record<string, string> = {
   'settings.saveThreshold': 'Enregistrer le seuil',
   'settings.thresholdSaved': 'Seuil enregistré avec succès',
 
+  // ─── Worksheet Configuration ───
+  'settings.worksheetConfig': 'Configuration des feuilles de travail',
+  'settings.worksheetConfigDesc': 'Définir les valeurs par défaut et les sections visibles pour les feuilles de travail des techniciens.',
+  'settings.defaultHourlyRate': 'Taux horaire par défaut',
+  'settings.defaultRatePerKm': 'Taux par km par défaut',
+  'settings.travelChargeMode': 'Mode de facturation déplacement',
+  'settings.travelModePerKm': 'Par kilomètre',
+  'settings.travelModeHourly': 'Taux horaire',
+  'settings.travelModeFlat': 'Forfaitaire',
+  'settings.travelHourlyRate': 'Taux horaire déplacement',
+  'settings.travelFlatRate': 'Forfait déplacement',
+  'settings.enableLabor': "Main-d'oeuvre",
+  'settings.enableParts': 'Pièces',
+  'settings.enableTravel': 'Déplacements',
+  'settings.enableNotes': 'Notes',
+  'settings.enableFollowUps': 'Suivis',
+  'settings.enabledSections': 'Sections activées',
+  'settings.worksheetConfigSaved': 'Configuration enregistrée',
+  'settings.saveWorksheetConfig': 'Enregistrer la configuration',
+
+  // ─── Worksheet travel mode labels ───
+  'worksheet.travelTimeMinutes': 'Temps de déplacement (minutes)',
+  'worksheet.travelBillingInfo': 'Facturation basée sur le temps de déplacement',
+
   // ─── Backups ───
   'backup.title': 'Sauvegardes',
   'backup.new': 'Nouvelle sauvegarde',
@@ -470,6 +494,9 @@ export const fr: Record<string, string> = {
   'tech.schedule.sat': 'Sam',
   'tech.schedule.sun': 'Dim',
   'tech.schedule.appointmentsCount': 'rendez-vous',
+  'tech.schedule.followUpsCount': '{count} suivis',
+  'tech.schedule.followUp': 'Suivi',
+  'tech.schedule.viewWorksheet': 'Voir la feuille de travail',
 
   // ─── Portal Dashboard ───
   'portal.dashboard.activeTickets': 'Billets actifs',
@@ -1256,6 +1283,10 @@ export const fr: Record<string, string> = {
   'worksheet.endTime': 'Fin',
   'worksheet.hourlyRate': 'Taux horaire',
   'worksheet.breakMinutes': 'Pause',
+  'worksheet.laborModeTimer': 'Démarrer chrono',
+  'worksheet.laborModeManual': 'Saisie manuelle',
+  'worksheet.laborEndTime': 'Heure de fin',
+  'worksheet.laborBreakMin': 'Pause (minutes)',
   'worksheet.partName': 'Nom de la pièce',
   'worksheet.partNumber': 'Numéro de pièce',
   'worksheet.supplier': 'Fournisseur',
@@ -1342,6 +1373,8 @@ export const fr: Record<string, string> = {
   'worksheet.customerVisible': 'Notes visibles',
   'worksheet.noVisibleNotes': 'Aucune note visible',
   'worksheet.portalSubtitle': 'Consultez les feuilles de travail liées à vos bons de travail et billets.',
+  'worksheet.adminActions': 'Actions',
+  'worksheet.confirmDeleteEntry': 'Êtes-vous sûr de vouloir supprimer cette entrée ?',
 
   // ─── Client Detail ───
   'clientDetail.backToClients': 'Retour aux clients',

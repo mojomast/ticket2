@@ -41,6 +41,32 @@ export default function TechWorksheetDetail() {
   const queryClient = useQueryClient();
   const toast = useToast();
 
+  // ─── Worksheet config (admin-defined defaults) ───
+  const { data: wsConfigData } = useQuery({
+    queryKey: ['config', 'worksheet_config'],
+    queryFn: () => api.config.get('worksheet_config').catch(() => null),
+    staleTime: 5 * 60 * 1000, // cache for 5 minutes
+  });
+
+  // Extract worksheet config with defaults
+  const wsConfig = (() => {
+    const v = (wsConfigData?.value && typeof wsConfigData.value === 'object')
+      ? wsConfigData.value as Record<string, unknown>
+      : {};
+    return {
+      defaultHourlyRate: typeof v.defaultHourlyRate === 'number' ? v.defaultHourlyRate : 85,
+      defaultRatePerKm: typeof v.defaultRatePerKm === 'number' ? v.defaultRatePerKm : 0.68,
+      travelChargeMode: (v.travelChargeMode === 'per_km' || v.travelChargeMode === 'hourly' || v.travelChargeMode === 'flat') ? v.travelChargeMode : 'per_km',
+      travelHourlyRate: typeof v.travelHourlyRate === 'number' ? v.travelHourlyRate : 65,
+      travelFlatRate: typeof v.travelFlatRate === 'number' ? v.travelFlatRate : 50,
+      enableLabor: typeof v.enableLabor === 'boolean' ? v.enableLabor : true,
+      enableParts: typeof v.enableParts === 'boolean' ? v.enableParts : true,
+      enableTravel: typeof v.enableTravel === 'boolean' ? v.enableTravel : true,
+      enableNotes: typeof v.enableNotes === 'boolean' ? v.enableNotes : true,
+      enableFollowUps: typeof v.enableFollowUps === 'boolean' ? v.enableFollowUps : true,
+    };
+  })();
+
   // ─── Active tab ───
   const [activeTab, setActiveTab] = useState<TabKey>('labor');
 
@@ -59,10 +85,13 @@ export default function TechWorksheetDetail() {
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
 
   // ─── Labor form state ───
+  const [laborMode, setLaborMode] = useState<'timer' | 'manual'>('timer');
   const [laborType, setLaborType] = useState('DIAGNOSTIC');
   const [laborDescription, setLaborDescription] = useState('');
   const [laborStartTime, setLaborStartTime] = useState('');
-  const [laborHourlyRate, setLaborHourlyRate] = useState('85');
+  const [laborEndTime, setLaborEndTime] = useState('');
+  const [laborBreakMinutes, setLaborBreakMinutes] = useState('0');
+  const [laborHourlyRate, setLaborHourlyRate] = useState(String(wsConfig.defaultHourlyRate));
 
   // ─── Part form state ───
   const [partName, setPartName] = useState('');
@@ -77,8 +106,9 @@ export default function TechWorksheetDetail() {
   const [travelDeparture, setTravelDeparture] = useState('');
   const [travelArrival, setTravelArrival] = useState('');
   const [travelDistanceKm, setTravelDistanceKm] = useState('');
-  const [travelRatePerKm, setTravelRatePerKm] = useState('0.68');
+  const [travelRatePerKm, setTravelRatePerKm] = useState(String(wsConfig.defaultRatePerKm));
   const [travelDate, setTravelDate] = useState('');
+  const [travelTimeMinutes, setTravelTimeMinutes] = useState('');
 
   // ─── Note form state ───
   const [noteType, setNoteType] = useState('INTERNE');
@@ -121,6 +151,13 @@ export default function TechWorksheetDetail() {
     const interval = setInterval(() => setTimerTick((tk) => tk + 1), 1000);
     return () => clearInterval(interval);
   }, [worksheet]);
+
+  // Update form defaults when worksheet config loads
+  useEffect(() => {
+    if (!wsConfigData?.value) return;
+    setLaborHourlyRate(String(wsConfig.defaultHourlyRate));
+    setTravelRatePerKm(String(wsConfig.defaultRatePerKm));
+  }, [wsConfigData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Mutations ───
 
@@ -295,10 +332,13 @@ export default function TechWorksheetDetail() {
   // ─── Form reset helpers ───
 
   function resetLaborForm() {
+    setLaborMode('timer');
     setLaborType('DIAGNOSTIC');
     setLaborDescription('');
     setLaborStartTime('');
-    setLaborHourlyRate('85');
+    setLaborEndTime('');
+    setLaborBreakMinutes('0');
+    setLaborHourlyRate(String(wsConfig.defaultHourlyRate));
     setShowLaborForm(false);
   }
 
@@ -317,8 +357,9 @@ export default function TechWorksheetDetail() {
     setTravelDeparture('');
     setTravelArrival('');
     setTravelDistanceKm('');
-    setTravelRatePerKm('0.68');
+    setTravelRatePerKm(String(wsConfig.defaultRatePerKm));
     setTravelDate('');
+    setTravelTimeMinutes('');
     setShowTravelForm(false);
   }
 
@@ -339,12 +380,23 @@ export default function TechWorksheetDetail() {
 
   function handleAddLabor(e: React.FormEvent) {
     e.preventDefault();
-    addLaborMutation.mutate({
+    const payload: Record<string, unknown> = {
       laborType,
       description: laborDescription || undefined,
       startTime: laborStartTime ? new Date(laborStartTime).toISOString() : new Date().toISOString(),
       hourlyRate: parseFloat(laborHourlyRate),
-    });
+    };
+    // In manual mode, include endTime and breakMinutes
+    if (laborMode === 'manual') {
+      if (laborEndTime) {
+        payload.endTime = new Date(laborEndTime).toISOString();
+      }
+      const breakMin = parseInt(laborBreakMinutes) || 0;
+      if (breakMin > 0) {
+        payload.breakMinutes = breakMin;
+      }
+    }
+    addLaborMutation.mutate(payload);
   }
 
   function handleAddPart(e: React.FormEvent) {
@@ -388,11 +440,27 @@ export default function TechWorksheetDetail() {
 
   function handleAddTravel(e: React.FormEvent) {
     e.preventDefault();
+    const distance = parseFloat(travelDistanceKm) || 0;
+    let rate = parseFloat(travelRatePerKm) || 0;
+
+    // For hourly mode: billing = (travelTimeMinutes / 60) * travelHourlyRate
+    // We encode the billing into ratePerKm so the backend computes lineTotal = distanceKm * ratePerKm
+    if (wsConfig.travelChargeMode === 'hourly' && distance > 0) {
+      const minutes = parseFloat(travelTimeMinutes) || 0;
+      const hourlyBilling = (minutes / 60) * wsConfig.travelHourlyRate;
+      rate = hourlyBilling / distance;
+    }
+
+    // For flat mode: encode flat rate as ratePerKm so lineTotal = distanceKm * (flatRate / distanceKm) = flatRate
+    if (wsConfig.travelChargeMode === 'flat' && distance > 0) {
+      rate = wsConfig.travelFlatRate / distance;
+    }
+
     addTravelMutation.mutate({
       departureAddress: travelDeparture || undefined,
       arrivalAddress: travelArrival || undefined,
-      distanceKm: parseFloat(travelDistanceKm) || 0,
-      ratePerKm: parseFloat(travelRatePerKm) || 0,
+      distanceKm: distance,
+      ratePerKm: rate,
       travelDate: travelDate ? new Date(travelDate).toISOString() : new Date().toISOString(),
     });
   }
@@ -441,13 +509,26 @@ export default function TechWorksheetDetail() {
   const statusColor = WS_STATUS_COLORS[worksheet.status] ?? { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' };
   const wo = worksheet.workOrder;
 
-  const tabs: Array<{ key: TabKey; label: string }> = [
+  const allTabs: Array<{ key: TabKey; label: string }> = [
     { key: 'labor', label: t('worksheet.laborTab') },
     { key: 'parts', label: t('worksheet.partsTab') },
     { key: 'travel', label: t('worksheet.travelTab') },
     { key: 'notes', label: t('worksheet.notesTab') },
     { key: 'followups', label: t('worksheet.followUpsTab') },
   ];
+
+  // Filter tabs based on enabled sections from config
+  const enabledMap: Record<TabKey, boolean> = {
+    labor: wsConfig.enableLabor,
+    parts: wsConfig.enableParts,
+    travel: wsConfig.enableTravel,
+    notes: wsConfig.enableNotes,
+    followups: wsConfig.enableFollowUps,
+  };
+  const tabs = allTabs.filter((tab) => enabledMap[tab.key]);
+
+  // If active tab is disabled, switch to first available tab
+  const validActiveTab = enabledMap[activeTab] ? activeTab : (tabs[0]?.key ?? 'labor');
 
   // ─── Render ───
 
@@ -541,7 +622,7 @@ export default function TechWorksheetDetail() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === tab.key
+              validActiveTab === tab.key
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
@@ -556,7 +637,7 @@ export default function TechWorksheetDetail() {
       {/* ════════════════════════════════════════════════ */}
 
       {/* ── Labor Tab ── */}
-      {activeTab === 'labor' && (
+      {validActiveTab === 'labor' && (
         <div className="space-y-3">
           {/* Totals summary */}
           <div className="flex items-center justify-between text-sm">
@@ -631,6 +712,25 @@ export default function TechWorksheetDetail() {
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleAddLabor} className="space-y-3">
+                      {/* Mode toggle: Timer vs Manual */}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={laborMode === 'timer' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setLaborMode('timer')}
+                        >
+                          ⏱ {t('worksheet.laborModeTimer')}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={laborMode === 'manual' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setLaborMode('manual')}
+                        >
+                          ✏️ {t('worksheet.laborModeManual')}
+                        </Button>
+                      </div>
                       <div>
                         <label className="text-xs font-medium">{t('worksheet.laborType')}</label>
                         <select
@@ -652,15 +752,54 @@ export default function TechWorksheetDetail() {
                           placeholder={t('worksheet.description')}
                         />
                       </div>
-                      <div>
-                        <label className="text-xs font-medium">{t('worksheet.startTime')}</label>
-                        <input
-                          type="datetime-local"
-                          value={laborStartTime}
-                          onChange={(e) => setLaborStartTime(e.target.value)}
-                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                        />
-                      </div>
+                      {/* Manual mode: start time, end time, break minutes */}
+                      {laborMode === 'manual' && (
+                        <>
+                          <div>
+                            <label className="text-xs font-medium">{t('worksheet.startTime')}</label>
+                            <input
+                              type="datetime-local"
+                              value={laborStartTime}
+                              onChange={(e) => setLaborStartTime(e.target.value)}
+                              required
+                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">{t('worksheet.laborEndTime')}</label>
+                            <input
+                              type="datetime-local"
+                              value={laborEndTime}
+                              onChange={(e) => setLaborEndTime(e.target.value)}
+                              required
+                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium">{t('worksheet.laborBreakMin')}</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={laborBreakMinutes}
+                              onChange={(e) => setLaborBreakMinutes(e.target.value)}
+                              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                            />
+                          </div>
+                        </>
+                      )}
+                      {/* Timer mode: optional start time override */}
+                      {laborMode === 'timer' && (
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.startTime')}</label>
+                          <input
+                            type="datetime-local"
+                            value={laborStartTime}
+                            onChange={(e) => setLaborStartTime(e.target.value)}
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="text-xs font-medium">{t('worksheet.hourlyRate')}</label>
                         <input
@@ -673,7 +812,7 @@ export default function TechWorksheetDetail() {
                       </div>
                       <div className="flex gap-2">
                         <Button type="submit" size="sm" disabled={addLaborMutation.isPending}>
-                          {t('common.save')}
+                          {laborMode === 'timer' ? t('worksheet.laborModeTimer') : t('common.save')}
                         </Button>
                         <Button type="button" variant="ghost" size="sm" onClick={resetLaborForm}>
                           {t('common.cancel')}
@@ -689,7 +828,7 @@ export default function TechWorksheetDetail() {
       )}
 
       {/* ── Parts Tab ── */}
-      {activeTab === 'parts' && (
+      {validActiveTab === 'parts' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">{t('worksheet.totalParts')}</span>
@@ -928,7 +1067,7 @@ export default function TechWorksheetDetail() {
       )}
 
       {/* ── Travel Tab ── */}
-      {activeTab === 'travel' && (
+      {validActiveTab === 'travel' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">{t('worksheet.totalTravel')}</span>
@@ -1002,18 +1141,22 @@ export default function TechWorksheetDetail() {
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs font-medium">{t('worksheet.distanceKm')}</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={travelDistanceKm}
-                            onChange={(e) => setTravelDistanceKm(e.target.value)}
-                            required
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                          />
-                        </div>
+
+                      {/* Distance is always required (for reimbursement) */}
+                      <div>
+                        <label className="text-xs font-medium">{t('worksheet.distanceKm')}</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={travelDistanceKm}
+                          onChange={(e) => setTravelDistanceKm(e.target.value)}
+                          required
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                        />
+                      </div>
+
+                      {/* Per-km mode: show rate per km */}
+                      {wsConfig.travelChargeMode === 'per_km' && (
                         <div>
                           <label className="text-xs font-medium">{t('worksheet.ratePerKm')}</label>
                           <input
@@ -1024,7 +1167,34 @@ export default function TechWorksheetDetail() {
                             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                           />
                         </div>
-                      </div>
+                      )}
+
+                      {/* Hourly mode: show travel time in minutes */}
+                      {wsConfig.travelChargeMode === 'hourly' && (
+                        <div>
+                          <label className="text-xs font-medium">{t('worksheet.travelTimeMinutes')}</label>
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={travelTimeMinutes}
+                            onChange={(e) => setTravelTimeMinutes(e.target.value)}
+                            required
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t('worksheet.travelBillingInfo')} ({wsConfig.travelHourlyRate} $/h)
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Flat mode: show info about flat rate */}
+                      {wsConfig.travelChargeMode === 'flat' && (
+                        <p className="text-xs text-muted-foreground">
+                          {t('settings.travelFlatRate')}: {wsConfig.travelFlatRate} $
+                        </p>
+                      )}
+
                       <div>
                         <label className="text-xs font-medium">{t('worksheet.travelDate')}</label>
                         <input
@@ -1052,7 +1222,7 @@ export default function TechWorksheetDetail() {
       )}
 
       {/* ── Notes Tab ── */}
-      {activeTab === 'notes' && (
+      {validActiveTab === 'notes' && (
         <div className="space-y-3">
           {worksheet.notes.map((note: WorksheetNote) => (
             <Card key={note.id}>
@@ -1147,7 +1317,7 @@ export default function TechWorksheetDetail() {
       )}
 
       {/* ── Follow-ups Tab ── */}
-      {activeTab === 'followups' && (
+      {validActiveTab === 'followups' && (
         <div className="space-y-3">
           {worksheet.followUps.map((fu: FollowUp) => (
             <Card key={fu.id}>

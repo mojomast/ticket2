@@ -29,6 +29,31 @@ app.post('/', requireRole('ADMIN', 'TECHNICIAN'), validateBody(createWorksheetSc
   return c.json({ data: worksheet, error: null }, 201);
 });
 
+// ─── Follow-Ups for Schedule (MUST be before /:id to avoid matching as ID) ───
+
+app.get('/follow-ups/schedule', async (c) => {
+  const session = c.get('session');
+  const from = c.req.query('from');
+  const to = c.req.query('to');
+
+  if (!from || !to) {
+    return c.json({ data: null, error: { message: 'Les paramètres "from" et "to" sont requis', code: 'VALIDATION_ERROR' } }, 400);
+  }
+
+  // Only ADMIN and TECHNICIAN can access schedule follow-ups
+  if (session.user.role === 'CUSTOMER') {
+    return c.json({ data: null, error: { message: 'Accès refusé', code: 'FORBIDDEN' } }, 403);
+  }
+
+  const followUps = await worksheetService.getFollowUpsForSchedule(
+    session.user.id,
+    session.user.role,
+    from,
+    to,
+  );
+  return c.json(followUps);
+});
+
 // ─── Detail ───
 
 app.get('/:id', async (c) => {

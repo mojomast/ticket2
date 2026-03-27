@@ -450,6 +450,20 @@ export interface FollowUp {
   updatedAt: string;
 }
 
+export interface ScheduleFollowUp {
+  id: string;
+  followUpType: string;
+  scheduledDate: string;
+  notes: string | null;
+  completed: boolean;
+  worksheet: {
+    id: string;
+    workOrder?: { id: string; orderNumber: string; customerName: string } | null;
+    ticket?: { id: string; ticketNumber: string; title: string } | null;
+    technician: { id: string; firstName: string; lastName: string };
+  };
+}
+
 export interface Worksheet extends WorksheetListItem {
   workOrderId?: string | null;
   ticketId?: string | null;
@@ -695,6 +709,7 @@ export const api = {
 
   config: {
     branding: () => request<Record<string, unknown>>('/api/config/branding'),
+    get: (key: string) => request<{ key: string; value: unknown }>(`/api/config/${key}`),
   },
 
   workorders: {
@@ -835,6 +850,8 @@ export const api = {
         request<FollowUp>(`/api/worksheets/${worksheetId}/follow-ups/${followUpId}`, { method: 'PATCH', body: JSON.stringify(data) }),
       delete: (worksheetId: string, followUpId: string) =>
         request<{ success: boolean }>(`/api/worksheets/${worksheetId}/follow-ups/${followUpId}`, { method: 'DELETE' }),
+      schedule: (params: { from: string; to: string }) =>
+        request<ScheduleFollowUp[]>(`/api/worksheets/follow-ups/schedule?${qs(params)}`),
     },
 
     // Signatures

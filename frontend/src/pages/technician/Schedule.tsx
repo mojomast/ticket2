@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type Appointment } from '../../api/client';
+import { api, type Appointment, type ScheduleFollowUp } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
-import { APPOINTMENT_STATUS_COLORS } from '../../lib/constants';
+import { APPOINTMENT_STATUS_COLORS, FOLLOWUP_TYPE_LABELS } from '../../lib/constants';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import HelpTooltip from '../../components/shared/HelpTooltip';
@@ -35,6 +35,7 @@ import {
   CalendarDays,
   Clock,
   LayoutGrid,
+  ClipboardCheck,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -70,6 +71,13 @@ function getStatusDotColor(status: string): string {
 function getStatusBlockColor(status: string): string {
   const c = APPOINTMENT_STATUS_COLORS[status];
   return c ? `${c.bg} ${c.text}` : 'bg-gray-100 text-gray-800';
+}
+
+/** Get a display label for a follow-up's reference (WO# or ticket#) */
+function getFollowUpRef(fu: ScheduleFollowUp): string {
+  if (fu.worksheet.workOrder) return fu.worksheet.workOrder.orderNumber;
+  if (fu.worksheet.ticket) return fu.worksheet.ticket.ticketNumber;
+  return fu.worksheet.id.slice(0, 8);
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -126,6 +134,17 @@ export default function TechSchedule() {
       }),
   });
   const appointments: Appointment[] = data ?? [];
+
+  // ── Fetch follow-ups ────────────────────────────────────────────
+  const { data: followUpData } = useQuery<ScheduleFollowUp[]>({
+    queryKey: ['schedule-followups', dateFrom, dateTo],
+    queryFn: () =>
+      api.worksheets.followUps.schedule({
+        from: `${dateFrom}T00:00:00Z`,
+        to: `${dateTo}T00:00:00Z`,
+      }),
+  });
+  const followUps: ScheduleFollowUp[] = followUpData ?? [];
 
   // ── Status change mutation ──────────────────────────────────────
   const statusMutation = useMutation({
@@ -201,6 +220,13 @@ export default function TechSchedule() {
   function getAppointmentsForDay(day: Date): Appointment[] {
     return appointments.filter((apt) =>
       isSameDay(parseISO(apt.scheduledStart), day)
+    );
+  }
+
+  // ── Get follow-ups for a specific day ───────────────────────────
+  function getFollowUpsForDay(day: Date): ScheduleFollowUp[] {
+    return followUps.filter((fu) =>
+      isSameDay(parseISO(fu.scheduledDate), day)
     );
   }
 
@@ -342,7 +368,9 @@ export default function TechSchedule() {
             <MonthView
               selectedDate={selectedDate}
               appointments={appointments}
+              followUps={followUps}
               getAppointmentsForDay={getAppointmentsForDay}
+              getFollowUpsForDay={getFollowUpsForDay}
               drillToDay={drillToDay}
               t={t}
             />
@@ -351,7 +379,9 @@ export default function TechSchedule() {
             <WeekView
               selectedDate={selectedDate}
               appointments={appointments}
+              followUps={followUps}
               getAppointmentsForDay={getAppointmentsForDay}
+              getFollowUpsForDay={getFollowUpsForDay}
               drillToDay={drillToDay}
               hours={HOURS}
               t={t}
@@ -361,7 +391,9 @@ export default function TechSchedule() {
             <DayView
               selectedDate={selectedDate}
               appointments={appointments}
+              followUps={followUps}
               getAppointmentsForDay={getAppointmentsForDay}
+              getFollowUpsForDay={getFollowUpsForDay}
               hours={HOURS}
               statusMutation={statusMutation}
               canStart={canStart}
@@ -383,15 +415,19 @@ export default function TechSchedule() {
 function MonthView({
   selectedDate,
   appointments: _appointments,
+  followUps: _followUps,
   getAppointmentsForDay,
+  getFollowUpsForDay,
   drillToDay,
   t,
 }: {
   selectedDate: Date;
   appointments: Appointment[];
+  followUps: ScheduleFollowUp[];
   getAppointmentsForDay: (d: Date) => Appointment[];
+  getFollowUpsForDay: (d: Date) => ScheduleFollowUp[];
   drillToDay: (d: Date) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
@@ -429,6 +465,7 @@ function MonthView({
       <div className="grid grid-cols-7">
         {days.map((day) => {
           const dayAppts = getAppointmentsForDay(day);
+          const dayFollowUps = getFollowUpsForDay(day);
           const inMonth = isSameMonth(day, selectedDate);
           const today = isToday(day);
 
@@ -476,6 +513,28 @@ function MonthView({
                   )}
                 </div>
               )}
+
+              {/* Follow-up dots (orange) */}
+              {dayFollowUps.length > 0 && (
+                <div className="mt-0.5 space-y-0.5">
+                  {dayFollowUps.slice(0, 2).map((fu) => (
+                    <div
+                      key={fu.id}
+                      className="flex items-center gap-1 truncate"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full flex-shrink-0 bg-orange-400" />
+                      <span className="text-[10px] leading-tight truncate text-orange-700">
+                        {FOLLOWUP_TYPE_LABELS[fu.followUpType] ?? fu.followUpType}
+                      </span>
+                    </div>
+                  ))}
+                  {dayFollowUps.length > 2 && (
+                    <span className="text-[10px] text-orange-500">
+                      +{dayFollowUps.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
             </button>
           );
         })}
@@ -491,17 +550,21 @@ function MonthView({
 function WeekView({
   selectedDate,
   appointments: _appointments,
+  followUps: _followUps,
   getAppointmentsForDay,
+  getFollowUpsForDay,
   drillToDay,
   hours,
   t,
 }: {
   selectedDate: Date;
   appointments: Appointment[];
+  followUps: ScheduleFollowUp[];
   getAppointmentsForDay: (d: Date) => Appointment[];
+  getFollowUpsForDay: (d: Date) => ScheduleFollowUp[];
   drillToDay: (d: Date) => void;
   hours: number[];
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({
@@ -556,9 +619,17 @@ function WeekView({
             {/* Day columns */}
             {weekDays.map((day) => {
               const dayAppts = getAppointmentsForDay(day);
+              const dayFollowUps = getFollowUpsForDay(day);
+
               // Show appointments that start in this hour
               const hourAppts = dayAppts.filter((apt) => {
                 const h = getHours(parseISO(apt.scheduledStart));
+                return h === hour;
+              });
+
+              // Show follow-ups that are scheduled in this hour
+              const hourFollowUps = dayFollowUps.filter((fu) => {
+                const h = getHours(parseISO(fu.scheduledDate));
                 return h === hour;
               });
 
@@ -588,6 +659,23 @@ function WeekView({
                       </span>
                     </Link>
                   ))}
+
+                  {/* Follow-up blocks (orange style) */}
+                  {hourFollowUps.map((fu) => (
+                    <Link
+                      key={fu.id}
+                      to={`/technicien/feuilles-travail/${fu.worksheet.id}`}
+                      className="block rounded px-1 py-0.5 text-[10px] leading-tight truncate mb-0.5 hover:opacity-80 transition-opacity bg-orange-100 text-orange-800"
+                      title={`${formatTime(fu.scheduledDate)} ${t('tech.schedule.followUp')} — ${getFollowUpRef(fu)}`}
+                    >
+                      <span className="font-medium">
+                        {formatTime(fu.scheduledDate)}
+                      </span>{' '}
+                      <span className="truncate">
+                        {FOLLOWUP_TYPE_LABELS[fu.followUpType] ?? fu.followUpType}
+                      </span>
+                    </Link>
+                  ))}
                 </div>
               );
             })}
@@ -605,7 +693,9 @@ function WeekView({
 function DayView({
   selectedDate,
   appointments: _appointments,
+  followUps: _followUps,
   getAppointmentsForDay,
+  getFollowUpsForDay,
   hours,
   statusMutation,
   canStart,
@@ -615,7 +705,9 @@ function DayView({
 }: {
   selectedDate: Date;
   appointments: Appointment[];
+  followUps: ScheduleFollowUp[];
   getAppointmentsForDay: (d: Date) => Appointment[];
+  getFollowUpsForDay: (d: Date) => ScheduleFollowUp[];
   hours: number[];
   statusMutation: {
     mutate: (vars: { id: string; status: string; cancelReason?: string }) => void;
@@ -624,11 +716,12 @@ function DayView({
   canStart: (s: string) => boolean;
   canComplete: (s: string) => boolean;
   canCancelAppointment: (s: string) => boolean;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const dayAppts = getAppointmentsForDay(selectedDate);
+  const dayFollowUps = getFollowUpsForDay(selectedDate);
 
-  // Sort by start time
+  // Sort appointments by start time
   const sorted = useMemo(
     () =>
       [...dayAppts].sort(
@@ -639,7 +732,7 @@ function DayView({
     [dayAppts]
   );
 
-  // Group by hour for the timeline
+  // Group appointments by hour for the timeline
   const appointmentsByHour = useMemo(() => {
     const map: Record<number, Appointment[]> = {};
     for (const apt of sorted) {
@@ -650,9 +743,20 @@ function DayView({
     return map;
   }, [sorted]);
 
-  const hasAppointments = sorted.length > 0;
+  // Group follow-ups by hour for the timeline
+  const followUpsByHour = useMemo(() => {
+    const map: Record<number, ScheduleFollowUp[]> = {};
+    for (const fu of dayFollowUps) {
+      const h = getHours(parseISO(fu.scheduledDate));
+      if (!map[h]) map[h] = [];
+      map[h].push(fu);
+    }
+    return map;
+  }, [dayFollowUps]);
 
-  if (!hasAppointments) {
+  const hasItems = sorted.length > 0 || dayFollowUps.length > 0;
+
+  if (!hasItems) {
     return (
       <Card className="p-8 text-center text-muted-foreground">
         <Calendar className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
@@ -664,29 +768,38 @@ function DayView({
   return (
     <Card className="overflow-hidden">
       {/* Summary bar */}
-      <div className="px-4 py-2 border-b bg-muted/30">
+      <div className="px-4 py-2 border-b bg-muted/30 flex items-center gap-3">
         <span className="text-sm text-muted-foreground">
           {sorted.length} {t('tech.schedule.appointmentsCount')}
         </span>
+        {dayFollowUps.length > 0 && (
+          <>
+            <span className="text-sm text-muted-foreground">,</span>
+            <span className="text-sm text-orange-600 font-medium">
+              {t('tech.schedule.followUpsCount', { count: dayFollowUps.length })}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Timeline */}
       <div className="divide-y">
         {hours.map((hour) => {
           const hourAppts = appointmentsByHour[hour] || [];
-          const hasAppts = hourAppts.length > 0;
+          const hourFollowUps = followUpsByHour[hour] || [];
+          const hasContent = hourAppts.length > 0 || hourFollowUps.length > 0;
 
           return (
             <div
               key={hour}
-              className={`flex min-h-[48px] ${hasAppts ? '' : 'opacity-40'}`}
+              className={`flex min-h-[48px] ${hasContent ? '' : 'opacity-40'}`}
             >
               {/* Hour label */}
               <div className="w-16 flex-shrink-0 border-r px-2 py-2 text-right text-xs text-muted-foreground">
                 {String(hour).padStart(2, '0')}:00
               </div>
 
-              {/* Appointments in this hour */}
+              {/* Appointments + follow-ups in this hour */}
               <div className="flex-1 p-1 space-y-1">
                 {hourAppts.map((apt) => (
                   <AppointmentCard
@@ -698,6 +811,11 @@ function DayView({
                     canCancelAppointment={canCancelAppointment}
                     t={t}
                   />
+                ))}
+
+                {/* Follow-up cards (orange style) */}
+                {hourFollowUps.map((fu) => (
+                  <FollowUpCard key={fu.id} followUp={fu} t={t} />
                 ))}
               </div>
             </div>
@@ -728,7 +846,7 @@ function AppointmentCard({
   canStart: (s: string) => boolean;
   canComplete: (s: string) => boolean;
   canCancelAppointment: (s: string) => boolean;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const startH = getHours(parseISO(apt.scheduledStart));
   const startM = getMinutes(parseISO(apt.scheduledStart));
@@ -824,6 +942,72 @@ function AppointmentCard({
             </HelpTooltip>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ── Follow-Up Card (used in Day view) ─────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+function FollowUpCard({
+  followUp,
+  t,
+}: {
+  followUp: ScheduleFollowUp;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
+  const typeLabel = FOLLOWUP_TYPE_LABELS[followUp.followUpType] ?? followUp.followUpType;
+  const ref = getFollowUpRef(followUp);
+  const customerName = followUp.worksheet.workOrder?.customerName
+    ?? (followUp.worksheet.ticket?.title || null);
+
+  return (
+    <div className="rounded-md border border-orange-300 bg-orange-50 px-3 py-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <ClipboardCheck className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
+            <span className="text-sm font-medium text-orange-800">
+              {t('tech.schedule.followUp')} — {typeLabel}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs flex items-center gap-1 text-orange-700">
+              <Clock className="h-3 w-3" />
+              {formatTime(followUp.scheduledDate)}
+            </span>
+            <span className="text-xs text-orange-600">
+              {ref}
+            </span>
+            {customerName && (
+              <span className="text-xs text-muted-foreground truncate">
+                — {customerName}
+              </span>
+            )}
+          </div>
+          {followUp.notes && (
+            <p className="text-xs text-muted-foreground mt-1 truncate">
+              {followUp.notes}
+            </p>
+          )}
+        </div>
+
+        {/* Link to worksheet */}
+        <Link
+          to={`/technicien/feuilles-travail/${followUp.worksheet.id}`}
+          className="flex-shrink-0"
+        >
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs border-orange-300 text-orange-700 hover:bg-orange-100"
+          >
+            {t('tech.schedule.viewWorksheet')}
+          </Button>
+        </Link>
       </div>
     </div>
   );

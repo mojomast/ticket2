@@ -292,6 +292,30 @@ export const en: Record<string, string> = {
   'settings.saveThreshold': 'Save threshold',
   'settings.thresholdSaved': 'Threshold saved successfully',
 
+  // ─── Worksheet Configuration ───
+  'settings.worksheetConfig': 'Worksheet configuration',
+  'settings.worksheetConfigDesc': 'Set default values and visible sections for technician worksheets.',
+  'settings.defaultHourlyRate': 'Default hourly rate',
+  'settings.defaultRatePerKm': 'Default rate per km',
+  'settings.travelChargeMode': 'Travel billing mode',
+  'settings.travelModePerKm': 'Per kilometer',
+  'settings.travelModeHourly': 'Hourly rate',
+  'settings.travelModeFlat': 'Flat rate',
+  'settings.travelHourlyRate': 'Travel hourly rate',
+  'settings.travelFlatRate': 'Travel flat rate',
+  'settings.enableLabor': 'Labor',
+  'settings.enableParts': 'Parts',
+  'settings.enableTravel': 'Travel',
+  'settings.enableNotes': 'Notes',
+  'settings.enableFollowUps': 'Follow-ups',
+  'settings.enabledSections': 'Enabled sections',
+  'settings.worksheetConfigSaved': 'Configuration saved',
+  'settings.saveWorksheetConfig': 'Save configuration',
+
+  // ─── Worksheet travel mode labels ───
+  'worksheet.travelTimeMinutes': 'Travel time (minutes)',
+  'worksheet.travelBillingInfo': 'Billing based on travel time',
+
   // ─── Backups ───
   'backup.title': 'Backups',
   'backup.new': 'New backup',
@@ -470,6 +494,9 @@ export const en: Record<string, string> = {
   'tech.schedule.sat': 'Sat',
   'tech.schedule.sun': 'Sun',
   'tech.schedule.appointmentsCount': 'appointments',
+  'tech.schedule.followUpsCount': '{count} follow-ups',
+  'tech.schedule.followUp': 'Follow-up',
+  'tech.schedule.viewWorksheet': 'View worksheet',
 
   // ─── Portal Dashboard ───
   'portal.dashboard.activeTickets': 'Active tickets',
@@ -1256,6 +1283,10 @@ export const en: Record<string, string> = {
   'worksheet.endTime': 'End',
   'worksheet.hourlyRate': 'Hourly rate',
   'worksheet.breakMinutes': 'Break',
+  'worksheet.laborModeTimer': 'Start timer',
+  'worksheet.laborModeManual': 'Manual entry',
+  'worksheet.laborEndTime': 'End time',
+  'worksheet.laborBreakMin': 'Break (minutes)',
   'worksheet.partName': 'Part name',
   'worksheet.partNumber': 'Part number',
   'worksheet.supplier': 'Supplier',
@@ -1342,6 +1373,8 @@ export const en: Record<string, string> = {
   'worksheet.customerVisible': 'Visible notes',
   'worksheet.noVisibleNotes': 'No visible notes',
   'worksheet.portalSubtitle': 'View worksheets linked to your work orders and tickets.',
+  'worksheet.adminActions': 'Actions',
+  'worksheet.confirmDeleteEntry': 'Are you sure you want to delete this entry?',
 
   // ─── Client Detail ───
   'clientDetail.backToClients': 'Back to clients',

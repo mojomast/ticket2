@@ -114,6 +114,46 @@ const COLOR_TABLE_BG = rgb(0.95, 0.95, 0.97);
 
 // ─── Helpers ───
 
+/**
+ * Sanitize text for pdf-lib StandardFonts (WinAnsi / Windows-1252 encoding).
+ * Characters outside WinAnsi are replaced with '?' to prevent encodeText crashes.
+ * WinAnsi supports: ASCII 0x20-0x7E, plus specific chars in 0x80-0xFF range
+ * (accented Latin chars like é, è, ê, ë, à, ç, ñ, ü, etc.)
+ */
+// WinAnsi maps specific Unicode code points in the 0x80-0x9F range:
+// 0x2013 (–), 0x2014 (—), 0x2018 ('), 0x2019 ('), 0x201A (‚),
+// 0x201C ("), 0x201D ("), 0x201E („), 0x2026 (…), 0x2039 (‹), 0x203A (›),
+// 0x0152 (Œ), 0x0153 (œ), 0x0160 (Š), 0x0161 (š), 0x0178 (Ÿ),
+// 0x017D (Ž), 0x017E (ž), 0x0192 (ƒ), 0x02C6 (ˆ), 0x02DC (~),
+// 0x2020 (†), 0x2021 (‡), 0x2030 (‰), 0x2122 (™)
+const WINANSI_EXTRA_CODEPOINTS = new Set([
+  0x2013, 0x2014, 0x2018, 0x2019, 0x201A, 0x201C, 0x201D, 0x201E,
+  0x2026, 0x2039, 0x203A, 0x0152, 0x0153, 0x0160, 0x0161, 0x0178,
+  0x017D, 0x017E, 0x0192, 0x02C6, 0x02DC, 0x2020, 0x2021, 0x2030, 0x2122,
+]);
+
+function sanitizeForPdf(text: string): string {
+  const result: string[] = [];
+  for (const ch of text) {
+    const code = ch.codePointAt(0)!;
+    if (code >= 0x20 && code <= 0x7E) {
+      // Standard ASCII printable range
+      result.push(ch);
+    } else if (code >= 0xA0 && code <= 0xFF) {
+      // Latin-1 supplement (0xA0-0xFF) — all mapped in WinAnsi
+      result.push(ch);
+    } else if (code === 0x0A || code === 0x0D || code === 0x09) {
+      // Newline, carriage return, tab — replace with space
+      result.push(' ');
+    } else if (WINANSI_EXTRA_CODEPOINTS.has(code)) {
+      result.push(ch);
+    } else {
+      result.push('?');
+    }
+  }
+  return result.join('');
+}
+
 function formatDate(d: Date | string | null): string {
   if (!d) return '—';
   const date = typeof d === 'string' ? new Date(d) : d;
@@ -201,7 +241,7 @@ class PdfDrawer {
 
   drawTitle(text: string, size: number = 18) {
     this.checkPage(40);
-    this.page.drawText(text, {
+    this.page.drawText(sanitizeForPdf(text), {
       x: MARGIN_LEFT, y: this.y,
       size, font: this.fontBold, color: COLOR_PRIMARY,
     });
@@ -217,7 +257,7 @@ class PdfDrawer {
       width: CONTENT_WIDTH, height: 20,
       color: COLOR_PRIMARY,
     });
-    this.page.drawText(text, {
+    this.page.drawText(sanitizeForPdf(text), {
       x: MARGIN_LEFT + 6, y: this.y,
       size: 11, font: this.fontBold, color: rgb(1, 1, 1),
     });
@@ -227,9 +267,10 @@ class PdfDrawer {
   drawText(text: string, opts: { size?: number; bold?: boolean; color?: typeof COLOR_DARK; indent?: number; maxWidth?: number } = {}) {
     const { size = 9, bold = false, color = COLOR_DARK, indent = 0, maxWidth = CONTENT_WIDTH - indent } = opts;
     const font = bold ? this.fontBold : this.fontRegular;
+    const safeText = sanitizeForPdf(text);
 
     // Simple word-wrap
-    const words = text.split(' ');
+    const words = safeText.split(' ');
     let line = '';
     for (const word of words) {
       const testLine = line ? `${line} ${word}` : word;
@@ -252,12 +293,14 @@ class PdfDrawer {
 
   drawKeyValue(key: string, value: string, indent: number = 0) {
     this.checkPage(16);
-    const keyWidth = this.fontBold.widthOfTextAtSize(key, 9);
-    this.page.drawText(key, {
+    const safeKey = sanitizeForPdf(key);
+    const safeValue = sanitizeForPdf(value);
+    const keyWidth = this.fontBold.widthOfTextAtSize(safeKey, 9);
+    this.page.drawText(safeKey, {
       x: MARGIN_LEFT + indent, y: this.y,
       size: 9, font: this.fontBold, color: COLOR_GRAY,
     });
-    this.page.drawText(value, {
+    this.page.drawText(safeValue, {
       x: MARGIN_LEFT + indent + keyWidth + 4, y: this.y,
       size: 9, font: this.fontRegular, color: COLOR_DARK,
     });
@@ -289,9 +332,10 @@ class PdfDrawer {
     const font = bold ? this.fontBold : this.fontRegular;
     let x = MARGIN_LEFT;
     for (const col of cols) {
-      const textWidth = font.widthOfTextAtSize(col.text, size);
+      const safeText = sanitizeForPdf(col.text);
+      const textWidth = font.widthOfTextAtSize(safeText, size);
       const drawX = col.align === 'right' ? x + col.width - textWidth - 4 : x + 4;
-      this.page.drawText(col.text, {
+      this.page.drawText(safeText, {
         x: drawX, y: this.y,
         size, font, color: COLOR_DARK,
       });
@@ -305,8 +349,9 @@ class PdfDrawer {
   }
 
   async drawSignature(dataUri: string | null, label: string, x: number) {
+    const safeLabel = sanitizeForPdf(label);
     if (!dataUri) {
-      this.page.drawText(`${label}: —`, {
+      this.page.drawText(`${safeLabel}: —`, {
         x, y: this.y,
         size: 9, font: this.fontRegular, color: COLOR_GRAY,
       });
@@ -317,7 +362,7 @@ class PdfDrawer {
       // Extract base64 data from data URI
       const base64Match = dataUri.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
       if (!base64Match) {
-        this.page.drawText(`${label}: (format invalide)`, {
+        this.page.drawText(`${safeLabel}: (format invalide)`, {
           x, y: this.y,
           size: 9, font: this.fontRegular, color: COLOR_GRAY,
         });
@@ -331,7 +376,7 @@ class PdfDrawer {
         : await this.doc.embedJpg(imageBytes);
 
       const scaledDims = image.scaleToFit(150, 60);
-      this.page.drawText(`${label}:`, {
+      this.page.drawText(`${safeLabel}:`, {
         x, y: this.y + scaledDims.height + 4,
         size: 9, font: this.fontBold, color: COLOR_GRAY,
       });
@@ -341,7 +386,7 @@ class PdfDrawer {
       });
     } catch (err) {
       logger.warn({ err }, 'Failed to embed signature image in PDF');
-      this.page.drawText(`${label}: (erreur image)`, {
+      this.page.drawText(`${safeLabel}: (erreur image)`, {
         x, y: this.y,
         size: 9, font: this.fontRegular, color: COLOR_GRAY,
       });
@@ -567,7 +612,9 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
   if (w.followUps.length > 0) {
     d.drawSectionHeader('Suivis planifiés');
     for (const fu of w.followUps) {
-      const statusStr = fu.completed ? '✓ Complété' : '○ En attente';
+      // Note: Using ASCII-safe symbols because pdf-lib StandardFonts only support WinAnsi encoding
+      // (Unicode chars like ✓ U+2713 and ○ U+25CB would crash encodeText)
+      const statusStr = fu.completed ? '[X] Complété' : '[ ] En attente';
       d.drawKeyValue(
         `${FOLLOWUP_TYPE_LABELS[fu.followUpType] || fu.followUpType}:`,
         `${formatDate(fu.scheduledDate)} — ${statusStr}`,
@@ -603,7 +650,7 @@ export async function generateWorksheetPdf(ws: any): Promise<Uint8Array> {
   const footerFont = await doc.embedFont(StandardFonts.Helvetica);
   for (let i = 0; i < allPages.length; i++) {
     const pg = allPages[i];
-    const footerText = `Valitek — Feuille de travail ${refNumber} — Page ${i + 1}/${allPages.length}`;
+    const footerText = sanitizeForPdf(`Valitek — Feuille de travail ${refNumber} — Page ${i + 1}/${allPages.length}`);
     const footerWidth = footerFont.widthOfTextAtSize(footerText, 7);
     pg.drawText(footerText, {
       x: (PAGE_WIDTH - footerWidth) / 2,
