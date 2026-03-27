@@ -21,6 +21,7 @@ import HelpTooltip from '../../components/shared/HelpTooltip';
 import { STATUS_LABELS, STATUS_COLORS } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
+import { useTranslation } from '../../lib/i18n/hook';
 
 // ─── Constants ───
 
@@ -39,20 +40,6 @@ const KANBAN_COLUMNS = [
 
 type KanbanStatus = (typeof KANBAN_COLUMNS)[number];
 
-/** French tooltip descriptions for each kanban column status */
-const COLUMN_TOOLTIPS: Record<KanbanStatus, string> = {
-  NOUVELLE: 'Billets nouvellement créés, en attente de prise en charge',
-  EN_ATTENTE_APPROBATION: 'Devis envoyé au client, en attente de son approbation',
-  EN_ATTENTE_REPONSE_CLIENT: 'En attente d\'une réponse ou action du client',
-  APPROUVEE: 'Devis approuvé par le client, prêt à être planifié',
-  PLANIFIEE: 'Rendez-vous planifié avec le technicien',
-  EN_COURS: 'Travail en cours par le technicien',
-  BLOCAGE: 'Travail bloqué — nécessite une action pour débloquer',
-  TERMINEE: 'Travail terminé, en attente de fermeture',
-  FERMEE: 'Billet fermé définitivement',
-  ANNULEE: 'Billet annulé',
-};
-
 // ─── Draggable Ticket Card ───
 
 interface TicketCardProps {
@@ -61,6 +48,7 @@ interface TicketCardProps {
 }
 
 function TicketCard({ ticket, isDragOverlay = false }: TicketCardProps) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -117,7 +105,7 @@ function TicketCard({ ticket, isDragOverlay = false }: TicketCardProps) {
   }
 
   return (
-    <HelpTooltip content="Cliquez pour voir les détails ou glissez pour changer le statut" side="right">
+    <HelpTooltip content={t('kanban.cardTooltip')} side="right">
       <div
         ref={setNodeRef}
         style={style}
@@ -149,6 +137,7 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ status, tickets, isOver }: KanbanColumnProps) {
+  const { t } = useTranslation();
   const { setNodeRef } = useDroppable({
     id: status,
     data: { status },
@@ -166,7 +155,7 @@ function KanbanColumn({ status, tickets, isOver }: KanbanColumnProps) {
     >
       {/* Column header */}
       <div className="flex items-center justify-between mb-3">
-        <HelpTooltip content={COLUMN_TOOLTIPS[status]} side="bottom" align="start">
+        <HelpTooltip content={t(`kanban.column.${status}`)} side="bottom" align="start">
           <div className="flex items-center gap-2">
             {colors && (
               <div className={cn('w-2 h-2 rounded-full', colors.bg)} />
@@ -193,7 +182,7 @@ function KanbanColumn({ status, tickets, isOver }: KanbanColumnProps) {
               isOver ? 'border-primary/40 bg-primary/5' : 'border-muted-foreground/20'
             )}
           >
-            Déposer ici
+            {t('kanban.dropHere')}
           </div>
         )}
       </div>
@@ -206,6 +195,7 @@ function KanbanColumn({ status, tickets, isOver }: KanbanColumnProps) {
 export default function KanbanBoard() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
 
   // Track the currently-dragged ticket for the overlay
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
@@ -264,7 +254,7 @@ export default function KanbanBoard() {
       if (context?.previousTickets) {
         queryClient.setQueryData(['tickets', { limit: 100 }], context.previousTickets);
       }
-      toast.error('Erreur lors du changement de statut. Le billet a été remis à sa position.');
+      toast.error(t('kanban.statusChangeError'));
     },
 
     onSettled: () => {
@@ -339,7 +329,7 @@ export default function KanbanBoard() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Kanban</h1>
+        <h1 className="text-2xl font-bold">{t('kanban.title')}</h1>
         <div className="flex gap-4 overflow-x-auto pb-4">
           {KANBAN_COLUMNS.map((status) => (
             <div key={status} className="min-w-[280px] bg-muted/50 rounded-lg p-3 animate-pulse">
@@ -357,7 +347,7 @@ export default function KanbanBoard() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Kanban</h1>
+      <h1 className="text-2xl font-bold">{t('kanban.title')}</h1>
 
       <DndContext
         sensors={sensors}

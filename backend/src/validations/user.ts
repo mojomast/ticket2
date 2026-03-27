@@ -35,6 +35,15 @@ export const updatePasswordSchema = z.object({
   newPassword: z.string().min(8, 'Le nouveau mot de passe doit avoir au moins 8 caracteres').max(128),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Le mot de passe actuel est requis'),
+  newPassword: z.string().min(8, 'Le nouveau mot de passe doit avoir au moins 8 caracteres').max(128),
+  confirmPassword: z.string().min(8, 'La confirmation du mot de passe est requise'),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: 'Les mots de passe ne correspondent pas',
+  path: ['confirmPassword'],
+});
+
 export const techPermissionsSchema = z.object({
   can_accept_tickets: z.boolean(),
   can_close_tickets: z.boolean(),

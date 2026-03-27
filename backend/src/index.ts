@@ -23,6 +23,7 @@ import demoRoutes from './routes/demo.routes.js';
 import healthRoutes from './routes/health.routes.js';
 import workorderRoutes from './routes/workorder.routes.js';
 import serviceRequestRoutes from './routes/service-request.routes.js';
+import attachmentRoutes from './routes/attachment.routes.js';
 
 const app = new Hono();
 
@@ -55,6 +56,7 @@ app.get('/api/config/branding', async (c) => {
 
 // ─── Authenticated Routes ───
 app.use('/api/tickets/*', requireAuth);
+app.use('/api/attachments/*', requireAuth);
 app.use('/api/appointments/*', requireAuth);
 app.use('/api/workorders/*', requireAuth);
 app.use('/api/messages/*', requireAuth);
@@ -62,6 +64,7 @@ app.use('/api/notifications/*', requireAuth);
 app.use('/api/technicians/*', requireAuth);
 app.use('/api/users/*', requireAuth);
 
+app.route('/api', attachmentRoutes);
 app.route('/api/tickets', ticketRoutes);
 app.route('/api/appointments', appointmentRoutes);
 app.route('/api/workorders', workorderRoutes);

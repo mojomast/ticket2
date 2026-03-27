@@ -4,6 +4,7 @@ import { api, Appointment, Ticket, User } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useToast } from '../../hooks/use-toast';
+import { useTranslation } from '../../lib/i18n/hook';
 import type { AppointmentStatus } from '../../types';
 
 // ─── French labels for appointment statuses ───
@@ -94,6 +95,7 @@ const EMPTY_FORM: AppointmentFormData = {
 export default function AdminCalendar() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
 
   // Date navigation state
   const [date, setDate] = useState<string>(
@@ -151,13 +153,13 @@ export default function AdminCalendar() {
         notes: data.notes || undefined,
       }),
     onSuccess: () => {
-      toast.success('Rendez-vous créé avec succès');
+      toast.success(t('admin.calendar.createdSuccess'));
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       setShowForm(false);
       setForm({ ...EMPTY_FORM });
     },
     onError: (err: Error) => {
-      toast.error(`Erreur lors de la création: ${err.message}`);
+      toast.error(t('admin.calendar.createError', { message: err.message }));
     },
   });
 
@@ -165,22 +167,22 @@ export default function AdminCalendar() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       api.appointments.changeStatus(id, status),
     onSuccess: () => {
-      toast.success('Statut mis à jour');
+      toast.success(t('admin.calendar.statusUpdated'));
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
     onError: (err: Error) => {
-      toast.error(`Erreur de changement de statut: ${err.message}`);
+      toast.error(t('admin.calendar.statusError', { message: err.message }));
     },
   });
 
   const cancelMutation = useMutation({
     mutationFn: (id: string) => api.appointments.cancel(id),
     onSuccess: () => {
-      toast.success('Rendez-vous annulé');
+      toast.success(t('admin.calendar.cancelled'));
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
     onError: (err: Error) => {
-      toast.error(`Erreur d'annulation: ${err.message}`);
+      toast.error(t('admin.calendar.cancelError', { message: err.message }));
     },
   });
 
@@ -214,7 +216,7 @@ export default function AdminCalendar() {
   function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault();
     if (!form.ticketId || !form.scheduledStart || !form.scheduledEnd) {
-      toast.error('Veuillez remplir les champs obligatoires (ticket, début, fin)');
+      toast.error(t('admin.calendar.requiredFields'));
       return;
     }
     createMutation.mutate(form);
@@ -252,50 +254,50 @@ export default function AdminCalendar() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Calendrier</h1>
-        <HelpTooltip content="Créer un nouveau rendez-vous pour un billet existant" side="left">
+        <h1 className="text-2xl font-bold">{t('admin.calendar.title')}</h1>
+        <HelpTooltip content={t('admin.calendar.newAppointmentTooltip')} side="left">
           <button
             type="button"
             onClick={() => setShowForm((v) => !v)}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
-            {showForm ? 'Fermer' : '+ Nouveau rendez-vous'}
+            {showForm ? t('admin.calendar.closeForm') : t('admin.calendar.newAppointment')}
           </button>
         </HelpTooltip>
       </div>
 
       {/* Date navigation bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <HelpTooltip content="Afficher le jour précédent" side="bottom">
+        <HelpTooltip content={t('admin.calendar.prevDayTooltip')} side="bottom">
           <button
             type="button"
             onClick={handlePrevDay}
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-            aria-label="Jour précédent"
+            aria-label={t('admin.calendar.prevDayAriaLabel')}
           >
-            ← Préc.
+            {t('admin.calendar.prevDay')}
           </button>
         </HelpTooltip>
-        <HelpTooltip content="Revenir à la date d'aujourd'hui" side="bottom">
+        <HelpTooltip content={t('admin.calendar.todayTooltip')} side="bottom">
           <button
             type="button"
             onClick={handleToday}
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
           >
-            Aujourd'hui
+            {t('admin.calendar.today')}
           </button>
         </HelpTooltip>
-        <HelpTooltip content="Afficher le jour suivant" side="bottom">
+        <HelpTooltip content={t('admin.calendar.nextDayTooltip')} side="bottom">
           <button
             type="button"
             onClick={handleNextDay}
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-            aria-label="Jour suivant"
+            aria-label={t('admin.calendar.nextDayAriaLabel')}
           >
-            Suiv. →
+            {t('admin.calendar.nextDay')}
           </button>
         </HelpTooltip>
-        <HelpTooltip content="Sélectionner une date spécifique" side="bottom">
+        <HelpTooltip content={t('admin.calendar.datePickTooltip')} side="bottom">
           <input
             type="date"
             value={date}
@@ -311,14 +313,14 @@ export default function AdminCalendar() {
       {/* ─── Creation Form ─── */}
       {showForm && (
         <div className="bg-card border rounded-lg p-4">
-          <h2 className="text-lg font-semibold mb-4">Nouveau rendez-vous</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('admin.calendar.formTitle')}</h2>
           <form onSubmit={handleSubmitForm} className="grid gap-4 sm:grid-cols-2">
             {/* Ticket select */}
             <div className="space-y-1">
               <label htmlFor="apt-ticket" className="text-sm font-medium">
-                Ticket <span className="text-destructive">*</span>
+                {t('admin.calendar.ticketLabel')} <span className="text-destructive">{t('admin.calendar.ticketRequired')}</span>
               </label>
-              <HelpTooltip content="Sélectionner le billet associé à ce rendez-vous" side="bottom">
+              <HelpTooltip content={t('admin.calendar.selectTicketTooltip')} side="bottom">
                 <select
                   id="apt-ticket"
                   value={form.ticketId}
@@ -326,7 +328,7 @@ export default function AdminCalendar() {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   required
                 >
-                  <option value="">— Sélectionner un ticket —</option>
+                  <option value="">{t('admin.calendar.selectTicket')}</option>
                   {openTickets.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.ticketNumber} — {t.title}
@@ -339,16 +341,16 @@ export default function AdminCalendar() {
             {/* Technician select */}
             <div className="space-y-1">
               <label htmlFor="apt-tech" className="text-sm font-medium">
-                Technicien
+                {t('admin.calendar.technicianLabel')}
               </label>
-              <HelpTooltip content="Choisir le technicien pour voir ses disponibilités" side="bottom">
+              <HelpTooltip content={t('admin.calendar.techTooltip')} side="bottom">
                 <select
                   id="apt-tech"
                   value={form.technicianId}
                   onChange={(e) => handleFormChange('technicianId', e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">— Aucun —</option>
+                  <option value="">{t('admin.calendar.techNone')}</option>
                   {(technicians ?? []).map((tech: User) => (
                     <option key={tech.id} value={tech.id}>
                       {tech.firstName} {tech.lastName}
@@ -360,14 +362,14 @@ export default function AdminCalendar() {
 
             {/* Availability slots */}
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium">Créneaux disponibles</label>
+              <label className="text-sm font-medium">{t('admin.calendar.slotsLabel')}</label>
               {!form.technicianId ? (
                 <p className="text-xs text-muted-foreground italic">
-                  Sélectionnez un technicien pour voir les disponibilités
+                  {t('admin.calendar.slotsSelectTech')}
                 </p>
               ) : loadingAvailability ? (
                 <p className="text-xs text-muted-foreground animate-pulse">
-                  Chargement des disponibilités…
+                  {t('admin.calendar.slotsLoading')}
                 </p>
               ) : availabilitySlots && availabilitySlots.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -384,8 +386,8 @@ export default function AdminCalendar() {
                       }`}
                       title={
                         slot.available
-                          ? 'Cliquez pour sélectionner ce créneau'
-                          : 'Créneau non disponible'
+                          ? t('admin.calendar.slotAvailable')
+                          : t('admin.calendar.slotUnavailable')
                       }
                     >
                       {formatSlotTime(slot.start)} – {formatSlotTime(slot.end)}
@@ -394,7 +396,7 @@ export default function AdminCalendar() {
                 </div>
               ) : availabilitySlots && availabilitySlots.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic">
-                  Aucun créneau disponible pour cette journée
+                  {t('admin.calendar.slotsNone')}
                 </p>
               ) : null}
             </div>
@@ -402,7 +404,7 @@ export default function AdminCalendar() {
             {/* Scheduled start */}
             <div className="space-y-1">
               <label htmlFor="apt-start" className="text-sm font-medium">
-                Début <span className="text-destructive">*</span>
+                {t('admin.calendar.startLabel')} <span className="text-destructive">*</span>
               </label>
               <input
                 id="apt-start"
@@ -417,7 +419,7 @@ export default function AdminCalendar() {
             {/* Scheduled end */}
             <div className="space-y-1">
               <label htmlFor="apt-end" className="text-sm font-medium">
-                Fin <span className="text-destructive">*</span>
+                {t('admin.calendar.endLabel')} <span className="text-destructive">*</span>
               </label>
               <input
                 id="apt-end"
@@ -432,7 +434,7 @@ export default function AdminCalendar() {
             {/* Travel buffer */}
             <div className="space-y-1">
               <label htmlFor="apt-buffer" className="text-sm font-medium">
-                Temps de déplacement (min)
+                {t('admin.calendar.travelBuffer')}
               </label>
               <input
                 id="apt-buffer"
@@ -449,7 +451,7 @@ export default function AdminCalendar() {
             {/* Notes */}
             <div className="space-y-1 sm:col-span-2">
               <label htmlFor="apt-notes" className="text-sm font-medium">
-                Notes
+                {t('admin.calendar.notesLabel')}
               </label>
               <textarea
                 id="apt-notes"
@@ -457,19 +459,19 @@ export default function AdminCalendar() {
                 value={form.notes}
                 onChange={(e) => handleFormChange('notes', e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-y"
-                placeholder="Notes optionnelles..."
+                placeholder={t('admin.calendar.notesPlaceholder')}
               />
             </div>
 
             {/* Submit */}
             <div className="sm:col-span-2 flex gap-2">
-              <HelpTooltip content="Valider et créer le rendez-vous avec les informations saisies" side="top">
+              <HelpTooltip content={t('admin.calendar.submitTooltip')} side="top">
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
                   className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
-                  {createMutation.isPending ? 'Création…' : 'Créer le rendez-vous'}
+                  {createMutation.isPending ? t('admin.calendar.creating') : t('admin.calendar.createButton')}
                 </button>
               </HelpTooltip>
               <button
@@ -480,7 +482,7 @@ export default function AdminCalendar() {
                 }}
                 className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
               >
-                Annuler
+                {t('common.cancel')}
               </button>
             </div>
           </form>
@@ -491,18 +493,18 @@ export default function AdminCalendar() {
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Rendez-vous du {formatDateLabel(date)}
+            {t('admin.calendar.appointmentsFor', { date: formatDateLabel(date) })}
           </p>
           {loadingAppointments && (
             <span className="text-xs text-muted-foreground animate-pulse">
-              Chargement…
+              {t('common.loadingEllipsis')}
             </span>
           )}
         </div>
 
         {appointmentsError && (
           <div className="p-4 text-sm text-destructive">
-            Erreur lors du chargement des rendez-vous:{' '}
+            {t('appointment.loadError')}{' '}
             {(appointmentsError as Error).message}
           </div>
         )}
@@ -516,7 +518,7 @@ export default function AdminCalendar() {
               {/* Left: appointment info */}
               <div className="space-y-1 min-w-0">
                 <p className="text-sm font-medium truncate">
-                  {apt.ticket?.title || 'Rendez-vous'}
+                  {apt.ticket?.title || t('common.noTitle')}
                   {apt.ticket?.ticketNumber && (
                     <span className="ml-2 text-xs text-muted-foreground font-normal">
                       #{apt.ticket.ticketNumber}
@@ -527,13 +529,13 @@ export default function AdminCalendar() {
                   {formatTime(apt.scheduledStart)} – {formatTime(apt.scheduledEnd)}
                   {apt.travelBuffer > 0 && (
                     <span className="ml-2">
-                      (déplacement: {apt.travelBuffer} min)
+                      {t('admin.calendar.travelDisplay', { minutes: apt.travelBuffer })}
                     </span>
                   )}
                 </p>
                 {apt.technician && (
                   <p className="text-xs text-muted-foreground">
-                    Technicien: {apt.technician.firstName} {apt.technician.lastName}
+                    {t('appointment.technicianLabel', { name: `${apt.technician.firstName} ${apt.technician.lastName}` })}
                   </p>
                 )}
                 {apt.notes && (
@@ -549,7 +551,7 @@ export default function AdminCalendar() {
 
                 {/* Status change dropdown */}
                 {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
-                  <HelpTooltip content="Modifier le statut de ce rendez-vous" side="top">
+                  <HelpTooltip content={t('admin.calendar.changeStatusTooltip')} side="top">
                     <select
                       value=""
                       onChange={(e) => {
@@ -562,9 +564,9 @@ export default function AdminCalendar() {
                         statusMutation.isPending || cancelMutation.isPending
                       }
                       className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-                      aria-label="Changer le statut"
+                      aria-label={t('admin.calendar.changeStatusLabel')}
                     >
-                      <option value="">Changer statut…</option>
+                      <option value="">{t('admin.calendar.changeStatusOption')}</option>
                       {ALL_STATUSES.filter((s) => s !== apt.status).map((s) => (
                         <option key={s} value={s}>
                           {APPOINTMENT_STATUS_LABELS[s]}
@@ -576,15 +578,15 @@ export default function AdminCalendar() {
 
                 {/* Cancel button (distinct from dropdown for quick access) */}
                 {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
-                  <HelpTooltip content="Annuler définitivement ce rendez-vous" side="top">
+                  <HelpTooltip content={t('admin.calendar.cancelTooltip')} side="top">
                     <button
                       type="button"
                       onClick={() => handleCancel(apt.id)}
                       disabled={cancelMutation.isPending}
                       className="inline-flex items-center rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50 transition-colors"
-                      title="Annuler le rendez-vous"
+                      title={t('admin.calendar.cancelTitle')}
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                   </HelpTooltip>
                 )}
@@ -597,7 +599,7 @@ export default function AdminCalendar() {
             !appointmentsError &&
             (appointments ?? []).length === 0 && (
               <div className="p-8 text-center text-muted-foreground text-sm">
-                Aucun rendez-vous pour cette journée
+                {t('appointment.noAppointmentsToday')}
               </div>
             )}
         </div>

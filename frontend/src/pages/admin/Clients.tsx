@@ -3,8 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 // ─── Constants ───
+
+const PAGE_LIMIT = 25;
 
 const CUSTOMER_TYPE_LABELS: Record<string, string> = {
   PARTICULIER: 'Particulier',
@@ -43,13 +46,18 @@ interface ClientFormData {
 export default function AdminClients() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
 
   // ── Search with debounce ──
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setPage(1); // Reset to page 1 when search changes
+    }, 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
@@ -59,13 +67,14 @@ export default function AdminClients() {
   const [form, setForm] = useState<ClientFormData>(EMPTY_FORM);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // ── Query ──
+  // ── Query (paginated) ──
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users', { role: 'CUSTOMER', search: debouncedSearch }],
-    queryFn: () => api.admin.users.list({ role: 'CUSTOMER', search: debouncedSearch }),
+    queryKey: ['admin', 'users', { role: 'CUSTOMER', search: debouncedSearch, page, limit: PAGE_LIMIT }],
+    queryFn: () => api.admin.users.listPaginated({ role: 'CUSTOMER', search: debouncedSearch, page, limit: PAGE_LIMIT }),
   });
 
-  const users: User[] = data ?? [];
+  const users: User[] = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   // ── Mutations ──
 
@@ -73,11 +82,11 @@ export default function AdminClients() {
     mutationFn: (data: Record<string, unknown>) => api.admin.users.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success('Client créé avec succès');
+      toast.success(t('admin.clients.createdSuccess'));
       closeDialog();
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la création du client');
+      toast.error(err.message || t('admin.clients.createError'));
     },
   });
 
@@ -86,11 +95,11 @@ export default function AdminClients() {
       api.admin.users.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success('Client mis à jour');
+      toast.success(t('admin.clients.updatedSuccess'));
       closeDialog();
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la mise à jour');
+      toast.error(err.message || t('admin.clients.updateError'));
     },
   });
 
@@ -98,11 +107,11 @@ export default function AdminClients() {
     mutationFn: (id: string) => api.admin.users.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success('Client supprimé');
+      toast.success(t('admin.clients.deletedSuccess'));
       setDeleteConfirmId(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la suppression');
+      toast.error(err.message || t('admin.clients.deleteError'));
       setDeleteConfirmId(null);
     },
   });
@@ -112,10 +121,10 @@ export default function AdminClients() {
       api.admin.users.update(id, { isActive }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success(variables.isActive ? 'Client activé' : 'Client désactivé');
+      toast.success(variables.isActive ? t('admin.clients.activated') : t('admin.clients.deactivated'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors du changement de statut');
+      toast.error(err.message || t('admin.clients.toggleError'));
     },
   });
 
@@ -203,22 +212,22 @@ export default function AdminClients() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Clients</h1>
-        <HelpTooltip content="Ajouter un nouveau client dans le système" side="bottom">
+        <h1 className="text-2xl font-bold">{t('admin.clients.title')}</h1>
+        <HelpTooltip content={t('admin.clients.newClientTooltip')} side="bottom">
           <button
             onClick={openCreate}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            Nouveau client
+            {t('admin.clients.newClient')}
           </button>
         </HelpTooltip>
       </div>
 
       {/* Search */}
-      <HelpTooltip content="Rechercher par nom, courriel ou téléphone" side="right">
+      <HelpTooltip content={t('admin.clients.searchTooltip')} side="right">
         <input
           type="text"
-          placeholder="Rechercher un client..."
+          placeholder={t('admin.clients.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -227,19 +236,19 @@ export default function AdminClients() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+        <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <div className="bg-card border rounded-lg overflow-hidden">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
-                <th className="text-left p-3 text-sm font-medium">Nom</th>
-                <th className="text-left p-3 text-sm font-medium">Courriel</th>
-                <th className="text-left p-3 text-sm font-medium">Téléphone</th>
-                <th className="text-left p-3 text-sm font-medium">Type</th>
-                <th className="text-left p-3 text-sm font-medium">Entreprise</th>
-                <th className="text-left p-3 text-sm font-medium">Statut</th>
-                <th className="text-right p-3 text-sm font-medium">Actions</th>
+                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.name')}</th>
+                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.email')}</th>
+                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.phone')}</th>
+                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.type')}</th>
+                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.company')}</th>
+                <th className="text-left p-3 text-sm font-medium">{t('admin.clients.statusHeader')}</th>
+                <th className="text-right p-3 text-sm font-medium">{t('admin.clients.actionsHeader')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -268,7 +277,7 @@ export default function AdminClients() {
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {user.isActive ? 'Actif' : 'Inactif'}
+                      {user.isActive ? t('admin.clients.active') : t('admin.clients.inactive')}
                     </span>
                   </td>
                   <td className="p-3 text-right">
@@ -277,7 +286,7 @@ export default function AdminClients() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Toggle active */}
-                      <HelpTooltip content={user.isActive ? 'Désactiver l\'accès de ce client' : 'Réactiver l\'accès de ce client'} side="bottom">
+                      <HelpTooltip content={user.isActive ? t('admin.clients.deactivateTooltip') : t('admin.clients.activateTooltip')} side="bottom">
                         <button
                           onClick={() =>
                             toggleActiveMutation.mutate({
@@ -286,25 +295,25 @@ export default function AdminClients() {
                             })
                           }
                           disabled={toggleActiveMutation.isPending}
-                          title={user.isActive ? 'Désactiver' : 'Activer'}
+                          title={user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
                           className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                             user.isActive
                               ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                               : 'bg-green-100 text-green-800 hover:bg-green-200'
                           }`}
                         >
-                          {user.isActive ? 'Désactiver' : 'Activer'}
+                          {user.isActive ? t('admin.clients.deactivate') : t('admin.clients.activate')}
                         </button>
                       </HelpTooltip>
 
                       {/* Edit */}
-                      <HelpTooltip content="Modifier les informations de ce client" side="bottom">
+                      <HelpTooltip content={t('admin.clients.editTooltip')} side="bottom">
                         <button
                           onClick={() => openEdit(user)}
-                          title="Modifier"
+                          title={t('common.edit')}
                           className="rounded px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
                         >
-                          Modifier
+                          {t('common.edit')}
                         </button>
                       </HelpTooltip>
 
@@ -316,23 +325,23 @@ export default function AdminClients() {
                             disabled={deleteMutation.isPending}
                             className="rounded px-2 py-1 text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
                           >
-                            {deleteMutation.isPending ? '...' : 'Confirmer'}
+                            {deleteMutation.isPending ? '...' : t('common.confirm')}
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(null)}
                             className="rounded px-2 py-1 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
                           >
-                            Annuler
+                            {t('common.cancel')}
                           </button>
                         </span>
                       ) : (
-                        <HelpTooltip content="Supprimer définitivement ce client" side="bottom">
+                        <HelpTooltip content={t('admin.clients.deleteTooltip')} side="bottom">
                           <button
                             onClick={() => setDeleteConfirmId(user.id)}
-                            title="Supprimer"
+                            title={t('common.delete')}
                             className="rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
                           >
-                            Supprimer
+                            {t('common.delete')}
                           </button>
                         </HelpTooltip>
                       )}
@@ -343,8 +352,33 @@ export default function AdminClients() {
             </tbody>
           </table>
           {users.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">Aucun client</div>
+            <div className="p-8 text-center text-muted-foreground">{t('admin.clients.noClients')}</div>
           )}
+        </div>
+      )}
+
+      {/* ─── Pagination controls ─── */}
+      {!isLoading && totalPages > 0 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            {t('common.pageOf', { page, total: totalPages })}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('common.previous_arrow')}
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages}
+              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('common.next_arrow')}
+            </button>
+          </div>
         </div>
       )}
 
@@ -361,12 +395,12 @@ export default function AdminClients() {
           <div className="relative z-10 w-full max-w-lg mx-4 bg-card border rounded-lg shadow-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-lg font-semibold">
-                {dialogMode === 'create' ? 'Nouveau client' : 'Modifier le client'}
+                {dialogMode === 'create' ? t('admin.clients.dialogTitleCreate') : t('admin.clients.dialogTitleEdit')}
               </h2>
               <button
                 onClick={closeDialog}
                 className="text-muted-foreground hover:text-foreground text-xl leading-none"
-                aria-label="Fermer"
+                aria-label={t('admin.clients.closeDialog')}
               >
                 &times;
               </button>
@@ -376,7 +410,7 @@ export default function AdminClients() {
               {/* First name / Last name */}
               <div className="grid grid-cols-2 gap-4">
                 <label className="space-y-1">
-                  <span className="text-sm font-medium">Prénom</span>
+                  <span className="text-sm font-medium">{t('admin.clients.firstName')}</span>
                   <input
                     type="text"
                     required
@@ -386,7 +420,7 @@ export default function AdminClients() {
                   />
                 </label>
                 <label className="space-y-1">
-                  <span className="text-sm font-medium">Nom</span>
+                  <span className="text-sm font-medium">{t('admin.clients.lastName')}</span>
                   <input
                     type="text"
                     required
@@ -399,7 +433,7 @@ export default function AdminClients() {
 
               {/* Email */}
               <label className="block space-y-1">
-                <span className="text-sm font-medium">Courriel</span>
+                <span className="text-sm font-medium">{t('admin.clients.email')}</span>
                 <input
                   type="email"
                   required
@@ -411,7 +445,7 @@ export default function AdminClients() {
 
               {/* Phone */}
               <label className="block space-y-1">
-                <span className="text-sm font-medium">Téléphone</span>
+                <span className="text-sm font-medium">{t('admin.clients.phone')}</span>
                 <input
                   type="tel"
                   value={form.phone}
@@ -422,7 +456,7 @@ export default function AdminClients() {
 
               {/* Customer type */}
               <label className="block space-y-1">
-                <span className="text-sm font-medium">Type de client</span>
+                <span className="text-sm font-medium">{t('admin.clients.customerType')}</span>
                 <select
                   value={form.customerType}
                   onChange={handleFieldChange('customerType')}
@@ -438,7 +472,7 @@ export default function AdminClients() {
 
               {/* Company name */}
               <label className="block space-y-1">
-                <span className="text-sm font-medium">Nom de l&apos;entreprise</span>
+                <span className="text-sm font-medium">{t('admin.clients.companyName')}</span>
                 <input
                   type="text"
                   value={form.companyName}
@@ -449,7 +483,7 @@ export default function AdminClients() {
 
               {/* Address */}
               <label className="block space-y-1">
-                <span className="text-sm font-medium">Adresse</span>
+                <span className="text-sm font-medium">{t('admin.clients.address')}</span>
                 <textarea
                   value={form.address}
                   onChange={handleFieldChange('address')}
@@ -461,10 +495,10 @@ export default function AdminClients() {
               {/* Password */}
               <label className="block space-y-1">
                 <span className="text-sm font-medium">
-                  Mot de passe
+                  {t('admin.clients.password')}
                   {dialogMode === 'edit' && (
                     <span className="text-muted-foreground font-normal">
-                      {' '}(laisser vide pour ne pas modifier)
+                      {t('admin.clients.passwordEditHint')}
                     </span>
                   )}
                 </span>
@@ -485,19 +519,19 @@ export default function AdminClients() {
                   onClick={closeDialog}
                   className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
-                <HelpTooltip content={dialogMode === 'create' ? 'Créer le compte client et envoyer les accès' : 'Sauvegarder les modifications du client'} side="top">
+                <HelpTooltip content={dialogMode === 'create' ? t('admin.clients.createSubmitTooltip') : t('admin.clients.editSubmitTooltip')} side="top">
                   <button
                     type="submit"
                     disabled={isSaving}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
                   >
                     {isSaving
-                      ? 'Enregistrement...'
+                      ? t('common.saving')
                       : dialogMode === 'create'
-                        ? 'Créer le client'
-                        : 'Enregistrer'}
+                        ? t('admin.clients.createButton')
+                        : t('common.save')}
                   </button>
                 </HelpTooltip>
               </div>

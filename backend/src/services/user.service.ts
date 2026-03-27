@@ -178,6 +178,36 @@ export async function getActiveTechnicians() {
   });
 }
 
+export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+  // Fetch user with password hash
+  const user = await prisma.user.findFirst({
+    where: { id: userId, deletedAt: null },
+    select: { id: true, passwordHash: true },
+  });
+  if (!user) throw AppError.notFound('Utilisateur introuvable');
+
+  // Verify current password
+  const valid = await verifyPassword(user.passwordHash, currentPassword);
+  if (!valid) {
+    throw AppError.unauthorized('Mot de passe actuel incorrect');
+  }
+
+  // Hash and save new password
+  const newHash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: newHash },
+  });
+
+  // Fire-and-forget audit log
+  createAuditLog({
+    entityType: 'USER',
+    entityId: userId,
+    action: 'PASSWORD_CHANGED',
+    userId,
+  }).catch(() => {});
+}
+
 export async function authenticate(email: string, password: string) {
   const user = await prisma.user.findUnique({
     where: { email },

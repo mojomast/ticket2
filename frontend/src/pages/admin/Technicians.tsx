@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 const PERMISSION_LABELS: Record<string, string> = {
   can_accept_tickets: 'Accepter les billets',
@@ -41,6 +42,7 @@ const emptyForm: TechnicianFormData = {
 export default function AdminTechnicians() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
 
   // ─── UI State ───
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -62,12 +64,12 @@ export default function AdminTechnicians() {
       api.admin.users.create({ ...data, role: 'TECHNICIAN' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      toast.success('Technicien créé avec succès');
+      toast.success(t('admin.technicians.createdSuccess'));
       setShowCreateForm(false);
       setFormData(emptyForm);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la création du technicien');
+      toast.error(err.message || t('admin.technicians.createError'));
     },
   });
 
@@ -76,12 +78,12 @@ export default function AdminTechnicians() {
       api.admin.users.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      toast.success('Technicien mis à jour avec succès');
+      toast.success(t('admin.technicians.updatedSuccess'));
       setEditingTech(null);
       setFormData(emptyForm);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la mise à jour du technicien');
+      toast.error(err.message || t('admin.technicians.updateError'));
     },
   });
 
@@ -89,11 +91,11 @@ export default function AdminTechnicians() {
     mutationFn: (id: string) => api.admin.users.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      toast.success('Technicien supprimé avec succès');
+      toast.success(t('admin.technicians.deletedSuccess'));
       setDeletingTechId(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la suppression du technicien');
+      toast.error(err.message || t('admin.technicians.deleteError'));
       setDeletingTechId(null);
     },
   });
@@ -103,10 +105,10 @@ export default function AdminTechnicians() {
       api.admin.users.updatePermissions(id, permissions),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      toast.success('Permissions mises à jour');
+      toast.success(t('admin.technicians.permissionsUpdated'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la mise à jour des permissions');
+      toast.error(err.message || t('admin.technicians.permissionsError'));
     },
   });
 
@@ -115,10 +117,10 @@ export default function AdminTechnicians() {
       api.admin.users.update(id, { isActive }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey });
-      toast.success(variables.isActive ? 'Technicien activé' : 'Technicien désactivé');
+      toast.success(variables.isActive ? t('admin.technicians.activated') : t('admin.technicians.deactivated'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors du changement de statut');
+      toast.error(err.message || t('admin.technicians.toggleError'));
     },
   });
 
@@ -196,12 +198,12 @@ export default function AdminTechnicians() {
       className="bg-card border rounded-lg p-6 space-y-4"
     >
       <h2 className="text-lg font-semibold">
-        {mode === 'create' ? 'Nouveau technicien' : `Modifier: ${editingTech?.firstName} ${editingTech?.lastName}`}
+        {mode === 'create' ? t('admin.technicians.formTitleCreate') : t('admin.technicians.formTitleEdit', { name: `${editingTech?.firstName} ${editingTech?.lastName}` })}
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Prénom</label>
+          <label className="block text-sm font-medium mb-1">{t('admin.technicians.firstName')}</label>
           <input
             type="text"
             required
@@ -212,7 +214,7 @@ export default function AdminTechnicians() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Nom</label>
+          <label className="block text-sm font-medium mb-1">{t('admin.technicians.lastName')}</label>
           <input
             type="text"
             required
@@ -223,7 +225,7 @@ export default function AdminTechnicians() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Courriel</label>
+          <label className="block text-sm font-medium mb-1">{t('admin.technicians.email')}</label>
           <input
             type="email"
             required
@@ -234,7 +236,7 @@ export default function AdminTechnicians() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Téléphone</label>
+          <label className="block text-sm font-medium mb-1">{t('admin.technicians.phone')}</label>
           <input
             type="tel"
             value={formData.phone}
@@ -245,7 +247,7 @@ export default function AdminTechnicians() {
         </div>
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium mb-1">
-            {mode === 'create' ? 'Mot de passe' : 'Mot de passe (laisser vide pour ne pas changer)'}
+            {mode === 'create' ? t('admin.technicians.password') : t('admin.technicians.passwordEditHint')}
           </label>
           <input
             type="password"
@@ -260,17 +262,17 @@ export default function AdminTechnicians() {
       </div>
 
       <div className="flex gap-2 pt-2">
-        <HelpTooltip content={mode === 'create' ? 'Créer le compte technicien' : 'Sauvegarder les modifications'} side="top">
+        <HelpTooltip content={mode === 'create' ? t('admin.technicians.createTooltip') : t('admin.technicians.editTooltip')} side="top">
           <button
             type="submit"
             disabled={isFormPending}
             className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
           >
             {isFormPending
-              ? 'Enregistrement...'
+              ? t('common.saving')
               : mode === 'create'
-                ? 'Créer le technicien'
-                : 'Enregistrer les modifications'}
+                ? t('admin.technicians.createButton')
+                : t('admin.technicians.editButton')}
           </button>
         </HelpTooltip>
         <button
@@ -279,7 +281,7 @@ export default function AdminTechnicians() {
           disabled={isFormPending}
           className="border border-input px-4 py-2 rounded-md text-sm font-medium hover:bg-muted disabled:opacity-50"
         >
-          Annuler
+          {t('common.cancel')}
         </button>
       </div>
     </form>
@@ -290,14 +292,14 @@ export default function AdminTechnicians() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Techniciens</h1>
+        <h1 className="text-2xl font-bold">{t('admin.technicians.title')}</h1>
         {!showCreateForm && !editingTech && (
-          <HelpTooltip content="Ajouter un nouveau technicien à l'équipe" side="bottom">
+          <HelpTooltip content={t('admin.technicians.newTechTooltip')} side="bottom">
             <button
               onClick={handleOpenCreate}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
             >
-              Nouveau technicien
+              {t('admin.technicians.newTech')}
             </button>
           </HelpTooltip>
         )}
@@ -311,7 +313,7 @@ export default function AdminTechnicians() {
 
       {/* Loading State */}
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+        <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <>
           {/* Technician Cards */}
@@ -325,10 +327,10 @@ export default function AdminTechnicians() {
               >
                 {/* Tech Info */}
                 <div className="flex items-start justify-between">
-                  <div
+                    <div
                     className="cursor-pointer flex-1"
                     onClick={() => handleOpenEdit(tech)}
-                    title="Cliquer pour modifier"
+                    title={t('admin.technicians.clickToEdit')}
                   >
                     <h3 className="font-medium hover:text-primary transition-colors">
                       {tech.firstName} {tech.lastName}
@@ -339,7 +341,7 @@ export default function AdminTechnicians() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 ml-2">
-                    <HelpTooltip content={tech.isActive ? 'Ce technicien est actif et peut recevoir des billets' : 'Ce technicien est désactivé et ne reçoit plus de billets'} side="left">
+                    <HelpTooltip content={tech.isActive ? t('admin.technicians.activeTooltip') : t('admin.technicians.inactiveTooltip')} side="left">
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full ${
                           tech.isActive
@@ -347,10 +349,10 @@ export default function AdminTechnicians() {
                             : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {tech.isActive ? 'Actif' : 'Inactif'}
+                        {tech.isActive ? t('admin.technicians.active') : t('admin.technicians.inactive')}
                       </span>
                     </HelpTooltip>
-                    <HelpTooltip content={tech.isActive ? 'Désactiver ce technicien' : 'Réactiver ce technicien'} side="left">
+                    <HelpTooltip content={tech.isActive ? t('admin.technicians.deactivateTooltip') : t('admin.technicians.activateTooltip')} side="left">
                       <button
                         onClick={() =>
                           toggleActiveMutation.mutate({
@@ -365,7 +367,7 @@ export default function AdminTechnicians() {
                             : 'bg-green-100 text-green-800 hover:bg-green-200'
                         }`}
                       >
-                        {tech.isActive ? 'Désactiver' : 'Activer'}
+                        {tech.isActive ? t('admin.technicians.deactivate') : t('admin.technicians.activate')}
                       </button>
                     </HelpTooltip>
                   </div>
@@ -374,7 +376,7 @@ export default function AdminTechnicians() {
                 {/* Permissions Checkboxes */}
                 <div className="mt-3 space-y-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                    Permissions
+                    {t('admin.technicians.permissions')}
                   </p>
                   {PERMISSION_KEYS.map((permKey) => {
                     const isChecked = !!tech.permissions?.[permKey];
@@ -406,29 +408,29 @@ export default function AdminTechnicians() {
                 <div className="mt-4 pt-3 border-t flex justify-end">
                   {deletingTechId === tech.id ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-destructive">Supprimer ?</span>
+                      <span className="text-sm text-destructive">{t('admin.technicians.deleteConfirm')}</span>
                       <button
                         onClick={() => handleConfirmDelete(tech.id)}
                         disabled={deleteMutation.isPending}
                         className="text-xs bg-destructive text-destructive-foreground px-3 py-1 rounded-md hover:bg-destructive/90 disabled:opacity-50"
                       >
-                        {deleteMutation.isPending ? 'Suppression...' : 'Confirmer'}
+                        {deleteMutation.isPending ? t('common.deleting') : t('common.confirm')}
                       </button>
                       <button
                         onClick={() => setDeletingTechId(null)}
                         disabled={deleteMutation.isPending}
                         className="text-xs border border-input px-3 py-1 rounded-md hover:bg-muted disabled:opacity-50"
                       >
-                        Annuler
+                        {t('common.cancel')}
                       </button>
                     </div>
                   ) : (
-                    <HelpTooltip content="Supprimer définitivement ce technicien" side="left">
+                    <HelpTooltip content={t('admin.technicians.deleteTooltip')} side="left">
                       <button
                         onClick={() => setDeletingTechId(tech.id)}
                         className="text-xs text-destructive hover:text-destructive/80 hover:underline"
                       >
-                        Supprimer
+                        {t('common.delete')}
                       </button>
                     </HelpTooltip>
                   )}

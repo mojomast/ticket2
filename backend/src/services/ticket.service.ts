@@ -5,6 +5,9 @@ import type { UserRole, TicketStatus } from '@prisma/client';
 import type { CreateTicketInput, UpdateTicketInput, TicketListQuery, ServiceRequestInput } from '../validations/ticket.js';
 import { createAuditLog } from './audit.service.js';
 import * as notificationService from './notification.service.js';
+import { sendEmail } from './email.service.js';
+import { sendSms } from './sms.service.js';
+import { logger } from '../lib/logger.js';
 import crypto from 'crypto';
 
 // ─── Shared Prisma includes ───
@@ -95,11 +98,21 @@ export async function createTicket(data: CreateTicketInput, userId: string, role
   // Fire-and-forget: notify admins about new ticket
   prisma.user.findMany({
     where: { role: 'ADMIN', isActive: true, deletedAt: null },
-    select: { id: true },
+    select: { id: true, email: true },
   }).then((admins) => {
     const recipientIds = admins.map(a => a.id).filter(id => id !== userId);
     if (recipientIds.length > 0) {
       notificationService.notifyTicketCreated(ticket.id, ticketNumber, recipientIds).catch(() => {});
+    }
+    // Email admins about new ticket
+    for (const admin of admins) {
+      if (admin.email) {
+        sendEmail({
+          to: admin.email,
+          subject: `Nouveau billet ${ticketNumber}`,
+          body: `Un nouveau billet a été créé:\n\nNuméro: ${ticketNumber}\nTitre: ${data.title}\nPriorité: ${data.priority || 'NORMALE'}`,
+        }).catch(err => logger.error({ err }, 'Failed to send ticket created email to admin'));
+      }
     }
   }).catch(() => {});
 
@@ -242,6 +255,32 @@ export async function changeStatus(id: string, newStatus: TicketStatus, userId: 
     ).catch(() => {});
   }
 
+  // Fire-and-forget: email customer and technician about status change
+  if (ticket.customerId && ticket.customerId !== userId) {
+    prisma.user.findUnique({ where: { id: ticket.customerId }, select: { email: true, firstName: true } })
+      .then(customer => {
+        if (customer?.email) {
+          sendEmail({
+            to: customer.email,
+            subject: `Billet ${ticket.ticketNumber} — statut mis à jour`,
+            body: `Bonjour ${customer.firstName},\n\nLe statut de votre billet ${ticket.ticketNumber} a été mis à jour: ${newStatus}`,
+          }).catch(err => logger.error({ err }, 'Failed to send status change email to customer'));
+        }
+      }).catch(() => {});
+  }
+  if (ticket.technicianId && ticket.technicianId !== userId) {
+    prisma.user.findUnique({ where: { id: ticket.technicianId }, select: { email: true, firstName: true } })
+      .then(tech => {
+        if (tech?.email) {
+          sendEmail({
+            to: tech.email,
+            subject: `Billet ${ticket.ticketNumber} — statut mis à jour`,
+            body: `Bonjour ${tech.firstName},\n\nLe billet ${ticket.ticketNumber} qui vous est assigné a changé de statut: ${newStatus}`,
+          }).catch(err => logger.error({ err }, 'Failed to send status change email to technician'));
+        }
+      }).catch(() => {});
+  }
+
   return updated;
 }
 
@@ -274,6 +313,15 @@ export async function assignTechnician(id: string, technicianId: string, adminId
 
   // Fire-and-forget: notify technician they've been assigned
   notificationService.notifyTechnicianAssigned(id, ticket.ticketNumber, technicianId).catch(() => {});
+
+  // Fire-and-forget: email technician about assignment
+  if (technician.email) {
+    sendEmail({
+      to: technician.email,
+      subject: `Billet ${ticket.ticketNumber} vous a été assigné`,
+      body: `Bonjour ${technician.firstName},\n\nLe billet ${ticket.ticketNumber} (${ticket.title}) vous a été assigné.\n\nVeuillez vous connecter pour consulter les détails.`,
+    }).catch(err => logger.error({ err }, 'Failed to send technician assigned email'));
+  }
 
   return updated;
 }
@@ -331,6 +379,24 @@ export async function sendQuote(id: string, price: number, description: string, 
   // Fire-and-forget: notify customer that a quote was sent
   if (ticket.customerId) {
     notificationService.notifyQuoteSent(id, ticket.ticketNumber, ticket.customerId).catch(() => {});
+
+    // Email and SMS the customer about the quote
+    prisma.user.findUnique({ where: { id: ticket.customerId }, select: { email: true, phone: true, firstName: true } })
+      .then(customer => {
+        if (customer?.email) {
+          sendEmail({
+            to: customer.email,
+            subject: `Devis pour le billet ${ticket.ticketNumber}`,
+            body: `Bonjour ${customer.firstName},\n\nUn devis a été soumis pour votre billet ${ticket.ticketNumber}:\n\nMontant: ${price}$\nDescription: ${description}\nDurée estimée: ${duration}\n\nVeuillez vous connecter pour approuver ou refuser ce devis.`,
+          }).catch(err => logger.error({ err }, 'Failed to send quote email to customer'));
+        }
+        if (customer?.phone) {
+          sendSms({
+            to: customer.phone,
+            message: `Valitek — Un devis de ${price}$ a été soumis pour votre billet ${ticket.ticketNumber}. Connectez-vous pour l'approuver.`,
+          }).catch(err => logger.error({ err }, 'Failed to send quote SMS to customer'));
+        }
+      }).catch(() => {});
   }
 
   return updated;
@@ -481,13 +547,30 @@ export async function createServiceRequest(data: ServiceRequestInput) {
   // Fire-and-forget: notify admins about new ticket
   prisma.user.findMany({
     where: { role: 'ADMIN', isActive: true, deletedAt: null },
-    select: { id: true },
+    select: { id: true, email: true },
   }).then((admins) => {
     const recipientIds = admins.map(a => a.id);
     if (recipientIds.length > 0) {
       notificationService.notifyTicketCreated(ticket.id, ticketNumber, recipientIds).catch(() => {});
     }
+    // Email admins about new service request
+    for (const admin of admins) {
+      if (admin.email) {
+        sendEmail({
+          to: admin.email,
+          subject: `Nouvelle demande de service ${ticketNumber}`,
+          body: `Une nouvelle demande de service a été soumise:\n\nNuméro: ${ticketNumber}\nTitre: ${data.title}\nClient: ${data.customerFirstName} ${data.customerLastName} (${data.customerEmail})`,
+        }).catch(err => logger.error({ err }, 'Failed to send service request email to admin'));
+      }
+    }
   }).catch(() => {});
+
+  // Fire-and-forget: send confirmation email to customer
+  sendEmail({
+    to: data.customerEmail,
+    subject: `Confirmation — Demande de service ${ticketNumber}`,
+    body: `Bonjour ${data.customerFirstName},\n\nVotre demande de service a bien été reçue.\n\nNuméro de billet: ${ticketNumber}\nTitre: ${data.title}\n\nNous vous contacterons sous peu. Merci de votre confiance!`,
+  }).catch(err => logger.error({ err }, 'Failed to send service request confirmation email'));
 
   return ticket;
 }

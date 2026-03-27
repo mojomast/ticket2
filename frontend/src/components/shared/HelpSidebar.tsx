@@ -4,10 +4,12 @@ import { useHelpStore } from '../../stores/help-store';
 import { useAuth } from '../../hooks/use-auth';
 import { getHelpContent } from '../../lib/help-content';
 import { cn } from '../../lib/utils';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function HelpSidebar() {
   const { isOpen, close, currentPageKey } = useHelpStore();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const helpContent = getHelpContent(currentPageKey, user?.role ?? null);
@@ -43,18 +45,18 @@ export default function HelpSidebar() {
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
         role="complementary"
-        aria-label="Panneau d'aide"
+        aria-label={t('help.panel')}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Aide</h2>
+            <h2 className="text-lg font-semibold">{t('help.title')}</h2>
           </div>
           <button
             onClick={close}
             className="rounded-md p-1 hover:bg-muted transition-colors"
-            aria-label="Fermer l'aide"
+            aria-label={t('help.close')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -114,7 +116,7 @@ export default function HelpSidebar() {
                   <div className="flex items-center gap-2 mb-2">
                     <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                     <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                      Astuces
+                      {t('help.tips')}
                     </span>
                   </div>
                   <ul className="space-y-1.5">
@@ -131,22 +133,30 @@ export default function HelpSidebar() {
                 </div>
               )}
 
-              {/* Keyboard shortcut hint */}
-              <div className="mt-6 text-xs text-muted-foreground text-center">
-                Appuyez sur <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">?</kbd> ou{' '}
-                <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">F1</kbd> pour
-                ouvrir/fermer l'aide
-              </div>
+              {/* Keyboard shortcut hint — uses placeholders KBD1/KBD2 to insert <kbd> elements */}
+              {(() => {
+                const raw = t('help.keyboardHint', { key1: '<<KBD1>>', key2: '<<KBD2>>' });
+                const parts = raw.split(/<<KBD1>>|<<KBD2>>/);
+                return (
+                  <div className="mt-6 text-xs text-muted-foreground text-center">
+                    {parts[0]}
+                    <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">?</kbd>
+                    {parts[1]}
+                    <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">F1</kbd>
+                    {parts[2]}
+                  </div>
+                );
+              })()}
             </>
           ) : (
             /* No content available */
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <HelpCircle className="h-12 w-12 text-muted-foreground/40 mb-4" />
               <p className="text-sm text-muted-foreground">
-                Aucune aide disponible pour cette page.
+                {t('help.noContent')}
               </p>
               <p className="text-xs text-muted-foreground/70 mt-1">
-                Contactez l'administrateur si vous avez besoin d'assistance.
+                {t('help.contactAdmin')}
               </p>
             </div>
           )}

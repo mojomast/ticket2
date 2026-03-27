@@ -5,10 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import type { DemoPersona } from '../../api/client';
 import { ROLE_LABELS } from '../../lib/constants';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login, demoLogin, isLoggingIn, loginError, user, isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -57,11 +59,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
       <div className="w-full max-w-md">
         <div className="bg-card border rounded-lg p-8 shadow-sm">
-          <h1 className="text-2xl font-bold text-center mb-6">Connexion</h1>
+          <h1 className="text-2xl font-bold text-center mb-6">{t('auth.login')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Courriel</label>
+              <label className="block text-sm font-medium mb-1">{t('auth.email')}</label>
               <input
                 type="email"
                 value={email}
@@ -71,7 +73,7 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Mot de passe</label>
+              <label className="block text-sm font-medium mb-1">{t('auth.password')}</label>
               <input
                 type="password"
                 value={password}
@@ -83,7 +85,7 @@ export default function Login() {
 
             {loginError && (
               <p className="text-sm text-destructive">
-                {(loginError as Error).message || 'Erreur de connexion'}
+                {(loginError as Error).message || t('auth.loginError')}
               </p>
             )}
 
@@ -92,13 +94,13 @@ export default function Login() {
               disabled={isLoggingIn}
               className="w-full py-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 disabled:opacity-50"
             >
-              {isLoggingIn ? 'Connexion...' : 'Se connecter'}
+              {isLoggingIn ? t('auth.loggingIn') : t('auth.loginButton')}
             </button>
           </form>
 
           {personas && personas.length > 0 && (
             <div className="mt-6 pt-6 border-t">
-              <p className="text-sm text-muted-foreground mb-3 text-center">Mode demo</p>
+              <p className="text-sm text-muted-foreground mb-3 text-center">{t('auth.demoMode')}</p>
               <div className="grid grid-cols-1 gap-2">
                 {(personas as DemoPersona[]).map((persona) => (
                   <button

@@ -4,11 +4,13 @@ import { api } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import { useAuthStore } from '../../stores/auth-store';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function AdminSettings() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const { locale, setLocale } = useAuthStore();
+  const { t } = useTranslation();
 
   // ---------- Form state ----------
   const [companyName, setCompanyName] = useState('');
@@ -49,10 +51,10 @@ export default function AdminSettings() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config', 'branding'] });
-      toast.success('Paramètres enregistrés');
+      toast.success(t('settings.savedSuccess'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la sauvegarde');
+      toast.error(err.message || t('settings.saveError'));
     },
   });
 
@@ -60,7 +62,7 @@ export default function AdminSettings() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <span className="text-muted-foreground text-sm">Chargement des paramètres…</span>
+        <span className="text-muted-foreground text-sm">{t('settings.loadingSettings')}</span>
       </div>
     );
   }
@@ -69,7 +71,7 @@ export default function AdminSettings() {
     return (
       <div className="flex items-center justify-center py-12">
         <span className="text-destructive text-sm">
-          Impossible de charger les paramètres. Veuillez réessayer.
+          {t('settings.loadError')}
         </span>
       </div>
     );
@@ -77,13 +79,13 @@ export default function AdminSettings() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Paramètres</h1>
+      <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
 
       {/* Language Toggle Section */}
       <div className="bg-card border rounded-lg p-6 max-w-xl">
-        <h2 className="font-semibold mb-4">Langue / Language</h2>
+        <h2 className="font-semibold mb-4">{t('settings.language')}</h2>
         <div className="flex items-center gap-3">
-          <HelpTooltip content="Changer la langue de l'interface" side="right">
+          <HelpTooltip content={t('settings.languageTooltip')} side="right">
             <div className="flex rounded-md border border-input overflow-hidden">
               <button
                 type="button"
@@ -94,7 +96,7 @@ export default function AdminSettings() {
                     : 'bg-background text-foreground hover:bg-muted'
                 }`}
               >
-                Français
+                {t('settings.french')}
               </button>
               <button
                 type="button"
@@ -105,24 +107,24 @@ export default function AdminSettings() {
                     : 'bg-background text-foreground hover:bg-muted'
                 }`}
               >
-                English
+                {t('settings.english')}
               </button>
             </div>
           </HelpTooltip>
           <span className="text-sm text-muted-foreground">
-            {locale === 'fr' ? 'Langue active : Français' : 'Active language: English'}
+            {locale === 'fr' ? t('settings.activeLangFr') : t('settings.activeLangEn')}
           </span>
         </div>
       </div>
 
       <div className="bg-card border rounded-lg p-6 max-w-xl">
-        <h2 className="font-semibold mb-4">Image de marque</h2>
+        <h2 className="font-semibold mb-4">{t('settings.branding')}</h2>
 
         <div className="space-y-4">
           {/* Company name */}
           <div>
-            <label className="block text-sm font-medium mb-1">Nom de l&apos;entreprise</label>
-            <HelpTooltip content="Ce nom apparaîtra dans les courriels, factures et l'interface client" side="right">
+            <label className="block text-sm font-medium mb-1">{t('settings.companyName')}</label>
+            <HelpTooltip content={t('settings.companyNameTooltip')} side="right">
               <input
                 type="text"
                 value={companyName}
@@ -135,8 +137,8 @@ export default function AdminSettings() {
 
           {/* Primary colour */}
           <div>
-            <label className="block text-sm font-medium mb-1">Couleur principale</label>
-            <HelpTooltip content="Couleur utilisée pour les boutons, liens et accents dans toute l'application" side="right">
+            <label className="block text-sm font-medium mb-1">{t('settings.primaryColor')}</label>
+            <HelpTooltip content={t('settings.primaryColorTooltip')} side="right">
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -157,8 +159,8 @@ export default function AdminSettings() {
 
           {/* Logo URL */}
           <div>
-            <label className="block text-sm font-medium mb-1">URL du logo</label>
-            <HelpTooltip content="Lien vers l'image du logo (format PNG ou SVG recommandé)" side="right">
+            <label className="block text-sm font-medium mb-1">{t('settings.logoUrl')}</label>
+            <HelpTooltip content={t('settings.logoUrlTooltip')} side="right">
               <input
                 type="url"
                 value={logoUrl}
@@ -171,7 +173,7 @@ export default function AdminSettings() {
 
           {/* Phone */}
           <div>
-            <label className="block text-sm font-medium mb-1">Téléphone</label>
+            <label className="block text-sm font-medium mb-1">{t('settings.phone')}</label>
             <input
               type="tel"
               value={phone}
@@ -183,7 +185,7 @@ export default function AdminSettings() {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium mb-1">Courriel</label>
+            <label className="block text-sm font-medium mb-1">{t('settings.email')}</label>
             <input
               type="email"
               value={email}
@@ -195,7 +197,7 @@ export default function AdminSettings() {
 
           {/* Address */}
           <div>
-            <label className="block text-sm font-medium mb-1">Adresse</label>
+            <label className="block text-sm font-medium mb-1">{t('settings.address')}</label>
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -206,13 +208,13 @@ export default function AdminSettings() {
           </div>
 
           {/* Save button */}
-          <HelpTooltip content="Enregistrer tous les paramètres d'image de marque" side="right">
+          <HelpTooltip content={t('settings.saveTooltip')} side="right">
             <button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
             >
-              {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+              {saveMutation.isPending ? t('common.saving') : t('common.save')}
             </button>
           </HelpTooltip>
         </div>

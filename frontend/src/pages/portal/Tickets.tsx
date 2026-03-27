@@ -11,6 +11,7 @@ import {
   SERVICE_MODE_LABELS,
 } from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 /** Shape of the "New Ticket" form data. */
 interface CreateTicketForm {
@@ -29,16 +30,23 @@ const EMPTY_FORM: CreateTicketForm = {
   serviceMode: 'EN_CUBICULE',
 };
 
+const PAGE_LIMIT = 25;
+
 export default function PortalTickets() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const toast = useToast();
 
-  // ─── Ticket list query ───
-  const { data, isLoading } = useQuery<Ticket[]>({
-    queryKey: ['tickets'],
-    queryFn: () => api.tickets.list(),
+  // ─── Pagination state ───
+  const [page, setPage] = useState(1);
+
+  // ─── Ticket list query (paginated) ───
+  const { data, isLoading } = useQuery({
+    queryKey: ['tickets', { page, limit: PAGE_LIMIT }],
+    queryFn: () => api.tickets.listPaginated({ page, limit: PAGE_LIMIT }),
   });
-  const tickets: Ticket[] = data ?? [];
+  const tickets: Ticket[] = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   // ─── Create‑form visibility & field state ───
   const [showForm, setShowForm] = useState(false);
@@ -49,12 +57,12 @@ export default function PortalTickets() {
     mutationFn: (payload: CreateTicketForm) => api.tickets.create(payload as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      toast.success('Billet créé avec succès');
+      toast.success(t('ticket.createdSuccess'));
       setForm(EMPTY_FORM);
       setShowForm(false);
     },
     onError: () => {
-      toast.error('Erreur lors de la création du billet');
+      toast.error(t('ticket.createError'));
     },
   });
 
@@ -72,14 +80,14 @@ export default function PortalTickets() {
     <div className="space-y-4">
       {/* ─── Header ─── */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Mes billets</h1>
-        <HelpTooltip content="Créer une nouvelle demande de service" side="left">
+        <h1 className="text-2xl font-bold">{t('portal.tickets.title')}</h1>
+        <HelpTooltip content={t('portal.tickets.newTooltip')} side="left">
           <button
             type="button"
             onClick={() => setShowForm((v) => !v)}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
-            {showForm ? 'Annuler' : '+ Nouveau billet'}
+            {showForm ? t('common.cancel') : t('ticket.newButton')}
           </button>
         </HelpTooltip>
       </div>
@@ -90,12 +98,12 @@ export default function PortalTickets() {
           onSubmit={handleSubmit}
           className="bg-card border rounded-lg p-6 space-y-4"
         >
-          <h2 className="text-lg font-semibold">Nouveau billet</h2>
+          <h2 className="text-lg font-semibold">{t('ticket.new')}</h2>
 
           {/* Title */}
           <div className="space-y-1">
             <label htmlFor="ticket-title" className="text-sm font-medium">
-              Titre
+              {t('ticket.title')}
             </label>
             <input
               id="ticket-title"
@@ -103,7 +111,7 @@ export default function PortalTickets() {
               required
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
-              placeholder="Décrivez brièvement le problème"
+              placeholder={t('ticket.titlePlaceholder')}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -111,7 +119,7 @@ export default function PortalTickets() {
           {/* Description */}
           <div className="space-y-1">
             <label htmlFor="ticket-description" className="text-sm font-medium">
-              Description
+              {t('ticket.description')}
             </label>
             <textarea
               id="ticket-description"
@@ -119,7 +127,7 @@ export default function PortalTickets() {
               rows={4}
               value={form.description}
               onChange={(e) => updateField('description', e.target.value)}
-              placeholder="Fournissez plus de détails sur votre demande…"
+              placeholder={t('ticket.descriptionPlaceholderPortal')}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
             />
           </div>
@@ -129,7 +137,7 @@ export default function PortalTickets() {
             {/* Priority */}
             <div className="space-y-1">
               <label htmlFor="ticket-priority" className="text-sm font-medium">
-                Priorité
+                {t('ticket.priority')}
               </label>
               <select
                 id="ticket-priority"
@@ -148,7 +156,7 @@ export default function PortalTickets() {
             {/* Service Category */}
             <div className="space-y-1">
               <label htmlFor="ticket-category" className="text-sm font-medium">
-                Catégorie de service
+                {t('portal.tickets.serviceCategory')}
               </label>
               <select
                 id="ticket-category"
@@ -167,7 +175,7 @@ export default function PortalTickets() {
             {/* Service Mode */}
             <div className="space-y-1">
               <label htmlFor="ticket-mode" className="text-sm font-medium">
-                Mode de service
+                {t('ticket.serviceMode')}
               </label>
               <select
                 id="ticket-mode"
@@ -186,13 +194,13 @@ export default function PortalTickets() {
 
           {/* Submit */}
           <div className="flex justify-end">
-            <HelpTooltip content="Soumettre votre demande — un technicien sera assigné" side="left">
+            <HelpTooltip content={t('portal.tickets.submitTooltip')} side="left">
               <button
                 type="submit"
                 disabled={createMutation.isPending}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {createMutation.isPending ? 'Création…' : 'Créer le billet'}
+                {createMutation.isPending ? t('ticket.creating') : t('ticket.createButton')}
               </button>
             </HelpTooltip>
           </div>
@@ -202,40 +210,65 @@ export default function PortalTickets() {
       {/* ─── Ticket list ─── */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Chargement...
+          {t('common.loading')}
         </div>
       ) : (
         <div className="bg-card border rounded-lg divide-y">
-          {tickets.map((t: Ticket) => (
+          {tickets.map((tk: Ticket) => (
             <Link
-              key={t.id}
-              to={`/portail/billets/${t.id}`}
+              key={tk.id}
+              to={`/portail/billets/${tk.id}`}
               className="p-4 flex justify-between items-center hover:bg-muted/30 block"
             >
               <div>
                 <span className="text-sm font-mono text-muted-foreground mr-2">
-                  {t.ticketNumber}
+                  {tk.ticketNumber}
                 </span>
-                <span className="text-sm font-medium">{t.title}</span>
+                <span className="text-sm font-medium">{tk.title}</span>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {formatDate(t.createdAt)}
+                  {formatDate(tk.createdAt)}
                 </p>
               </div>
               <div className="flex gap-2">
-                <HelpTooltip content="Statut actuel de votre demande" side="left">
-                  <span><StatusBadge status={t.status} /></span>
+                <HelpTooltip content={t('portal.tickets.statusTooltip')} side="left">
+                  <span><StatusBadge status={tk.status} /></span>
                 </HelpTooltip>
-                <HelpTooltip content="Niveau de priorité de la demande" side="left">
-                  <span><StatusBadge status={t.priority} type="priority" /></span>
+                <HelpTooltip content={t('portal.tickets.priorityTooltip')} side="left">
+                  <span><StatusBadge status={tk.priority} type="priority" /></span>
                 </HelpTooltip>
               </div>
             </Link>
           ))}
           {tickets.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
-              Aucun billet
+              {t('ticket.noTickets')}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ─── Pagination controls ─── */}
+      {!isLoading && totalPages > 0 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            {t('common.pageOf', { page: String(page), total: String(totalPages) })}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('common.previous_arrow')}
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages}
+              className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('common.next_arrow')}
+            </button>
+          </div>
         </div>
       )}
     </div>

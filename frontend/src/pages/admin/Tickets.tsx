@@ -6,6 +6,7 @@ import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { formatDate } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
+import { useTranslation } from '../../lib/i18n/hook';
 import {
   STATUS_LABELS,
   PRIORITY_LABELS,
@@ -43,13 +44,15 @@ export default function AdminTickets() {
 
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
 
   const { data, isLoading } = useQuery({
     queryKey: ['tickets', { ...filters, search, page, limit: PAGE_LIMIT }],
-    queryFn: () => api.tickets.list({ ...filters, search, page, limit: PAGE_LIMIT }),
+    queryFn: () => api.tickets.listPaginated({ ...filters, search, page, limit: PAGE_LIMIT }),
   });
 
-  const tickets = data as any[] || [];
+  const tickets = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   // Fetch customers for the create-ticket dropdown
   const { data: customers = [] } = useQuery({
@@ -64,12 +67,12 @@ export default function AdminTickets() {
       api.tickets.create(payload as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      toast.success('Billet créé avec succès');
+      toast.success(t('ticket.createdSuccess'));
       setForm(EMPTY_FORM);
       setShowForm(false);
     },
     onError: () => {
-      toast.error('Erreur lors de la création du billet');
+      toast.error(t('ticket.createError'));
     },
   });
 
@@ -80,26 +83,23 @@ export default function AdminTickets() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.customerId) {
-      toast.error('Veuillez sélectionner un client');
+      toast.error(t('ticket.selectClientError'));
       return;
     }
     createMutation.mutate(form);
   };
 
-  // Determine if there may be more pages
-  const hasMore = tickets.length === PAGE_LIMIT;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Billets</h1>
-        <HelpTooltip content="Créer un nouveau billet pour un client" side="left">
+        <h1 className="text-2xl font-bold">{t('ticket.list')}</h1>
+        <HelpTooltip content={t('admin.tickets.newTooltip')} side="left">
           <button
             type="button"
             onClick={() => setShowForm((v) => !v)}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors"
           >
-            {showForm ? 'Annuler' : '+ Nouveau billet'}
+            {showForm ? t('common.cancel') : t('ticket.newButton')}
           </button>
         </HelpTooltip>
       </div>
@@ -110,12 +110,12 @@ export default function AdminTickets() {
           onSubmit={handleSubmit}
           className="bg-card border rounded-lg p-6 space-y-4"
         >
-          <h2 className="text-lg font-semibold">Nouveau billet</h2>
+          <h2 className="text-lg font-semibold">{t('ticket.new')}</h2>
 
           {/* Customer select */}
           <div className="space-y-1">
             <label htmlFor="admin-ticket-customer" className="text-sm font-medium">
-              Client
+              {t('ticket.customer')}
             </label>
             <select
               id="admin-ticket-customer"
@@ -124,7 +124,7 @@ export default function AdminTickets() {
               required
               className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">— Sélectionner un client —</option>
+              <option value="">{t('ticket.selectClient')}</option>
               {(customers as any[]).map((c: any) => (
                 <option key={c.id} value={c.id}>
                   {c.firstName} {c.lastName} ({c.email})
@@ -136,7 +136,7 @@ export default function AdminTickets() {
           {/* Title */}
           <div className="space-y-1">
             <label htmlFor="admin-ticket-title" className="text-sm font-medium">
-              Titre
+              {t('ticket.title')}
             </label>
             <input
               id="admin-ticket-title"
@@ -144,7 +144,7 @@ export default function AdminTickets() {
               required
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
-              placeholder="Décrivez brièvement le problème"
+              placeholder={t('ticket.titlePlaceholder')}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -152,7 +152,7 @@ export default function AdminTickets() {
           {/* Description */}
           <div className="space-y-1">
             <label htmlFor="admin-ticket-description" className="text-sm font-medium">
-              Description
+              {t('ticket.description')}
             </label>
             <textarea
               id="admin-ticket-description"
@@ -160,7 +160,7 @@ export default function AdminTickets() {
               rows={4}
               value={form.description}
               onChange={(e) => updateField('description', e.target.value)}
-              placeholder="Fournissez plus de détails sur la demande…"
+              placeholder={t('ticket.descriptionPlaceholder')}
               className="w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
             />
           </div>
@@ -169,7 +169,7 @@ export default function AdminTickets() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
               <label htmlFor="admin-ticket-priority" className="text-sm font-medium">
-                Priorité
+                {t('ticket.priority')}
               </label>
               <select
                 id="admin-ticket-priority"
@@ -185,7 +185,7 @@ export default function AdminTickets() {
 
             <div className="space-y-1">
               <label htmlFor="admin-ticket-category" className="text-sm font-medium">
-                Catégorie
+                {t('ticket.category')}
               </label>
               <select
                 id="admin-ticket-category"
@@ -201,7 +201,7 @@ export default function AdminTickets() {
 
             <div className="space-y-1">
               <label htmlFor="admin-ticket-mode" className="text-sm font-medium">
-                Mode
+                {t('ticket.mode')}
               </label>
               <select
                 id="admin-ticket-mode"
@@ -218,13 +218,13 @@ export default function AdminTickets() {
 
           {/* Submit */}
           <div className="flex justify-end">
-            <HelpTooltip content="Créer le billet pour ce client" side="left">
+            <HelpTooltip content={t('admin.tickets.createTooltip')} side="left">
               <button
                 type="submit"
                 disabled={createMutation.isPending}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {createMutation.isPending ? 'Création…' : 'Créer le billet'}
+                {createMutation.isPending ? t('ticket.creating') : t('ticket.createButton')}
               </button>
             </HelpTooltip>
           </div>
@@ -232,32 +232,32 @@ export default function AdminTickets() {
       )}
 
       <div className="flex gap-4">
-        <HelpTooltip content="Rechercher par numéro de billet, titre ou nom du client" side="bottom">
+        <HelpTooltip content={t('admin.tickets.searchTooltip')} side="bottom">
           <input
             type="text"
-            placeholder="Rechercher..."
+            placeholder={t('common.searchPlaceholder')}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="flex-1 max-w-sm rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </HelpTooltip>
-        <HelpTooltip content="Filtrer les billets par leur statut actuel" side="bottom">
+        <HelpTooltip content={t('admin.tickets.filterStatusTooltip')} side="bottom">
           <select
-            onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+            onChange={(e) => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1); }}
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="">Tous les statuts</option>
+            <option value="">{t('ticket.allStatuses')}</option>
             {Object.entries(STATUS_LABELS).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
         </HelpTooltip>
-        <HelpTooltip content="Filtrer les billets par niveau de priorité" side="bottom">
+        <HelpTooltip content={t('admin.tickets.filterPriorityTooltip')} side="bottom">
           <select
-            onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
+            onChange={(e) => { setFilters(f => ({ ...f, priority: e.target.value })); setPage(1); }}
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="">Toutes les priorites</option>
+            <option value="">{t('ticket.allPriorities')}</option>
             {Object.entries(PRIORITY_LABELS).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
             ))}
@@ -266,25 +266,25 @@ export default function AdminTickets() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+        <div className="text-center py-8 text-muted-foreground">{t('common.loading')}</div>
       ) : (
         <div className="bg-card border rounded-lg overflow-hidden">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-3 text-sm font-medium">#</th>
-                <th className="text-left p-3 text-sm font-medium">Titre</th>
-                <th className="text-left p-3 text-sm font-medium">Client</th>
-                <HelpTooltip content="Technicien assigné au billet" side="bottom">
-                  <th className="text-left p-3 text-sm font-medium">Technicien</th>
+                <th className="text-left p-3 text-sm font-medium">{t('ticket.title')}</th>
+                <th className="text-left p-3 text-sm font-medium">{t('ticket.customer')}</th>
+                <HelpTooltip content={t('admin.tickets.technicianTooltip')} side="bottom">
+                  <th className="text-left p-3 text-sm font-medium">{t('ticket.technician')}</th>
                 </HelpTooltip>
-                <HelpTooltip content="Statut actuel dans le cycle de vie du billet" side="bottom">
-                  <th className="text-left p-3 text-sm font-medium">Statut</th>
+                <HelpTooltip content={t('admin.tickets.statusTooltip')} side="bottom">
+                  <th className="text-left p-3 text-sm font-medium">{t('ticket.status')}</th>
                 </HelpTooltip>
-                <HelpTooltip content="Niveau d'urgence du billet" side="bottom">
-                  <th className="text-left p-3 text-sm font-medium">Priorite</th>
+                <HelpTooltip content={t('admin.tickets.priorityTooltip')} side="bottom">
+                  <th className="text-left p-3 text-sm font-medium">{t('ticket.priority')}</th>
                 </HelpTooltip>
-                <th className="text-left p-3 text-sm font-medium">Date</th>
+                <th className="text-left p-3 text-sm font-medium">{t('common.date')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -310,17 +310,16 @@ export default function AdminTickets() {
             </tbody>
           </table>
           {tickets.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground">Aucun billet</div>
+            <div className="p-8 text-center text-muted-foreground">{t('ticket.noTickets')}</div>
           )}
         </div>
       )}
 
       {/* ─── Pagination controls ─── */}
-      {!isLoading && (
+      {!isLoading && totalPages > 0 && (
         <div className="flex items-center justify-between pt-2">
           <p className="text-sm text-muted-foreground">
-            Page {page}
-            {tickets.length > 0 && ` · ${tickets.length} billet${tickets.length > 1 ? 's' : ''} affiché${tickets.length > 1 ? 's' : ''}`}
+            {t('common.pageOf', { page: String(page), total: String(totalPages) })}
           </p>
           <div className="flex gap-2">
             <button
@@ -328,14 +327,14 @@ export default function AdminTickets() {
               disabled={page <= 1}
               className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ← Précédent
+              {t('common.previous_arrow')}
             </button>
             <button
               onClick={() => setPage((p) => p + 1)}
-              disabled={!hasMore}
+              disabled={page >= totalPages}
               className="px-3 py-1.5 text-sm border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Suivant →
+              {t('common.next_arrow')}
             </button>
           </div>
         </div>

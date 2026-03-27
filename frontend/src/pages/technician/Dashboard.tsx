@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/use-auth';
 import { Link } from 'react-router-dom';
 import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 /** Active (non-terminal) ticket statuses */
 const ACTIVE_STATUSES = [
@@ -21,6 +22,7 @@ function getTodayRange() {
 
 export default function TechDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const today = useMemo(() => getTodayRange(), []);
 
   // Fetch assigned tickets (up to 100)
@@ -42,8 +44,8 @@ export default function TechDashboard() {
   });
 
   // Stats
-  const activeTickets = tickets.filter((t) => ACTIVE_STATUSES.includes(t.status));
-  const enCoursCount = tickets.filter((t) => t.status === 'EN_COURS').length;
+  const activeTickets = tickets.filter((tk) => ACTIVE_STATUSES.includes(tk.status));
+  const enCoursCount = tickets.filter((tk) => tk.status === 'EN_COURS').length;
   const todayAppointments = appointments.length;
   const activeWoCount = (workOrderStats as any)?.activeCount ?? 0;
 
@@ -58,38 +60,38 @@ export default function TechDashboard() {
 
   const stats = [
     {
-      label: 'Tickets assignés',
+      label: t('tech.dashboard.assignedTickets'),
       count: activeTickets.length,
       color: 'text-blue-600',
       icon: '📋',
-      tooltip: 'Nombre de billets actifs qui vous sont assignés',
+      tooltip: t('tech.dashboard.assignedTooltip'),
     },
     {
-      label: 'En cours',
+      label: t('tech.dashboard.inProgress'),
       count: enCoursCount,
       color: 'text-purple-600',
       icon: '⚙️',
-      tooltip: 'Billets actuellement en cours de traitement',
+      tooltip: t('tech.dashboard.inProgressTooltip'),
     },
     {
-      label: "RDV aujourd'hui",
+      label: t('tech.dashboard.todayAppointments'),
       count: todayAppointments,
       color: 'text-indigo-600',
       icon: '📅',
-      tooltip: 'Rendez-vous planifiés pour aujourd\'hui',
+      tooltip: t('tech.dashboard.todayAppointmentsTooltip'),
     },
     {
-      label: 'Bons de travail actifs',
+      label: t('tech.dashboard.activeWorkOrders'),
       count: activeWoCount,
       color: 'text-teal-600',
       icon: '🔧',
-      tooltip: 'Bons de travail en cours (non terminés)',
+      tooltip: t('tech.dashboard.activeWorkOrdersTooltip'),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Bienvenue, {user?.firstName}</h1>
+      <h1 className="text-2xl font-bold">{t('dashboard.welcome', { name: user?.firstName ?? '' })}</h1>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -111,40 +113,40 @@ export default function TechDashboard() {
       {/* Ticket List */}
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">Mes billets</h2>
-          <HelpTooltip content="Voir la liste complète de vos billets" side="left">
+          <h2 className="font-semibold">{t('tech.dashboard.myTickets')}</h2>
+          <HelpTooltip content={t('tech.dashboard.viewAllTooltip')} side="left">
             <Link to="/technicien/billets" className="text-sm text-primary hover:underline">
-              Voir tout
+              {t('tech.dashboard.viewAll')}
             </Link>
           </HelpTooltip>
         </div>
         <div className="divide-y">
           {recentTickets.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground text-sm">
-              Aucun billet assigné
+              {t('ticket.noAssigned')}
             </div>
           ) : (
-            recentTickets.map((t) => (
+            recentTickets.map((tk) => (
               <Link
-                key={t.id}
-                to={`/technicien/billets/${t.id}`}
+                key={tk.id}
+                to={`/technicien/billets/${tk.id}`}
                 className="p-4 flex justify-between hover:bg-muted/30 block"
               >
                 <div>
                   <span className="text-sm font-mono text-muted-foreground mr-2">
-                    {t.ticketNumber}
+                    {tk.ticketNumber}
                   </span>
-                  <span className="text-sm">{t.title}</span>
+                  <span className="text-sm">{tk.title}</span>
                 </div>
                 <div className="flex gap-2">
-                  <HelpTooltip content="Statut actuel du billet" side="left">
+                  <HelpTooltip content={t('tech.dashboard.statusTooltip')} side="left">
                     <span>
-                      <StatusBadge status={t.status} />
+                      <StatusBadge status={tk.status} />
                     </span>
                   </HelpTooltip>
-                  <HelpTooltip content="Niveau de priorité du billet" side="left">
+                  <HelpTooltip content={t('tech.dashboard.priorityTooltip')} side="left">
                     <span>
-                      <StatusBadge status={t.priority} type="priority" />
+                      <StatusBadge status={tk.priority} type="priority" />
                     </span>
                   </HelpTooltip>
                 </div>

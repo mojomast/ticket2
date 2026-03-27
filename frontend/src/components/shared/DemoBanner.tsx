@@ -5,20 +5,22 @@ import { api } from '../../api/client';
 import { ROLE_LABELS } from '../../lib/constants';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from './HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function DemoBanner() {
   const { user, demoLogin } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const resetMutation = useMutation({
     mutationFn: () => api.demo.reset(),
     onSuccess: () => {
       queryClient.invalidateQueries();
-      toast.success('Donnees demo reinitialisees');
+      toast.success(t('demo.resetSuccess'));
     },
-    onError: () => toast.error('Erreur lors de la reinitialisation'),
+    onError: () => toast.error(t('demo.resetError')),
   });
 
   const handlePersonaSwitch = async (email: string) => {
@@ -36,7 +38,7 @@ export default function DemoBanner() {
           break;
       }
     } catch {
-      toast.error('Impossible de se connecter avec ce compte demo.');
+      toast.error(t('demo.loginError'));
     }
   };
 
@@ -61,13 +63,13 @@ export default function DemoBanner() {
     <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
       <div className="flex items-center gap-4 max-w-7xl mx-auto">
         <span className="text-xs font-medium text-amber-800 whitespace-nowrap">
-          MODE DEMO
+          {t('demo.mode')}
         </span>
 
         {/* Admin & Technician buttons */}
         <div className="flex gap-2 flex-wrap">
           {[...admins, ...technicians].map((persona) => (
-            <HelpTooltip key={persona.id} content={`Se connecter en tant que ${persona.firstName} (${ROLE_LABELS[persona.role] || persona.role})`} side="bottom">
+            <HelpTooltip key={persona.id} content={t('demo.loginAs', { name: persona.firstName, role: ROLE_LABELS[persona.role] || persona.role })} side="bottom">
               <button
                 onClick={() => handlePersonaSwitch(persona.email)}
                 className={`text-xs px-2 py-1 rounded-full border transition-colors ${
@@ -83,7 +85,7 @@ export default function DemoBanner() {
 
           {/* Customer dropdown */}
           {customers.length > 0 && (
-            <HelpTooltip content="Changer d'utilisateur client pour tester le portail" side="bottom">
+            <HelpTooltip content={t('demo.switchCustomerTooltip')} side="bottom">
               <select
                 value={currentCustomerEmail}
                 onChange={(e) => {
@@ -96,7 +98,7 @@ export default function DemoBanner() {
                 }`}
               >
                 <option value="">
-                  Clients ({customers.length})
+                  {t('demo.customers', { count: customers.length })}
                 </option>
                 {customers.map((persona) => (
                   <option key={persona.id} value={persona.email}>
@@ -110,13 +112,13 @@ export default function DemoBanner() {
 
         <div className="ml-auto">
           {user?.role === 'ADMIN' && (
-            <HelpTooltip content="Réinitialiser toutes les données de démonstration à leur état initial" side="bottom">
+            <HelpTooltip content={t('demo.resetTooltip')} side="bottom">
               <button
                 onClick={() => resetMutation.mutate()}
                 disabled={resetMutation.isPending}
                 className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
               >
-                {resetMutation.isPending ? 'Reinitialisation...' : 'Reinitialiser'}
+                {resetMutation.isPending ? t('demo.resetting') : t('demo.reset')}
               </button>
             </HelpTooltip>
           )}

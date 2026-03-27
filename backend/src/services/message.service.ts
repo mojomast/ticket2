@@ -4,6 +4,8 @@ import type { UserRole } from '@prisma/client';
 import type { CreateMessageInput, UpdateMessageInput } from '../validations/message.js';
 import { getPagination, buildPaginatedResponse } from '../types/index.js';
 import * as notificationService from './notification.service.js';
+import { sendEmail } from './email.service.js';
+import { logger } from '../lib/logger.js';
 
 const MESSAGE_INCLUDE = {
   author: {
@@ -68,6 +70,35 @@ export async function createMessage(ticketId: string, data: CreateMessageInput, 
     if (ticket.technicianId && ticket.technicianId !== userId) recipientIds.push(ticket.technicianId);
     if (recipientIds.length > 0) {
       notificationService.notifyNewMessage(ticketId, ticket.ticketNumber, recipientIds).catch(() => {});
+    }
+
+    // Fire-and-forget: email the other party about the new message
+    // If customer wrote → email tech; if tech/admin wrote → email customer
+    if (ticket.customerId && ticket.customerId !== userId) {
+      // Tech/admin wrote, email the customer
+      prisma.user.findUnique({ where: { id: ticket.customerId }, select: { email: true, firstName: true } })
+        .then(customer => {
+          if (customer?.email) {
+            sendEmail({
+              to: customer.email,
+              subject: `Nouveau message — Billet ${ticket.ticketNumber}`,
+              body: `Bonjour ${customer.firstName},\n\nUn nouveau message a été ajouté à votre billet ${ticket.ticketNumber}.\n\nVeuillez vous connecter pour le consulter.`,
+            }).catch(err => logger.error({ err }, 'Failed to send new message email to customer'));
+          }
+        }).catch(() => {});
+    }
+    if (ticket.technicianId && ticket.technicianId !== userId) {
+      // Customer or another user wrote, email the assigned tech
+      prisma.user.findUnique({ where: { id: ticket.technicianId }, select: { email: true, firstName: true } })
+        .then(tech => {
+          if (tech?.email) {
+            sendEmail({
+              to: tech.email,
+              subject: `Nouveau message — Billet ${ticket.ticketNumber}`,
+              body: `Bonjour ${tech.firstName},\n\nUn nouveau message a été ajouté au billet ${ticket.ticketNumber} qui vous est assigné.\n\nVeuillez vous connecter pour le consulter.`,
+            }).catch(err => logger.error({ err }, 'Failed to send new message email to technician'));
+          }
+        }).catch(() => {});
     }
   } else if (ticket.technicianId && ticket.technicianId !== userId) {
     // Internal notes: only notify the technician (not the customer)

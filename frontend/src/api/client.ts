@@ -31,6 +31,29 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return json.data;
 }
 
+/** Like request(), but returns the full paginated envelope (data + pagination metadata). */
+async function requestPaginated<T>(path: string, options?: RequestInit): Promise<PaginatedResponse<T>> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+    ...options,
+  });
+
+  const json = await res.json();
+
+  if (json.error) {
+    throw new ApiError(json.error.message, json.error.code, res.status);
+  }
+
+  return {
+    data: json.data,
+    pagination: json.pagination,
+  };
+}
+
 function qs(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -253,6 +276,21 @@ export interface WorkOrderStats {
   overdue: number;
 }
 
+// ─── Attachment Types ───
+
+export interface Attachment {
+  id: string;
+  ticketId: string;
+  messageId?: string | null;
+  uploadedBy: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  storagePath: string;
+  uploader: Pick<User, 'id' | 'firstName' | 'lastName' | 'role' | 'email'>;
+  createdAt: string;
+}
+
 export const api = {
   auth: {
     login: (data: LoginInput) =>
@@ -267,6 +305,8 @@ export const api = {
   tickets: {
     list: (params?: Record<string, unknown>) =>
       request<Ticket[]>(`/api/tickets${params ? `?${qs(params)}` : ''}`),
+    listPaginated: (params?: Record<string, unknown>) =>
+      requestPaginated<Ticket>(`/api/tickets${params ? `?${qs(params)}` : ''}`),
     get: (id: string) => request<Ticket>(`/api/tickets/${id}`),
     create: (data: Record<string, unknown>) =>
       request<Ticket>('/api/tickets', { method: 'POST', body: JSON.stringify(data) }),
@@ -364,6 +404,8 @@ export const api = {
     users: {
       list: (params?: Record<string, unknown>) =>
         request<User[]>(`/api/admin/users${params ? `?${qs(params)}` : ''}`),
+      listPaginated: (params?: Record<string, unknown>) =>
+        requestPaginated<User>(`/api/admin/users${params ? `?${qs(params)}` : ''}`),
       get: (id: string) => request<User>(`/api/admin/users/${id}`),
       create: (data: Record<string, unknown>) =>
         request<User>('/api/admin/users', { method: 'POST', body: JSON.stringify(data) }),
@@ -404,6 +446,8 @@ export const api = {
     profile: () => request<User>('/api/users/profile'),
     updateProfile: (data: Record<string, unknown>) =>
       request<User>('/api/users/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+    changePassword: (data: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+      request<{ message: string }>('/api/users/profile/password', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   demo: {
@@ -413,6 +457,32 @@ export const api = {
 
   serviceRequest: {
     create: (data: any) => request<Ticket>('/api/service-request', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
+  attachments: {
+    upload: async (ticketId: string, file: File): Promise<Attachment> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${BASE_URL}/api/tickets/${ticketId}/attachments`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new ApiError(
+          json.error?.message || 'Erreur lors du téléversement',
+          json.error?.code || 'UPLOAD_ERROR',
+          res.status,
+        );
+      }
+      return json.data;
+    },
+    list: (ticketId: string) =>
+      request<Attachment[]>(`/api/tickets/${ticketId}/attachments`),
+    delete: (id: string) =>
+      request<{ message: string }>(`/api/attachments/${id}`, { method: 'DELETE' }),
+    downloadUrl: (id: string) => `${BASE_URL}/api/attachments/${id}/download`,
   },
 
   config: {

@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/use-auth';
 import { Link } from 'react-router-dom';
 import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 /** Active (non-terminal) ticket statuses */
 const ACTIVE_STATUSES = [
@@ -17,6 +18,7 @@ const AWAITING_RESPONSE = ['EN_ATTENTE_APPROBATION', 'EN_ATTENTE_REPONSE_CLIENT'
 
 export default function PortalDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Fetch customer tickets (up to 50)
   const { data: tickets = [] } = useQuery<Ticket[]>({
@@ -31,8 +33,8 @@ export default function PortalDashboard() {
   });
 
   // Stats
-  const activeTickets = tickets.filter((t) => ACTIVE_STATUSES.includes(t.status));
-  const awaitingCount = tickets.filter((t) => AWAITING_RESPONSE.includes(t.status)).length;
+  const activeTickets = tickets.filter((tk) => ACTIVE_STATUSES.includes(tk.status));
+  const awaitingCount = tickets.filter((tk) => AWAITING_RESPONSE.includes(tk.status)).length;
   const activeWoCount = (workOrderStats as any)?.activeCount ?? 0;
 
   // Recent tickets
@@ -46,31 +48,31 @@ export default function PortalDashboard() {
 
   const stats = [
     {
-      label: 'Billets actifs',
+      label: t('portal.dashboard.activeTickets'),
       count: activeTickets.length,
       color: 'text-blue-600',
       icon: '📋',
-      tooltip: 'Nombre de billets en cours de traitement',
+      tooltip: t('portal.dashboard.activeTooltip'),
     },
     {
-      label: 'En attente',
+      label: t('portal.dashboard.waiting'),
       count: awaitingCount,
       color: 'text-yellow-600',
       icon: '⏳',
-      tooltip: 'Billets en attente de votre réponse ou approbation',
+      tooltip: t('portal.dashboard.waitingTooltip'),
     },
     {
-      label: 'Bons de travail actifs',
+      label: t('portal.dashboard.activeWorkOrders'),
       count: activeWoCount,
       color: 'text-teal-600',
       icon: '🔧',
-      tooltip: 'Bons de travail en cours pour vos appareils',
+      tooltip: t('portal.dashboard.activeWoTooltip'),
     },
   ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Bienvenue, {user?.firstName}</h1>
+      <h1 className="text-2xl font-bold">{t('dashboard.welcome', { name: user?.firstName ?? '' })}</h1>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -92,34 +94,34 @@ export default function PortalDashboard() {
       {/* Recent Tickets */}
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex justify-between">
-          <h2 className="font-semibold">Mes billets recents</h2>
-          <HelpTooltip content="Voir la liste complète de vos billets" side="left">
+          <h2 className="font-semibold">{t('ticket.myRecentTickets')}</h2>
+          <HelpTooltip content={t('portal.dashboard.viewAllTooltip')} side="left">
             <Link to="/portail/billets" className="text-sm text-primary hover:underline">
-              Voir tout
+              {t('common.viewAllFull')}
             </Link>
           </HelpTooltip>
         </div>
         <div className="divide-y">
           {recentTickets.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground text-sm">
-              Aucun billet pour le moment. Créez une demande de service pour commencer.
+              {t('ticket.noTicketsCreate')}
             </div>
           ) : (
-            recentTickets.map((t) => (
+            recentTickets.map((tk) => (
               <Link
-                key={t.id}
-                to={`/portail/billets/${t.id}`}
+                key={tk.id}
+                to={`/portail/billets/${tk.id}`}
                 className="p-4 flex justify-between hover:bg-muted/30 block"
               >
                 <div>
                   <span className="text-sm font-mono text-muted-foreground mr-2">
-                    {t.ticketNumber}
+                    {tk.ticketNumber}
                   </span>
-                  <span className="text-sm">{t.title}</span>
+                  <span className="text-sm">{tk.title}</span>
                 </div>
-                <HelpTooltip content="Statut actuel de votre demande" side="left">
+                <HelpTooltip content={t('portal.dashboard.statusTooltip')} side="left">
                   <span>
-                    <StatusBadge status={t.status} />
+                    <StatusBadge status={tk.status} />
                   </span>
                 </HelpTooltip>
               </Link>

@@ -1,56 +1,7 @@
 import { STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, APPOINTMENT_STATUS_COLORS, APPOINTMENT_STATUS_LABELS, PROPOSAL_STATUS_COLORS, PROPOSAL_STATUS_LABELS, WO_STATUS_COLORS, WO_STATUS_LABELS } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import HelpTooltip from './HelpTooltip';
-
-// French descriptions for each status type and value (keys match the actual French enum values)
-const STATUS_DESCRIPTIONS: Record<string, Record<string, string>> = {
-  ticket: {
-    NOUVELLE: 'Nouveau billet en attente de prise en charge',
-    EN_ATTENTE_APPROBATION: 'Devis envoyé — en attente d\'approbation du client',
-    EN_ATTENTE_REPONSE_CLIENT: 'En attente d\'une réponse du client',
-    APPROUVEE: 'Devis approuvé — billet prêt à être planifié',
-    PLANIFIEE: 'Rendez-vous planifié pour l\'intervention',
-    EN_COURS: 'Un technicien travaille activement sur ce billet',
-    BLOCAGE: 'Billet bloqué — en attente de résolution d\'un obstacle',
-    TERMINEE: 'Le travail est terminé — en attente de fermeture',
-    FERMEE: 'Billet fermé définitivement',
-    ANNULEE: 'Billet annulé',
-  },
-  priority: {
-    BASSE: 'Priorité basse — traitement dans les délais normaux',
-    NORMALE: 'Priorité normale — traitement dans un délai raisonnable',
-    HAUTE: 'Priorité haute — traitement rapide requis',
-    URGENTE: 'Urgent — traitement immédiat nécessaire',
-  },
-  appointment: {
-    DEMANDE: 'Demande de rendez-vous en attente',
-    PLANIFIE: 'Rendez-vous planifié',
-    CONFIRME: 'Rendez-vous confirmé par le client',
-    EN_COURS: 'Intervention en cours',
-    TERMINE: 'Rendez-vous terminé',
-    ANNULE: 'Rendez-vous annulé',
-  },
-  proposal: {
-    PROPOSEE: 'Proposition en attente de réponse',
-    ACCEPTEE: 'Proposition acceptée — rendez-vous créé',
-    REFUSEE: 'Proposition refusée',
-    ANNULEE: 'Proposition annulée',
-  },
-  workorder: {
-    RECEPTION: 'Équipement reçu — en attente de diagnostic',
-    DIAGNOSTIC: 'Diagnostic en cours — identification du problème',
-    ATTENTE_APPROBATION: 'Devis envoyé — en attente d\'approbation du client',
-    APPROUVE: 'Devis approuvé — prêt pour la réparation',
-    ATTENTE_PIECES: 'En attente de pièces ou de matériel nécessaire',
-    EN_REPARATION: 'Réparation en cours par le technicien',
-    VERIFICATION: 'Vérification finale après réparation',
-    PRET: 'Réparation terminée — prêt pour le ramassage par le client',
-    REMIS: 'Équipement remis au client',
-    REFUSE: 'Devis refusé par le client',
-    ABANDONNE: 'Bon de travail abandonné — équipement non réclamé',
-    ANNULE: 'Bon de travail annulé',
-  },
-};
+import { useTranslation } from '../../lib/i18n/hook';
 
 interface StatusBadgeProps {
   status: string;
@@ -59,6 +10,7 @@ interface StatusBadgeProps {
 }
 
 export default function StatusBadge({ status, type = 'ticket', className }: StatusBadgeProps) {
+  const { t } = useTranslation();
   let colors: { bg: string; text: string } | undefined;
   let label = status;
 
@@ -89,7 +41,11 @@ export default function StatusBadge({ status, type = 'ticket', className }: Stat
     colors = { bg: 'bg-gray-100', text: 'text-gray-700' };
   }
 
-  const description = STATUS_DESCRIPTIONS[type]?.[status];
+  // Look up description from i18n catalog using status.{type}.{value} keys
+  const descriptionKey = `status.${type}.${status}`;
+  const description = t(descriptionKey);
+  // If t() returns the key itself, there's no translation — treat as no description
+  const hasDescription = description !== descriptionKey;
 
   const badge = (
     <span
@@ -104,7 +60,7 @@ export default function StatusBadge({ status, type = 'ticket', className }: Stat
     </span>
   );
 
-  if (description) {
+  if (hasDescription) {
     return (
       <HelpTooltip content={description} side="top">
         {badge}

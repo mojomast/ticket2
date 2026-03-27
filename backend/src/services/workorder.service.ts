@@ -7,6 +7,9 @@ import type { UserRole, WorkOrderStatus } from '@prisma/client';
 import { getPagination, buildPaginatedResponse } from '../types/index.js';
 import * as notificationService from './notification.service.js';
 import { createAuditLog } from './audit.service.js';
+import { sendEmail } from './email.service.js';
+import { sendSms } from './sms.service.js';
+import { logger } from '../lib/logger.js';
 
 // ─── Prisma Includes ───
 
@@ -318,6 +321,27 @@ export async function changeStatus(id: string, newStatus: WorkOrderStatus, reaso
     ).catch(() => {});
   }
 
+  // Fire-and-forget: email customer about work order status change
+  if (wo.customerId) {
+    prisma.user.findUnique({ where: { id: wo.customerId }, select: { email: true, phone: true, firstName: true } })
+      .then(customer => {
+        if (customer?.email) {
+          sendEmail({
+            to: customer.email,
+            subject: `Bon de travail ${updated.orderNumber} — statut mis à jour`,
+            body: `Bonjour ${customer.firstName},\n\nLe statut de votre bon de travail ${updated.orderNumber} a été mis à jour: ${newStatus}`,
+          }).catch(err => logger.error({ err }, 'Failed to send WO status change email to customer'));
+        }
+        // SMS customer when work order is ready for pickup (PRET status)
+        if (newStatus === 'PRET' && customer?.phone) {
+          sendSms({
+            to: customer.phone,
+            message: `Valitek — Votre appareil est prêt! Bon de travail ${updated.orderNumber}. Vous pouvez venir le récupérer.`,
+          }).catch(err => logger.error({ err }, 'Failed to send WO ready SMS to customer'));
+        }
+      }).catch(() => {});
+  }
+
   return updated;
 }
 
@@ -358,6 +382,24 @@ export async function sendQuote(id: string, data: WorkOrderQuoteInput, userId: s
   // Fire-and-forget: notify customer that a quote was sent
   if (wo.customerId) {
     notificationService.notifyQuoteSent(id, updated.orderNumber, wo.customerId).catch(() => {});
+
+    // Email and SMS the customer about the work order quote
+    prisma.user.findUnique({ where: { id: wo.customerId }, select: { email: true, phone: true, firstName: true } })
+      .then(customer => {
+        if (customer?.email) {
+          sendEmail({
+            to: customer.email,
+            subject: `Devis pour le bon de travail ${updated.orderNumber}`,
+            body: `Bonjour ${customer.firstName},\n\nUn devis a été soumis pour votre bon de travail ${updated.orderNumber}:\n\nMontant estimé: ${data.estimatedCost}$\nDiagnostic: ${data.diagnosticNotes}\n\nVeuillez vous connecter pour approuver ou refuser ce devis.`,
+          }).catch(err => logger.error({ err }, 'Failed to send WO quote email to customer'));
+        }
+        if (customer?.phone) {
+          sendSms({
+            to: customer.phone,
+            message: `Valitek — Un devis de ${data.estimatedCost}$ a été soumis pour votre bon de travail ${updated.orderNumber}. Connectez-vous pour l'approuver.`,
+          }).catch(err => logger.error({ err }, 'Failed to send WO quote SMS to customer'));
+        }
+      }).catch(() => {});
   }
 
   // Fire-and-forget audit log

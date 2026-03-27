@@ -60,12 +60,15 @@ A complete IT ticket management and in-shop repair work order system built for V
 
 ### Additional
 - In-app notification system with bell dropdown and navigation to related ticket/WO
+- Email notifications via Microsoft 365 Graph API (ticket events, quote sent, tech assigned, messages, WO events)
+- SMS notifications via VoIP.ms (quote sent, WO ready for pickup, appointment confirmed)
 - Message threads with internal (staff-only) messages, edit window (5 min), admin-only delete
+- File attachments on tickets (drag-and-drop upload, download, delete) with 10MB limit and MIME validation
 - Database backup/restore (admin) with transactional restore and confirmation dialog
 - Audit logging for ticket, work order, and user changes
-- French/English internationalization with language toggle in settings
+- Full French/English internationalization (1000+ translation keys) wired into all 31 pages
 - Demo mode with persona selector (dropdown for customers) and data reset (admin-only)
-- User profile management
+- User profile management with password change
 - Contextual help system with sidebar, keyboard shortcuts, and 170+ French tooltips
 
 ---
@@ -175,6 +178,7 @@ ticket2/
 │       │   └── validate.middleware.ts  # Zod body/query validation
 │       ├── routes/
 │       │   ├── appointment.routes.ts
+│       │   ├── attachment.routes.ts
 │       │   ├── auth.routes.ts
 │       │   ├── backup.routes.ts
 │       │   ├── config.routes.ts
@@ -183,11 +187,13 @@ ticket2/
 │       │   ├── message.routes.ts
 │       │   ├── notification.routes.ts
 │       │   ├── profile.routes.ts
+│       │   ├── service-request.routes.ts
 │       │   ├── technician.routes.ts
 │       │   ├── ticket.routes.ts
 │       │   ├── user.routes.ts
 │       │   └── workorder.routes.ts
 │       ├── services/
+│       │   ├── attachment.service.ts
 │       │   ├── audit.service.ts
 │       │   ├── backup.service.ts
 │       │   ├── email.service.ts
@@ -238,13 +244,13 @@ ticket2/
         │   ├── utils.ts           # cn(), formatDate, formatCurrency, etc.
         │   └── i18n/
         │       ├── hook.ts        # useTranslation()
-        │       ├── provider.tsx   # I18nProvider context
         │       └── locales/
-        │           ├── fr.ts      # French translations
-        │           └── en.ts      # English translations
+        │           ├── fr.ts      # French translations (1000+ keys)
+        │           └── en.ts      # English translations (1000+ keys)
         ├── components/
         │   ├── shared/
         │   │   ├── AppSidebar.tsx      # Role-based sidebar navigation
+        │   │   ├── AttachmentSection.tsx # Drag-drop file upload/download/delete
         │   │   ├── DemoBanner.tsx      # Demo mode banner + persona selector
         │   │   ├── HelpSidebar.tsx     # Contextual help slide-out panel
         │   │   ├── HelpTooltip.tsx     # Tooltip convenience wrapper
@@ -555,6 +561,15 @@ All authenticated endpoints require a `valitek-auth` httpOnly cookie (set on log
 |--------|------|-------------|
 | GET | `/api/users/profile` | Get own profile |
 | PATCH | `/api/users/profile` | Update own profile |
+| POST | `/api/users/profile/password` | Change own password |
+
+#### Attachments
+| Method | Path | Roles | Description |
+|--------|------|-------|-------------|
+| POST | `/api/tickets/:id/attachments` | Any | Upload file attachment |
+| GET | `/api/tickets/:id/attachments` | Any | List ticket attachments |
+| GET | `/api/attachments/:id/download` | Any | Download attachment file |
+| DELETE | `/api/attachments/:id` | Owner, Admin | Delete attachment |
 
 #### Admin - User Management
 | Method | Path | Description |

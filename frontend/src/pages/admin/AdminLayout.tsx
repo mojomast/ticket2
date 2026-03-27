@@ -6,10 +6,12 @@ import NotificationBell from '../../components/shared/NotificationBell';
 import HelpSidebar from '../../components/shared/HelpSidebar';
 import { useHelpStore } from '../../stores/help-store';
 import { usePageHelp } from '../../hooks/use-page-help';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function AdminLayout() {
   usePageHelp();
   const toggle = useHelpStore((s) => s.toggle);
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen">
@@ -21,8 +23,8 @@ export default function AdminLayout() {
             <button
               onClick={toggle}
               className="rounded-md p-1.5 hover:bg-muted transition-colors"
-              aria-label="Ouvrir l'aide"
-              title="Aide (? ou F1)"
+              aria-label={t('help.openHelp')}
+              title={t('help.helpTitle')}
             >
               <HelpCircle className="h-5 w-5 text-muted-foreground" />
             </button>

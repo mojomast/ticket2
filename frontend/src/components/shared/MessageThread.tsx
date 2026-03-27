@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/use-auth';
 import { useToast } from '../../hooks/use-toast';
 import { formatRelativeTime } from '../../lib/utils';
 import { ROLE_LABELS } from '../../lib/constants';
+import { useTranslation } from '../../lib/i18n/hook';
 
 interface MessageThreadProps {
   ticketId: string;
@@ -14,6 +15,7 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
   const { user } = useAuth();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [content, setContent] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,9 +32,9 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
     onSuccess: () => {
       setContent('');
       queryClient.invalidateQueries({ queryKey: ['messages', ticketId] });
-      toast.success('Message envoye');
+      toast.success(t('message.sent'));
     },
-    onError: () => toast.error('Erreur lors de l\'envoi du message'),
+    onError: () => toast.error(t('message.sendError')),
   });
 
   const updateMutation = useMutation({
@@ -42,9 +44,9 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
       setEditingId(null);
       setEditContent('');
       queryClient.invalidateQueries({ queryKey: ['messages', ticketId] });
-      toast.success('Message modifie');
+      toast.success(t('message.editSuccess'));
     },
-    onError: () => toast.error('Erreur lors de la modification du message'),
+    onError: () => toast.error(t('message.editError')),
   });
 
   const deleteMutation = useMutation({
@@ -52,16 +54,16 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
     onSuccess: () => {
       setDeletingId(null);
       queryClient.invalidateQueries({ queryKey: ['messages', ticketId] });
-      toast.success('Message supprime');
+      toast.success(t('message.deleteSuccess'));
     },
     onError: () => {
       setDeletingId(null);
-      toast.error('Erreur lors de la suppression du message');
+      toast.error(t('message.deleteError'));
     },
   });
 
   if (isLoading) {
-    return <div className="text-center py-4 text-muted-foreground">Chargement...</div>;
+    return <div className="text-center py-4 text-muted-foreground">{t('common.loading')}</div>;
   }
 
   return (
@@ -88,7 +90,7 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
                 </span>
                 {msg.isInternal && (
                   <span className="text-xs bg-yellow-200 text-yellow-800 px-1.5 py-0.5 rounded">
-                    Note interne
+                    {t('message.internal')}
                   </span>
                 )}
               </div>
@@ -113,7 +115,7 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
                           }}
                           className="text-xs text-primary hover:underline"
                         >
-                          Modifier
+                          {t('message.edit')}
                         </button>
                       )}
                       {canDelete && (
@@ -121,7 +123,7 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
                           onClick={() => setDeletingId(msg.id)}
                           className="text-xs text-red-600 hover:underline"
                         >
-                          Supprimer
+                          {t('common.delete')}
                         </button>
                       )}
                     </>
@@ -142,7 +144,7 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
                     disabled={!editContent.trim() || updateMutation.isPending}
                     className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
                   >
-                    {updateMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                    {updateMutation.isPending ? t('message.saving') : t('common.save')}
                   </button>
                   <button
                     onClick={() => {
@@ -151,25 +153,25 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
                     }}
                     className="text-xs px-2 py-1 text-muted-foreground hover:underline"
                   >
-                    Annuler
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
             ) : deletingId === msg.id ? (
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-red-600">Supprimer ce message ?</span>
+                <span className="text-xs text-red-600">{t('message.deleteConfirm')}</span>
                 <button
                   onClick={() => deleteMutation.mutate(msg.id)}
                   disabled={deleteMutation.isPending}
                   className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                 >
-                  {deleteMutation.isPending ? 'Suppression...' : 'Confirmer'}
+                  {deleteMutation.isPending ? t('common.deleting') : t('common.confirm')}
                 </button>
                 <button
                   onClick={() => setDeletingId(null)}
                   className="text-xs px-2 py-1 text-muted-foreground hover:underline"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
               </div>
             ) : (
@@ -178,7 +180,7 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
           </div>
         ))}
         {(messages as Message[]).length === 0 && (
-          <p className="text-center text-muted-foreground text-sm py-8">Aucun message</p>
+          <p className="text-center text-muted-foreground text-sm py-8">{t('message.noMessages')}</p>
         )}
       </div>
 
@@ -192,14 +194,14 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
               onChange={(e) => setIsInternal(e.target.checked)}
               className="rounded border-gray-300"
             />
-            Note interne (invisible au client)
+            {t('message.internalLabel')}
           </label>
         )}
         <div className="flex gap-2">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Ecrire un message..."
+            placeholder={t('message.placeholder')}
             className="flex-1 min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
@@ -207,7 +209,7 @@ export default function MessageThread({ ticketId }: MessageThreadProps) {
             disabled={!content.trim() || sendMutation.isPending}
             className="self-end px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
           >
-            Envoyer
+            {t('common.send')}
           </button>
         </div>
       </div>

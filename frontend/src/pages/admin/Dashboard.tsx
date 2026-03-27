@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/use-auth';
 import StatusBadge from '../../components/shared/StatusBadge';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { formatRelativeTime, formatDateTime } from '../../lib/utils';
+import { useTranslation } from '../../lib/i18n/hook';
 
 // ─── Status groupings for stat cards ───
 
@@ -36,6 +37,7 @@ function getTodayRange(): { start: string; end: string } {
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const today = useMemo(() => getTodayRange(), []);
 
   // Fetch all tickets (up to 200) to compute accurate stats
@@ -61,45 +63,45 @@ export default function AdminDashboard() {
   // Compute stat counts from all tickets
   const stats: StatCard[] = useMemo(() => {
     const countByGroup = (statuses: readonly string[]) =>
-      tickets.filter((t) => statuses.includes(t.status)).length;
+      tickets.filter((tk) => statuses.includes(tk.status)).length;
 
     return [
       {
-        label: 'Nouveaux',
+        label: t('admin.dashboard.new'),
         count: countByGroup(STATUS_GROUPS.nouveaux),
         color: 'text-blue-600',
         icon: '🆕',
-        tooltip: 'Billets nouvellement créés en attente de traitement',
+        tooltip: t('admin.dashboard.newTooltip'),
       },
       {
-        label: 'En cours',
+        label: t('admin.dashboard.inProgress'),
         count: countByGroup(STATUS_GROUPS.enCours),
         color: 'text-purple-600',
         icon: '⚙️',
-        tooltip: 'Billets actuellement pris en charge par un technicien',
+        tooltip: t('admin.dashboard.inProgressTooltip'),
       },
       {
-        label: 'En attente',
+        label: t('admin.dashboard.waiting'),
         count: countByGroup(STATUS_GROUPS.enAttente),
         color: 'text-yellow-600',
         icon: '⏳',
-        tooltip: 'Billets en attente d\'approbation de devis ou de réponse du client',
+        tooltip: t('admin.dashboard.waitingTooltip'),
       },
       {
-        label: 'Termines',
+        label: t('admin.dashboard.completed'),
         count: countByGroup(STATUS_GROUPS.termines),
         color: 'text-teal-600',
         icon: '✅',
-        tooltip: 'Billets terminés ou fermés définitivement',
+        tooltip: t('admin.dashboard.completedTooltip'),
       },
     ];
-  }, [tickets]);
+  }, [tickets, t]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <h1 className="text-2xl font-bold">
-        Bienvenue, {user?.firstName}
+        {t('dashboard.welcome', { name: user?.firstName ?? '' })}
       </h1>
 
       {/* ─── Stat Cards ─── */}
@@ -126,20 +128,20 @@ export default function AdminDashboard() {
       {/* ─── Recent Tickets ─── */}
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">Billets recents</h2>
-          <HelpTooltip content="Afficher la liste complète de tous les billets" side="left">
+          <h2 className="font-semibold">{t('ticket.recentTickets')}</h2>
+          <HelpTooltip content={t('admin.tickets.viewAllTooltip')} side="left">
             <Link
               to="/admin/billets"
               className="text-sm text-primary hover:underline"
             >
-              Voir tous
+              {t('common.viewAll')}
             </Link>
           </HelpTooltip>
         </div>
         <div className="divide-y">
           {recentTickets.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">
-              Aucun billet pour le moment.
+              {t('ticket.noTicketsMoment')}
             </p>
           )}
           {recentTickets.map((ticket) => (
@@ -173,20 +175,20 @@ export default function AdminDashboard() {
       {/* ─── Today's Appointments ─── */}
       <div className="bg-card border rounded-lg">
         <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">Rendez-vous aujourd&apos;hui</h2>
-          <HelpTooltip content="Ouvrir le calendrier complet des rendez-vous" side="left">
+          <h2 className="font-semibold">{t('appointment.today')}</h2>
+          <HelpTooltip content={t('admin.tickets.calendarTooltip')} side="left">
             <Link
               to="/admin/calendrier"
               className="text-sm text-primary hover:underline"
             >
-              Voir tous
+              {t('common.viewAll')}
             </Link>
           </HelpTooltip>
         </div>
         <div className="divide-y">
           {appointments.length === 0 && (
             <p className="p-4 text-sm text-muted-foreground">
-              Aucun rendez-vous aujourd&apos;hui.
+              {t('appointment.noAppointmentsToday')}
             </p>
           )}
           {appointments.map((appt) => (
@@ -206,7 +208,7 @@ export default function AdminDashboard() {
                 </span>
                 {appt.technician && (
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Technicien: {appt.technician.firstName} {appt.technician.lastName}
+                    {t('appointment.technicianLabel', { name: `${appt.technician.firstName} ${appt.technician.lastName}` })}
                   </p>
                 )}
               </div>

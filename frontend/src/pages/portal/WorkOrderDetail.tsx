@@ -10,12 +10,14 @@ import {
   SERVICE_CATEGORY_LABELS, WO_TERMINAL_STATUSES,
 } from '../../lib/constants';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function PortalWorkOrderDetail() {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [noteContent, setNoteContent] = useState('');
+  const { t } = useTranslation();
 
   const { data: workOrder, isLoading, isError } = useQuery({
     queryKey: ['workorder', id],
@@ -35,9 +37,9 @@ export default function PortalWorkOrderDetail() {
       queryClient.invalidateQueries({ queryKey: ['workorder', id] });
       queryClient.invalidateQueries({ queryKey: ['workorder-notes', id] });
       queryClient.invalidateQueries({ queryKey: ['portal-workorders'] });
-      toast.success('Devis approuvé');
+      toast.success(t('portal.woDetail.approveSuccess'));
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur'),
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   const declineMutation = useMutation({
@@ -46,9 +48,9 @@ export default function PortalWorkOrderDetail() {
       queryClient.invalidateQueries({ queryKey: ['workorder', id] });
       queryClient.invalidateQueries({ queryKey: ['workorder-notes', id] });
       queryClient.invalidateQueries({ queryKey: ['portal-workorders'] });
-      toast.success('Devis refusé');
+      toast.success(t('portal.woDetail.declineSuccess'));
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur'),
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   const addNoteMutation = useMutation({
@@ -56,10 +58,10 @@ export default function PortalWorkOrderDetail() {
       api.workorders.notes.create(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workorder-notes', id] });
-      toast.success('Message envoyé');
+      toast.success(t('portal.woDetail.messageSuccess'));
       setNoteContent('');
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur lors de l\'envoi'),
+    onError: (err: Error) => toast.error(err.message || t('portal.woDetail.messageError')),
   });
 
   function handleAddNote(e: React.FormEvent) {
@@ -68,9 +70,9 @@ export default function PortalWorkOrderDetail() {
     addNoteMutation.mutate({ content: noteContent.trim(), isInternal: false });
   }
 
-  if (isLoading) return <div className="text-center py-8">Chargement...</div>;
-  if (isError) return <div className="text-center py-8 text-red-600">Erreur lors du chargement. Veuillez réessayer.</div>;
-  if (!workOrder) return <div className="text-center py-8">Bon de travail introuvable</div>;
+  if (isLoading) return <div className="text-center py-8">{t('common.loading')}</div>;
+  if (isError) return <div className="text-center py-8 text-red-600">{t('portal.wo.loadError')}</div>;
+  if (!workOrder) return <div className="text-center py-8">{t('portal.woDetail.notFound')}</div>;
 
   const wo: WorkOrder = workOrder;
   const pendingApproval = wo.status === 'ATTENTE_APPROBATION';
@@ -81,10 +83,10 @@ export default function PortalWorkOrderDetail() {
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
         <Link to="/portail/bons-travail" className="text-sm text-muted-foreground hover:text-foreground">
-          &larr; Retour
+          {t('portal.woDetail.back')}
         </Link>
         <h1 className="text-2xl font-bold font-mono">{wo.orderNumber}</h1>
-        <HelpTooltip content="Étape actuelle dans le processus de réparation" side="bottom">
+        <HelpTooltip content={t('portal.woDetail.statusTooltip')} side="bottom">
           <span><StatusBadge status={wo.status} type="workorder" /></span>
         </HelpTooltip>
       </div>
@@ -92,10 +94,10 @@ export default function PortalWorkOrderDetail() {
       {/* Status explanation */}
       <div className="bg-card border rounded-lg p-4">
         <p className="text-sm">
-          <span className="font-medium">Statut actuel:</span>{' '}
+          <span className="font-medium">{t('portal.woDetail.currentStatus')}</span>{' '}
           {WO_STATUS_LABELS[wo.status] || wo.status}
         </p>
-        <HelpTooltip content="Progression de votre bon de travail à travers les différentes étapes" side="bottom">
+        <HelpTooltip content={t('portal.woDetail.timelineTooltip')} side="bottom">
           <div>
             <StatusTimeline status={wo.status} />
           </div>
@@ -105,44 +107,44 @@ export default function PortalWorkOrderDetail() {
       {/* Quote approval section */}
       {pendingApproval && wo.estimatedCost && (
         <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 space-y-4">
-          <h2 className="font-semibold text-yellow-900">Devis à approuver</h2>
+          <h2 className="font-semibold text-yellow-900">{t('portal.woDetail.quoteTitle')}</h2>
           <div className="text-sm space-y-2">
-            <p><span className="text-yellow-800 font-medium">Coût estimé:</span> {formatCurrency(wo.estimatedCost)}</p>
+            <p><span className="text-yellow-800 font-medium">{t('portal.woDetail.estimatedCost')}</span> {formatCurrency(wo.estimatedCost)}</p>
             {wo.diagnosticNotes && (
               <div>
-                <span className="text-yellow-800 font-medium">Diagnostic:</span>
+                <span className="text-yellow-800 font-medium">{t('portal.woDetail.diagnostic')}</span>
                 <p className="mt-1 whitespace-pre-wrap text-yellow-900">{wo.diagnosticNotes}</p>
               </div>
             )}
             {wo.estimatedPickupDate && (
-              <p><span className="text-yellow-800 font-medium">Ramassage prévu:</span> {new Date(wo.estimatedPickupDate).toLocaleDateString('fr-CA')}</p>
+              <p><span className="text-yellow-800 font-medium">{t('portal.woDetail.estimatedPickup')}</span> {new Date(wo.estimatedPickupDate).toLocaleDateString('fr-CA')}</p>
             )}
           </div>
           <div className="flex gap-3 pt-2">
-            <HelpTooltip content="Approuver le devis et autoriser les réparations sur votre appareil" side="bottom">
+            <HelpTooltip content={t('portal.woDetail.approveTooltip')} side="bottom">
               <button
                 onClick={() => {
-                  if (confirm('Approuver le devis et autoriser les réparations?')) {
+                  if (confirm(t('portal.woDetail.approveConfirm'))) {
                     approveMutation.mutate();
                   }
                 }}
                 disabled={approveMutation.isPending || declineMutation.isPending}
                 className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
               >
-                {approveMutation.isPending ? 'Approbation...' : 'Approuver le devis'}
+                {approveMutation.isPending ? t('portal.woDetail.approving') : t('portal.woDetail.approveButton')}
               </button>
             </HelpTooltip>
-            <HelpTooltip content="Refuser le devis — votre appareil sera retourné sans réparation" side="bottom">
+            <HelpTooltip content={t('portal.woDetail.declineTooltip')} side="bottom">
               <button
                 onClick={() => {
-                  if (confirm('Refuser le devis? Votre appareil sera retourné sans réparation.')) {
+                  if (confirm(t('portal.woDetail.declineConfirm'))) {
                     declineMutation.mutate();
                   }
                 }}
                 disabled={approveMutation.isPending || declineMutation.isPending}
                 className="flex-1 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
               >
-                {declineMutation.isPending ? 'Refus...' : 'Refuser le devis'}
+                {declineMutation.isPending ? t('portal.woDetail.declining') : t('portal.woDetail.declineButton')}
               </button>
             </HelpTooltip>
           </div>
@@ -151,14 +153,14 @@ export default function PortalWorkOrderDetail() {
 
       {/* Device info */}
       <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-3">Appareil</h3>
+        <h3 className="font-semibold mb-3">{t('portal.woDetail.device')}</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span className="text-xs text-muted-foreground">Type</span>
+            <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceType')}</span>
             <p>{DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType}</p>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">Marque / Modèle</span>
+            <span className="text-xs text-muted-foreground">{t('portal.woDetail.deviceBrandModel')}</span>
             <p>{wo.deviceBrand} {wo.deviceModel}</p>
           </div>
         </div>
@@ -166,11 +168,11 @@ export default function PortalWorkOrderDetail() {
 
       {/* Problem */}
       <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-2">Problème rapporté</h3>
+        <h3 className="font-semibold mb-2">{t('portal.woDetail.reportedIssue')}</h3>
         <p className="text-sm whitespace-pre-wrap">{wo.reportedIssue}</p>
         {wo.serviceCategory && (
           <p className="text-xs text-muted-foreground mt-2">
-            Catégorie: {SERVICE_CATEGORY_LABELS[wo.serviceCategory] || wo.serviceCategory}
+            {t('portal.woDetail.categoryLabel', { category: SERVICE_CATEGORY_LABELS[wo.serviceCategory] || wo.serviceCategory })}
           </p>
         )}
       </div>
@@ -178,29 +180,29 @@ export default function PortalWorkOrderDetail() {
       {/* Financial info */}
       {(wo.estimatedCost || wo.finalCost || wo.depositAmount) && (
         <div className="bg-card border rounded-lg p-6">
-          <h3 className="font-semibold mb-3">Coûts</h3>
+          <h3 className="font-semibold mb-3">{t('portal.woDetail.costs')}</h3>
           <div className="text-sm space-y-1.5">
             {wo.estimatedCost != null && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Devis</span>
+                <span className="text-muted-foreground">{t('portal.woDetail.quoteLabel')}</span>
                 <span>{formatCurrency(wo.estimatedCost)}</span>
               </div>
             )}
             {wo.finalCost != null && (
               <div className="flex justify-between font-medium">
-                <span>Coût final</span>
+                <span>{t('portal.woDetail.finalCost')}</span>
                 <span>{formatCurrency(wo.finalCost)}</span>
               </div>
             )}
             {wo.depositAmount != null && wo.depositAmount > 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Dépôt versé</span>
+                <span className="text-muted-foreground">{t('portal.woDetail.deposit')}</span>
                 <span>{formatCurrency(wo.depositAmount)}</span>
               </div>
             )}
             {wo.diagnosticFee != null && wo.diagnosticFee > 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Frais de diagnostic</span>
+                <span className="text-muted-foreground">{t('portal.woDetail.diagnosticFee')}</span>
                 <span>{formatCurrency(wo.diagnosticFee)}</span>
               </div>
             )}
@@ -210,34 +212,34 @@ export default function PortalWorkOrderDetail() {
 
       {/* Dates */}
       <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-3">Dates</h3>
+        <h3 className="font-semibold mb-3">{t('portal.woDetail.dates')}</h3>
         <div className="text-sm space-y-1.5">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Réception</span>
+            <span className="text-muted-foreground">{t('portal.woDetail.receptionDate')}</span>
             <span>{formatDateTime(wo.intakeDate)}</span>
           </div>
           {wo.estimatedPickupDate && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Ramassage prévu</span>
+              <span className="text-muted-foreground">{t('portal.woDetail.estimatedPickupDate')}</span>
               <span>{new Date(wo.estimatedPickupDate).toLocaleDateString('fr-CA')}</span>
             </div>
           )}
           {wo.completedDate && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Réparation terminée</span>
+              <span className="text-muted-foreground">{t('portal.woDetail.completedDate')}</span>
               <span>{formatDateTime(wo.completedDate)}</span>
             </div>
           )}
           {wo.pickupDate && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Remis</span>
+              <span className="text-muted-foreground">{t('portal.woDetail.pickupDate')}</span>
               <span>{formatDateTime(wo.pickupDate)}</span>
             </div>
           )}
           {wo.warrantyDays != null && wo.warrantyDays > 0 && wo.warrantyStartDate && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Garantie</span>
-              <span>{wo.warrantyDays} jours (depuis {new Date(wo.warrantyStartDate).toLocaleDateString('fr-CA')})</span>
+              <span className="text-muted-foreground">{t('portal.woDetail.warranty')}</span>
+              <span>{t('portal.woDetail.warrantyDays', { days: wo.warrantyDays, date: new Date(wo.warrantyStartDate).toLocaleDateString('fr-CA') })}</span>
             </div>
           )}
         </div>
@@ -245,7 +247,7 @@ export default function PortalWorkOrderDetail() {
 
       {/* Notes (non-internal only) */}
       <div className="bg-card border rounded-lg p-6">
-        <h3 className="font-semibold mb-3">Messages</h3>
+        <h3 className="font-semibold mb-3">{t('portal.woDetail.messages')}</h3>
         {(notes as WorkOrderNote[]).length > 0 ? (
           <div className="space-y-3">
             {(notes as WorkOrderNote[]).map((note) => (
@@ -263,7 +265,7 @@ export default function PortalWorkOrderDetail() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground mb-3">Aucun message</p>
+          <p className="text-sm text-muted-foreground mb-3">{t('portal.woDetail.noMessages')}</p>
         )}
 
         {/* Reply form — only visible for non-terminal WOs */}
@@ -272,7 +274,7 @@ export default function PortalWorkOrderDetail() {
             <textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="Écrire un message..."
+              placeholder={t('portal.woDetail.messagePlaceholder')}
               rows={3}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -282,7 +284,7 @@ export default function PortalWorkOrderDetail() {
                 disabled={addNoteMutation.isPending || !noteContent.trim()}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                {addNoteMutation.isPending ? 'Envoi...' : 'Envoyer'}
+                {addNoteMutation.isPending ? t('common.sending') : t('common.send')}
               </button>
             </div>
           </form>
@@ -299,24 +301,14 @@ const STATUS_STEPS = [
   'ATTENTE_PIECES', 'EN_REPARATION', 'VERIFICATION', 'PRET', 'REMIS',
 ];
 
-const STATUS_STEP_LABELS: Record<string, string> = {
-  RECEPTION: 'Réception',
-  DIAGNOSTIC: 'Diagnostic',
-  ATTENTE_APPROBATION: 'Approbation',
-  APPROUVE: 'Approuvé',
-  ATTENTE_PIECES: 'Att. pièces',
-  EN_REPARATION: 'Réparation',
-  VERIFICATION: 'Vérification',
-  PRET: 'Prêt',
-  REMIS: 'Remis',
-};
-
 function StatusTimeline({ status }: { status: string }) {
+  const { t } = useTranslation();
+
   // For terminal non-happy-path statuses, show a special badge
   if (['REFUSE', 'ABANDONNE', 'ANNULE'].includes(status)) {
     return (
       <p className="text-xs text-muted-foreground mt-2">
-        Ce bon de travail est terminé avec le statut: <strong>{WO_STATUS_LABELS[status]}</strong>
+        {t('portal.woDetail.terminalStatus', { status: WO_STATUS_LABELS[status] ?? status })}
       </p>
     );
   }
@@ -342,7 +334,7 @@ function StatusTimeline({ status }: { status: string }) {
                 'text-[9px] mt-1 whitespace-nowrap',
                 isCurrent ? 'font-semibold text-primary' : 'text-muted-foreground'
               )}>
-                {STATUS_STEP_LABELS[step]}
+                {t(`wo.step.${step}`)}
               </span>
             </div>
             {i < STATUS_STEPS.length - 1 && (

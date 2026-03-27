@@ -10,10 +10,16 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
 
-  // ---------- Form state ----------
+  // ---------- Profile form state ----------
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+
+  // ---------- Password form state ----------
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
 
   // ---------- Query ----------
   const { data: profile, isLoading, isError } = useQuery<User>({
@@ -30,7 +36,7 @@ export default function Profile() {
     setPhone(profile.phone ?? '');
   }, [profile]);
 
-  // ---------- Mutation ----------
+  // ---------- Profile Mutation ----------
   const saveMutation = useMutation({
     mutationFn: () =>
       api.users.updateProfile({ firstName, lastName, phone }),
@@ -44,6 +50,48 @@ export default function Profile() {
       toast.error(err.message || 'Erreur lors de la mise à jour du profil');
     },
   });
+
+  // ---------- Password Mutation ----------
+  const passwordMutation = useMutation({
+    mutationFn: () =>
+      api.users.changePassword({ currentPassword, newPassword, confirmPassword }),
+    onSuccess: () => {
+      toast.success('Mot de passe modifié avec succès');
+      // Clear the password form
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordErrors({});
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Erreur lors du changement de mot de passe');
+    },
+  });
+
+  // ---------- Password validation ----------
+  function validatePasswordForm(): boolean {
+    const errors: Record<string, string> = {};
+
+    if (!currentPassword) {
+      errors.currentPassword = 'Le mot de passe actuel est requis';
+    }
+    if (newPassword.length < 8) {
+      errors.newPassword = 'Le nouveau mot de passe doit avoir au moins 8 caractères';
+    }
+    if (confirmPassword !== newPassword) {
+      errors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    }
+
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (validatePasswordForm()) {
+      passwordMutation.mutate();
+    }
+  }
 
   // ---------- Render ----------
   if (isLoading) {
@@ -68,6 +116,7 @@ export default function Profile() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Profil</h1>
 
+      {/* ─── Profile Information Card ─── */}
       <div className="bg-card border rounded-lg p-6 max-w-xl">
         {/* User info header */}
         <div className="flex items-center gap-4 mb-6">
@@ -155,6 +204,67 @@ export default function Profile() {
             </button>
           </HelpTooltip>
         </div>
+      </div>
+
+      {/* ─── Change Password Card ─── */}
+      <div className="bg-card border rounded-lg p-6 max-w-xl">
+        <h2 className="font-semibold mb-4">Changer le mot de passe</h2>
+
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          {/* Current password */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Mot de passe actuel</label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Entrez votre mot de passe actuel"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            {passwordErrors.currentPassword && (
+              <p className="text-destructive text-xs mt-1">{passwordErrors.currentPassword}</p>
+            )}
+          </div>
+
+          {/* New password */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Nouveau mot de passe</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Au moins 8 caractères"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            {passwordErrors.newPassword && (
+              <p className="text-destructive text-xs mt-1">{passwordErrors.newPassword}</p>
+            )}
+          </div>
+
+          {/* Confirm new password */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Confirmer le nouveau mot de passe</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirmez le nouveau mot de passe"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            {passwordErrors.confirmPassword && (
+              <p className="text-destructive text-xs mt-1">{passwordErrors.confirmPassword}</p>
+            )}
+          </div>
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={passwordMutation.isPending}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+          >
+            {passwordMutation.isPending ? 'Changement en cours…' : 'Changer le mot de passe'}
+          </button>
+        </form>
       </div>
     </div>
   );

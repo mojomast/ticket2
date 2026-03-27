@@ -6,25 +6,27 @@ import { useAuth } from '../../hooks/use-auth';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { DEVICE_TYPE_LABELS, DATA_BACKUP_CONSENT_LABELS, SERVICE_CATEGORY_LABELS, PRIORITY_LABELS } from '../../lib/constants';
+import { useTranslation } from '../../lib/i18n/hook';
 
-const DEFAULT_CHECKLIST: Record<string, boolean> = {
-  'Ecran intact': true,
-  'Clavier fonctionnel': true,
-  'Batterie presente': true,
-  'Chargeur inclus': true,
-  'Chassis sans dommage': true,
-  'Ports USB fonctionnels': true,
-};
+const DEFAULT_CHECKLIST_KEYS = [
+  'screenIntact',
+  'keyboardFunctional',
+  'batteryPresent',
+  'chargerIncluded',
+  'chassisNoDamage',
+  'usbPortsFunctional',
+] as const;
 
-const COMMON_ACCESSORIES = [
-  'Chargeur', 'Souris', 'Housse/Sac', 'Cable USB', 'Cle USB',
-  'Ecouteurs', 'Disque externe', 'Clavier externe', 'Adaptateur',
-];
+const COMMON_ACCESSORY_KEYS = [
+  'charger', 'mouse', 'bag', 'usbCable', 'usbKey',
+  'earphones', 'externalDisk', 'externalKeyboard', 'adapter',
+] as const;
 
 export default function WorkOrderIntake() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useTranslation();
 
   const basePath = user?.role === 'ADMIN' ? '/admin' : '/technicien';
 
@@ -57,7 +59,11 @@ export default function WorkOrderIntake() {
   const [conditionNotes, setConditionNotes] = useState('');
   const [accessories, setAccessories] = useState<string[]>([]);
   const [customAccessory, setCustomAccessory] = useState('');
-  const [conditionChecklist, setConditionChecklist] = useState<Record<string, boolean>>({ ...DEFAULT_CHECKLIST });
+  const [conditionChecklist, setConditionChecklist] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const k of DEFAULT_CHECKLIST_KEYS) init[k] = true;
+    return init;
+  });
 
   // Problem
   const [reportedIssue, setReportedIssue] = useState('');
@@ -88,10 +94,10 @@ export default function WorkOrderIntake() {
   const createMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) => api.workorders.create(data),
     onSuccess: (wo) => {
-      toast.success(`Bon de travail ${wo.orderNumber} cree`);
+      toast.success(t('wo.intake.createdSuccess', { orderNumber: wo.orderNumber }));
       navigate(`${basePath}/bons-travail/${wo.id}`);
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur lors de la creation'),
+    onError: (err: Error) => toast.error(err.message || t('wo.intake.createError')),
   });
 
   // ─── Handlers ───
@@ -126,31 +132,31 @@ export default function WorkOrderIntake() {
     e.preventDefault();
 
     if (!selectedCustomer) {
-      toast.error('Veuillez sélectionner un client');
+      toast.error(t('wo.intake.errorSelectClient'));
       return;
     }
     if (!customerName.trim()) {
-      toast.error('Le nom du client est requis');
+      toast.error(t('wo.intake.errorClientName'));
       return;
     }
     if (!customerPhone.trim()) {
-      toast.error('Le téléphone est requis');
+      toast.error(t('wo.intake.errorPhone'));
       return;
     }
     if (!deviceBrand.trim()) {
-      toast.error('La marque de l\'appareil est requise');
+      toast.error(t('wo.intake.errorBrand'));
       return;
     }
     if (!deviceModel.trim()) {
-      toast.error('Le modèle de l\'appareil est requis');
+      toast.error(t('wo.intake.errorModel'));
       return;
     }
     if (!reportedIssue.trim()) {
-      toast.error('La description du problème est requise');
+      toast.error(t('wo.intake.errorIssue'));
       return;
     }
     if (!termsAccepted) {
-      toast.error('Le client doit accepter les conditions avant de continuer');
+      toast.error(t('wo.intake.errorTerms'));
       return;
     }
 
@@ -190,26 +196,26 @@ export default function WorkOrderIntake() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Nouvelle reception</h1>
-        <p className="text-sm text-muted-foreground">Enregistrer un appareil pour reparation en atelier</p>
+        <h1 className="text-2xl font-bold">{t('wo.intake.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('wo.intake.subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* ─── Section 1: Client ─── */}
         <section className="bg-card border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">1. Client</h2>
+          <h2 className="font-semibold mb-4">{t('wo.intake.sectionClient')}</h2>
 
           {showCustomerSearch ? (
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Rechercher un client existant</label>
-                <HelpTooltip content="Tapez au moins 2 caractères pour rechercher un client par nom, courriel ou téléphone" side="right">
+                <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.searchExisting')}</label>
+                <HelpTooltip content={t('wo.intake.searchTooltip')} side="right">
                   <input
                     type="text"
                     value={customerSearch}
                     onChange={(e) => setCustomerSearch(e.target.value)}
-                    placeholder="Nom, courriel ou telephone..."
+                    placeholder={t('wo.intake.searchPlaceholder')}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                 </HelpTooltip>
@@ -219,7 +225,7 @@ export default function WorkOrderIntake() {
               {customerSearch.length >= 2 && (
                 <div className="border rounded-md max-h-48 overflow-y-auto">
                   {(customers as User[]).length === 0 ? (
-                    <p className="text-sm text-muted-foreground p-3">Aucun client trouve</p>
+                    <p className="text-sm text-muted-foreground p-3">{t('wo.intake.noClientFound')}</p>
                   ) : (
                     (customers as User[]).map((c) => (
                       <button
@@ -249,13 +255,13 @@ export default function WorkOrderIntake() {
                   onClick={() => { setShowCustomerSearch(true); setSelectedCustomer(null); }}
                   className="text-xs text-primary hover:underline"
                 >
-                  Changer
+                  {t('wo.intake.changeClient')}
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Nom complet *</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.fullName')}</label>
                   <input
                     type="text"
                     value={customerName}
@@ -265,7 +271,7 @@ export default function WorkOrderIntake() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Telephone *</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.phone')}</label>
                   <input
                     type="tel"
                     value={customerPhone}
@@ -275,7 +281,7 @@ export default function WorkOrderIntake() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Courriel</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.email')}</label>
                   <input
                     type="email"
                     value={customerEmail}
@@ -290,11 +296,11 @@ export default function WorkOrderIntake() {
 
         {/* ─── Section 2: Appareil ─── */}
         <section className="bg-card border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">2. Appareil</h2>
+          <h2 className="font-semibold mb-4">{t('wo.intake.sectionDevice')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Type d'appareil</label>
-              <HelpTooltip content="Sélectionnez le type d'appareil : ordinateur portable, bureau, tablette, téléphone, etc." side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.deviceType')}</label>
+              <HelpTooltip content={t('wo.intake.deviceTypeTooltip')} side="top">
                 <select
                   value={deviceType}
                   onChange={(e) => setDeviceType(e.target.value)}
@@ -307,34 +313,34 @@ export default function WorkOrderIntake() {
               </HelpTooltip>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Marque *</label>
-              <HelpTooltip content="Marque du fabricant de l'appareil (ex: Dell, HP, Apple, Lenovo)" side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.brand')}</label>
+              <HelpTooltip content={t('wo.intake.brandTooltip')} side="top">
                 <input
                   type="text"
                   value={deviceBrand}
                   onChange={(e) => setDeviceBrand(e.target.value)}
-                  placeholder="Ex: Dell, HP, Apple..."
+                  placeholder={t('wo.intake.brandPlaceholder')}
                   required
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </HelpTooltip>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Modele *</label>
-              <HelpTooltip content="Modèle exact de l'appareil, visible sur l'étiquette ou dans les paramètres système" side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.model')}</label>
+              <HelpTooltip content={t('wo.intake.modelTooltip')} side="top">
                 <input
                   type="text"
                   value={deviceModel}
                   onChange={(e) => setDeviceModel(e.target.value)}
-                  placeholder="Ex: Latitude 5540, MacBook Pro..."
+                  placeholder={t('wo.intake.modelPlaceholder')}
                   required
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </HelpTooltip>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">No. de serie</label>
-              <HelpTooltip content="Numéro de série unique, souvent sur une étiquette sous l'appareil ou dans les paramètres" side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.serialNumber')}</label>
+              <HelpTooltip content={t('wo.intake.serialTooltip')} side="top">
                 <input
                   type="text"
                   value={deviceSerial}
@@ -344,7 +350,7 @@ export default function WorkOrderIntake() {
               </HelpTooltip>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Couleur</label>
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.color')}</label>
               <input
                 type="text"
                 value={deviceColor}
@@ -353,39 +359,39 @@ export default function WorkOrderIntake() {
               />
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Systeme d'exploitation</label>
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.os')}</label>
               <input
                 type="text"
                 value={deviceOs}
                 onChange={(e) => setDeviceOs(e.target.value)}
-                placeholder="Ex: Windows 11, macOS Sonoma..."
+                placeholder={t('wo.intake.osPlaceholder')}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </div>
             <div className="md:col-span-3">
-              <label className="block text-xs text-muted-foreground mb-1">Mot de passe appareil</label>
-              <HelpTooltip content="Mot de passe, PIN ou schéma de déverrouillage nécessaire pour accéder à l'appareil durant le diagnostic" side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.devicePassword')}</label>
+              <HelpTooltip content={t('wo.intake.devicePasswordTooltip')} side="top">
                 <input
                   type="text"
                   value={devicePassword}
                   onChange={(e) => setDevicePassword(e.target.value)}
-                  placeholder="PIN, mot de passe, pattern..."
+                  placeholder={t('wo.intake.devicePasswordPlaceholder')}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </HelpTooltip>
-              <p className="text-[10px] text-muted-foreground mt-1">Necessaire pour le diagnostic</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t('wo.intake.devicePasswordHint')}</p>
             </div>
           </div>
         </section>
 
         {/* ─── Section 3: Etat et accessoires ─── */}
         <section className="bg-card border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">3. Etat et accessoires</h2>
+          <h2 className="font-semibold mb-4">{t('wo.intake.sectionCondition')}</h2>
 
           {/* Condition checklist */}
           <div className="mb-4">
-            <HelpTooltip content="Décochez les éléments endommagés ou absents. Les éléments décochés apparaîtront en rouge comme avertissement." side="right">
-              <label className="block text-xs text-muted-foreground mb-2">Inspection visuelle</label>
+            <HelpTooltip content={t('wo.intake.visualInspectionTooltip')} side="right">
+              <label className="block text-xs text-muted-foreground mb-2">{t('wo.intake.visualInspection')}</label>
             </HelpTooltip>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {Object.entries(conditionChecklist).map(([key, val]) => (
@@ -396,7 +402,7 @@ export default function WorkOrderIntake() {
                     onChange={() => handleChecklistToggle(key)}
                     className="rounded border-input"
                   />
-                  <span className={!val ? 'text-red-600 font-medium' : ''}>{key}</span>
+                  <span className={!val ? 'text-red-600 font-medium' : ''}>{t(`wo.intake.checklist.${key}`)}</span>
                 </label>
               ))}
             </div>
@@ -404,34 +410,34 @@ export default function WorkOrderIntake() {
 
           {/* Condition notes */}
           <div className="mb-4">
-            <label className="block text-xs text-muted-foreground mb-1">Notes sur l'etat (egratignures, dommages, etc.)</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.conditionNotes')}</label>
             <textarea
               value={conditionNotes}
               onChange={(e) => setConditionNotes(e.target.value)}
               rows={2}
-              placeholder="Decrire l'etat visible..."
+              placeholder={t('wo.intake.conditionNotesPlaceholder')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
             />
           </div>
 
           {/* Accessories */}
           <div>
-            <HelpTooltip content="Sélectionnez tous les accessoires laissés par le client avec l'appareil. Vous pouvez aussi en ajouter manuellement." side="right">
-              <label className="block text-xs text-muted-foreground mb-2">Accessoires laisses</label>
+            <HelpTooltip content={t('wo.intake.accessoriesTooltip')} side="right">
+              <label className="block text-xs text-muted-foreground mb-2">{t('wo.intake.accessories')}</label>
             </HelpTooltip>
             <div className="flex flex-wrap gap-2 mb-2">
-              {COMMON_ACCESSORIES.map((acc) => (
+              {COMMON_ACCESSORY_KEYS.map((accKey) => (
                 <button
-                  key={acc}
+                  key={accKey}
                   type="button"
-                  onClick={() => handleToggleAccessory(acc)}
+                  onClick={() => handleToggleAccessory(accKey)}
                   className={`rounded-full px-3 py-1 text-xs border transition-colors ${
-                    accessories.includes(acc)
+                    accessories.includes(accKey)
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-background text-muted-foreground border-input hover:bg-muted'
                   }`}
                 >
-                  {acc}
+                  {t(`wo.intake.accessory.${accKey}`)}
                 </button>
               ))}
             </div>
@@ -440,7 +446,7 @@ export default function WorkOrderIntake() {
                 type="text"
                 value={customAccessory}
                 onChange={(e) => setCustomAccessory(e.target.value)}
-                placeholder="Autre accessoire..."
+                placeholder={t('wo.intake.otherAccessory')}
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') { e.preventDefault(); handleAddCustomAccessory(); }
@@ -451,12 +457,12 @@ export default function WorkOrderIntake() {
                 onClick={handleAddCustomAccessory}
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-muted"
               >
-                Ajouter
+                {t('wo.intake.addAccessory')}
               </button>
             </div>
             {accessories.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
-                {accessories.filter((a) => !COMMON_ACCESSORIES.includes(a)).map((a) => (
+                {accessories.filter((a) => !(COMMON_ACCESSORY_KEYS as readonly string[]).includes(a)).map((a) => (
                   <span key={a} className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     {a}
                     <button type="button" onClick={() => handleToggleAccessory(a)} className="text-primary/50 hover:text-primary">x</button>
@@ -469,24 +475,24 @@ export default function WorkOrderIntake() {
 
         {/* ─── Section 4: Probleme ─── */}
         <section className="bg-card border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">4. Probleme rapporte</h2>
+          <h2 className="font-semibold mb-4">{t('wo.intake.sectionProblem')}</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Description du probleme *</label>
-              <HelpTooltip content="Décrivez le problème tel que rapporté par le client. Soyez aussi précis que possible pour faciliter le diagnostic." side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.problemDesc')}</label>
+              <HelpTooltip content={t('wo.intake.problemDescTooltip')} side="top">
                 <textarea
                   value={reportedIssue}
                   onChange={(e) => setReportedIssue(e.target.value)}
                   rows={4}
                   required
-                  placeholder="Decrire le probleme tel que rapporte par le client..."
+                  placeholder={t('wo.intake.problemDescPlaceholder')}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
                 />
               </HelpTooltip>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Categorie de service</label>
+                <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.serviceCategory')}</label>
                 <select
                   value={serviceCategory}
                   onChange={(e) => setServiceCategory(e.target.value)}
@@ -498,7 +504,7 @@ export default function WorkOrderIntake() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Priorite</label>
+                <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.priority')}</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
@@ -515,11 +521,11 @@ export default function WorkOrderIntake() {
 
         {/* ─── Section 5: Consentement et sauvegarde ─── */}
         <section className="bg-card border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">5. Consentement</h2>
+          <h2 className="font-semibold mb-4">{t('wo.intake.sectionConsent')}</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Sauvegarde des donnees</label>
-              <HelpTooltip content="Client fait = le client a déjà sauvegardé. Atelier fait = nous faisons la sauvegarde. Décliné = le client refuse. Non applicable = pas de données à sauvegarder." side="right">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.dataBackup')}</label>
+              <HelpTooltip content={t('wo.intake.dataBackupTooltip')} side="right">
                 <select
                   value={dataBackupConsent}
                   onChange={(e) => setDataBackupConsent(e.target.value)}
@@ -538,18 +544,18 @@ export default function WorkOrderIntake() {
                 onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="rounded border-input"
               />
-              Le client accepte les conditions de service et la politique de responsabilite
+              {t('wo.intake.termsAccept')}
             </label>
           </div>
         </section>
 
         {/* ─── Section 6: Finances et estimation ─── */}
         <section className="bg-card border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">6. Finances et estimation</h2>
+          <h2 className="font-semibold mb-4">{t('wo.intake.sectionFinance')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Montant maximum autorise ($)</label>
-              <HelpTooltip content="Montant au-delà duquel le client doit être contacté pour approbation avant de poursuivre les réparations" side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.maxAuthorized')}</label>
+              <HelpTooltip content={t('wo.intake.maxAuthorizedTooltip')} side="top">
                 <input
                   type="number"
                   step="0.01"
@@ -560,11 +566,11 @@ export default function WorkOrderIntake() {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </HelpTooltip>
-              <p className="text-[10px] text-muted-foreground mt-1">Montant maximum que le client autorise sans rapprobation</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t('wo.intake.maxAuthorizedHint')}</p>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Depot ($)</label>
-              <HelpTooltip content="Acompte versé par le client à la réception de l'appareil, déduit du coût final" side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.deposit')}</label>
+              <HelpTooltip content={t('wo.intake.depositTooltip')} side="top">
                 <input
                   type="number"
                   step="0.01"
@@ -577,8 +583,8 @@ export default function WorkOrderIntake() {
               </HelpTooltip>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Frais de diagnostic ($)</label>
-              <HelpTooltip content="Frais facturés pour le diagnostic initial, généralement non remboursables même si le client refuse la réparation" side="top">
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.diagnosticFee')}</label>
+              <HelpTooltip content={t('wo.intake.diagnosticFeeTooltip')} side="top">
                 <input
                   type="number"
                   step="0.01"
@@ -591,7 +597,7 @@ export default function WorkOrderIntake() {
               </HelpTooltip>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Date de ramassage estimee</label>
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.estimatedPickup')}</label>
               <input
                 type="date"
                 value={estimatedPickupDate}
@@ -601,13 +607,13 @@ export default function WorkOrderIntake() {
               />
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Technicien assigne</label>
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.assignedTech')}</label>
               <select
                 value={technicianId}
                 onChange={(e) => setTechnicianId(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
-                <option value="">Non assigne</option>
+                <option value="">{t('wo.intake.notAssigned')}</option>
                 {(technicians as User[] | undefined)?.map((tech) => (
                   <option key={tech.id} value={tech.id}>
                     {tech.firstName} {tech.lastName}
@@ -616,7 +622,7 @@ export default function WorkOrderIntake() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Garantie (jours)</label>
+              <label className="block text-xs text-muted-foreground mb-1">{t('wo.intake.warranty')}</label>
               <input
                 type="number"
                 min="0"
@@ -636,15 +642,15 @@ export default function WorkOrderIntake() {
             onClick={() => navigate(`${basePath}/bons-travail`)}
             className="rounded-md border border-input bg-background px-6 py-2 text-sm font-medium hover:bg-accent"
           >
-            Annuler
+            {t('wo.intake.cancel')}
           </button>
-          <HelpTooltip content="Valide et crée le bon de travail. Le client, l'appareil, et la description du problème sont obligatoires." side="top">
+          <HelpTooltip content={t('wo.intake.submitTooltip')} side="top">
             <button
               type="submit"
               disabled={createMutation.isPending}
               className="rounded-md bg-primary px-8 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {createMutation.isPending ? 'Creation...' : 'Creer le bon de travail'}
+              {createMutation.isPending ? t('wo.intake.creating') : t('wo.intake.submit')}
             </button>
           </HelpTooltip>
         </div>

@@ -10,20 +10,21 @@ import {
   WO_TERMINAL_STATUSES, DEVICE_TYPE_LABELS,
 } from '../../lib/constants';
 import { cn } from '../../lib/utils';
+import { useTranslation } from '../../lib/i18n/hook';
 
 type ViewMode = 'kanban' | 'list';
 
-function formatRelativeTime(dateStr: string) {
+function formatRelativeTime(dateStr: string, t: (key: string, params?: Record<string, string | number>) => string) {
   const d = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'a l\'instant';
-  if (diffMins < 60) return `il y a ${diffMins} min`;
+  if (diffMins < 1) return t('wo.dashboard.relativeNow');
+  if (diffMins < 60) return t('wo.dashboard.relativeMinutes', { count: diffMins });
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `il y a ${diffHours}h`;
+  if (diffHours < 24) return t('wo.dashboard.relativeHours', { count: diffHours });
   const diffDays = Math.floor(diffHours / 24);
-  return `il y a ${diffDays}j`;
+  return t('wo.dashboard.relativeDays', { count: diffDays });
 }
 
 function isOverdue(wo: WorkOrder): boolean {
@@ -36,6 +37,7 @@ function isOverdue(wo: WorkOrder): boolean {
 // Color-coded pill showing how many days since intake
 
 function AgeBadge({ wo }: { wo: WorkOrder }) {
+  const { t } = useTranslation();
   // Don't show for terminal statuses
   if ((WO_TERMINAL_STATUSES as readonly string[]).includes(wo.status)) return null;
 
@@ -56,10 +58,10 @@ function AgeBadge({ wo }: { wo: WorkOrder }) {
     colorClasses = 'bg-red-100 text-red-700';
   }
 
-  const label = days === 0 ? '< 1j' : `${days}j`;
+  const label = days === 0 ? t('wo.dashboard.ageLessThanDay') : t('wo.dashboard.ageDays', { count: days });
 
   return (
-    <HelpTooltip content="Âge du bon : vert = moins de 3 jours, jaune = 3-5 jours, orange = 6-9 jours, rouge = 10+ jours" side="top">
+    <HelpTooltip content={t('wo.dashboard.ageBadgeTooltip')} side="top">
       <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', colorClasses)}>
         {label}
       </span>
@@ -69,6 +71,7 @@ function AgeBadge({ wo }: { wo: WorkOrder }) {
 
 export default function WorkOrdersDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchInput, setSearchInput] = useState('');
@@ -120,16 +123,16 @@ export default function WorkOrdersDashboard() {
       {/* ─── Header ─── */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Bons de travail</h1>
-          <p className="text-sm text-muted-foreground">Gestion des réparations en atelier</p>
+          <h1 className="text-2xl font-bold">{t('wo.dashboard.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('wo.dashboard.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <HelpTooltip content="Créer un nouveau bon de travail pour enregistrer un appareil reçu en atelier" side="bottom">
+          <HelpTooltip content={t('wo.dashboard.newReceptionTooltip')} side="bottom">
             <Link
               to={`${basePath}/bons-travail/nouveau`}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90"
             >
-              + Nouvelle réception
+              {t('wo.dashboard.newReception')}
             </Link>
           </HelpTooltip>
         </div>
@@ -138,13 +141,13 @@ export default function WorkOrdersDashboard() {
       {/* ─── Stat Cards ─── */}
       {stats && !statsError && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-          <StatCard label="Total ouvert" value={stats.totalOpen} color="text-blue-700" bg="bg-blue-50" />
-          <StatCard label="Réception" value={stats.statusCounts.RECEPTION || 0} color="text-blue-700" bg="bg-blue-50" />
-          <StatCard label="Diagnostic" value={stats.statusCounts.DIAGNOSTIC || 0} color="text-cyan-700" bg="bg-cyan-50" />
-          <StatCard label="Att. pièces" value={stats.statusCounts.ATTENTE_PIECES || 0} color="text-orange-700" bg="bg-orange-50" />
-          <StatCard label="En réparation" value={stats.statusCounts.EN_REPARATION || 0} color="text-purple-700" bg="bg-purple-50" />
+          <StatCard label={t('wo.dashboard.totalOpen')} value={stats.totalOpen} color="text-blue-700" bg="bg-blue-50" />
+          <StatCard label={t('wo.dashboard.reception')} value={stats.statusCounts.RECEPTION || 0} color="text-blue-700" bg="bg-blue-50" />
+          <StatCard label={t('wo.dashboard.diagnostic')} value={stats.statusCounts.DIAGNOSTIC || 0} color="text-cyan-700" bg="bg-cyan-50" />
+          <StatCard label={t('wo.dashboard.waitingParts')} value={stats.statusCounts.ATTENTE_PIECES || 0} color="text-orange-700" bg="bg-orange-50" />
+          <StatCard label={t('wo.dashboard.inRepair')} value={stats.statusCounts.EN_REPARATION || 0} color="text-purple-700" bg="bg-purple-50" />
           <StatCard
-            label="En retard"
+            label={t('wo.dashboard.overdue')}
             value={stats.overdue}
             color={stats.overdue > 0 ? 'text-red-700' : 'text-gray-500'}
             bg={stats.overdue > 0 ? 'bg-red-50' : 'bg-gray-50'}
@@ -156,7 +159,7 @@ export default function WorkOrdersDashboard() {
       <div className="flex items-center gap-3 flex-wrap">
         {/* View toggle */}
         <div className="flex border rounded-md overflow-hidden">
-          <HelpTooltip content="Vue Kanban : affiche les bons de travail en colonnes par statut" side="bottom">
+          <HelpTooltip content={t('wo.dashboard.kanbanTooltip')} side="bottom">
             <button
               onClick={() => setViewMode('kanban')}
               className={cn(
@@ -164,10 +167,10 @@ export default function WorkOrdersDashboard() {
                 viewMode === 'kanban' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
               )}
             >
-              Kanban
+              {t('wo.dashboard.kanban')}
             </button>
           </HelpTooltip>
-          <HelpTooltip content="Vue liste : affiche les bons de travail dans un tableau triable" side="bottom">
+          <HelpTooltip content={t('wo.dashboard.listTooltip')} side="bottom">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
@@ -175,16 +178,16 @@ export default function WorkOrdersDashboard() {
                 viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-muted'
               )}
             >
-              Liste
+              {t('wo.dashboard.list')}
             </button>
           </HelpTooltip>
         </div>
 
         {/* Search */}
-        <HelpTooltip content="Rechercher par numéro de bon, nom du client, marque ou modèle d'appareil" side="bottom">
+        <HelpTooltip content={t('wo.dashboard.searchTooltip')} side="bottom">
           <input
             type="text"
-            placeholder="Rechercher..."
+            placeholder={t('wo.dashboard.searchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="px-3 py-1.5 text-sm border rounded-md bg-card w-48"
@@ -192,13 +195,13 @@ export default function WorkOrdersDashboard() {
         </HelpTooltip>
 
         {/* Status filter (always visible, reset on kanban) */}
-        <HelpTooltip content="Filtrer les bons de travail par statut. Sélectionnez « Tous » pour tout afficher." side="bottom">
+        <HelpTooltip content={t('wo.dashboard.filterStatusTooltip')} side="bottom">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-3 py-1.5 text-sm border rounded-md bg-card"
           >
-            <option value="">Tous les statuts</option>
+            <option value="">{t('wo.dashboard.allStatuses')}</option>
             {Object.entries(WO_STATUS_LABELS).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
             ))}
@@ -208,10 +211,10 @@ export default function WorkOrdersDashboard() {
 
       {/* ─── Content ─── */}
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Chargement...</div>
+        <div className="text-center py-12 text-muted-foreground">{t('wo.dashboard.loading')}</div>
       ) : isError ? (
         <div className="text-center py-12 text-red-600">
-          Erreur lors du chargement des bons de travail. Veuillez réessayer.
+          {t('wo.dashboard.loadError')}
         </div>
       ) : viewMode === 'kanban' ? (
         <KanbanView columns={columns} basePath={basePath} />
@@ -236,15 +239,17 @@ function StatCard({ label, value, color, bg }: { label: string; value: number; c
 // ─── Kanban View ───
 
 function KanbanView({ columns, basePath }: { columns: Record<string, WorkOrder[]>; basePath: string }) {
-  const columnTooltips: Record<string, string> = {
-    RECEPTION: 'Appareil reçu en atelier, en attente de diagnostic',
-    DIAGNOSTIC: 'Diagnostic en cours pour identifier le problème',
-    ATTENTE_APPROBATION: 'Devis envoyé au client, en attente de sa réponse',
-    APPROUVE: 'Devis approuvé par le client, prêt à démarrer',
-    ATTENTE_PIECES: 'En attente de pièces de rechange nécessaires',
-    EN_REPARATION: 'Réparation en cours par le technicien',
-    VERIFICATION: 'Réparation terminée, vérification qualité en cours',
-    PRET: 'Appareil prêt, en attente du ramassage par le client',
+  const { t } = useTranslation();
+
+  const columnTooltipKeys: Record<string, string> = {
+    RECEPTION: 'wo.dashboard.columnReception',
+    DIAGNOSTIC: 'wo.dashboard.columnDiagnostic',
+    ATTENTE_APPROBATION: 'wo.dashboard.columnAttenteApprobation',
+    APPROUVE: 'wo.dashboard.columnApprouve',
+    ATTENTE_PIECES: 'wo.dashboard.columnAttentePieces',
+    EN_REPARATION: 'wo.dashboard.columnEnReparation',
+    VERIFICATION: 'wo.dashboard.columnVerification',
+    PRET: 'wo.dashboard.columnPret',
   };
 
   return (
@@ -258,7 +263,7 @@ function KanbanView({ columns, basePath }: { columns: Record<string, WorkOrder[]
             className="flex-shrink-0 w-72 bg-muted/30 rounded-lg flex flex-col"
           >
             {/* Column header */}
-            <HelpTooltip content={columnTooltips[status] || WO_STATUS_LABELS[status] || status} side="top">
+            <HelpTooltip content={columnTooltipKeys[status] ? t(columnTooltipKeys[status]) : (WO_STATUS_LABELS[status] || status)} side="top">
               <div className={cn('px-3 py-2 rounded-t-lg border-b flex items-center justify-between', colors?.bg)}>
                 <span className={cn('text-xs font-semibold', colors?.text)}>
                   {WO_STATUS_LABELS[status]}
@@ -272,7 +277,7 @@ function KanbanView({ columns, basePath }: { columns: Record<string, WorkOrder[]
             {/* Cards */}
             <div className="flex-1 p-2 space-y-2 overflow-y-auto" style={{ maxHeight: '65vh' }}>
               {items.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">Aucun</p>
+                <p className="text-xs text-muted-foreground text-center py-4">{t('wo.dashboard.noItems')}</p>
               ) : (
                 items.map((wo) => (
                   <KanbanCard key={wo.id} wo={wo} basePath={basePath} />
@@ -287,6 +292,7 @@ function KanbanView({ columns, basePath }: { columns: Record<string, WorkOrder[]
 }
 
 function KanbanCard({ wo, basePath }: { wo: WorkOrder; basePath: string }) {
+  const { t } = useTranslation();
   const overdue = isOverdue(wo);
 
   return (
@@ -318,23 +324,23 @@ function KanbanCard({ wo, basePath }: { wo: WorkOrder; basePath: string }) {
         {wo.technician ? (
           <span>{wo.technician.firstName} {wo.technician.lastName?.charAt(0)}.</span>
         ) : (
-          <span className="italic">Non assigné</span>
+          <span className="italic">{t('wo.dashboard.unassigned')}</span>
         )}
         <div className="flex items-center gap-1.5">
           <AgeBadge wo={wo} />
-          <span>{formatRelativeTime(wo.intakeDate)}</span>
+          <span>{formatRelativeTime(wo.intakeDate, t)}</span>
         </div>
       </div>
 
       {overdue && (
         <div className="text-xs font-medium text-red-700">
-          En retard
+          {t('wo.dashboard.overdueLabel')}
         </div>
       )}
 
       {wo.estimatedCost && (
         <div className="text-xs text-muted-foreground">
-          Devis: {wo.estimatedCost.toFixed(2)}$
+          {t('wo.dashboard.quoteLabel', { amount: wo.estimatedCost.toFixed(2) })}
         </div>
       )}
     </Link>
@@ -344,10 +350,12 @@ function KanbanCard({ wo, basePath }: { wo: WorkOrder; basePath: string }) {
 // ─── List View ───
 
 function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath: string }) {
+  const { t } = useTranslation();
+
   if (workOrders.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        Aucun bon de travail trouvé.
+        {t('wo.dashboard.noWorkOrders')}
       </div>
     );
   }
@@ -358,15 +366,15 @@ function ListView({ workOrders, basePath }: { workOrders: WorkOrder[]; basePath:
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">#</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Statut</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Client</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Appareil</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Problème</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Technicien</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Priorité</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Réception</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Âge</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thNumber')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thStatus')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thClient')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thDevice')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thProblem')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thTechnician')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thPriority')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thReception')}</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">{t('wo.dashboard.thAge')}</th>
             </tr>
           </thead>
           <tbody className="divide-y">

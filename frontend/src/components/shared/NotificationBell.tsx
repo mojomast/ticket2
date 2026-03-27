@@ -7,12 +7,14 @@ import { useAuth } from '../../hooks/use-auth';
 import { formatRelativeTime } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from './HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function NotificationBell() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -34,7 +36,7 @@ export default function NotificationBell() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
     onError: () => {
-      toast.error('Impossible de marquer la notification comme lue');
+      toast.error(t('notification.markReadError'));
     },
   });
 
@@ -43,10 +45,10 @@ export default function NotificationBell() {
     mutationFn: () => api.notifications.markAllRead(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      toast.success('Toutes les notifications marquées comme lues');
+      toast.success(t('notification.markAllSuccess'));
     },
     onError: () => {
-      toast.error('Impossible de marquer toutes les notifications comme lues');
+      toast.error(t('notification.markAllError'));
     },
   });
 
@@ -98,7 +100,7 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={containerRef}>
       {/* Bell icon button */}
-      <HelpTooltip content={unreadCount > 0 ? `Vous avez ${unreadCount} notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}` : 'Aucune nouvelle notification'} side="bottom">
+      <HelpTooltip content={unreadCount > 0 ? t('notification.unread', { count: unreadCount, plural: unreadCount > 1 ? 's' : '' }) : t('notification.noNew')} side="bottom">
         <button
           onClick={() => setOpen(!open)}
           className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
@@ -118,18 +120,18 @@ export default function NotificationBell() {
         <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border bg-card shadow-lg z-50">
           {/* Header */}
           <div className="border-b px-4 py-3">
-            <h3 className="text-sm font-semibold">Notifications</h3>
+            <h3 className="text-sm font-semibold">{t('notification.title')}</h3>
           </div>
 
           {/* Notification list */}
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Aucune notification
+                {t('notification.none')}
               </div>
             ) : (
               notifications.map((notification: Notification) => (
-                <HelpTooltip key={notification.id} content={!notification.readAt ? 'Cliquer pour marquer comme lu' : 'Notification déjà lue'} side="left">
+                <HelpTooltip key={notification.id} content={!notification.readAt ? t('notification.markRead') : t('notification.alreadyRead')} side="left">
                   <button
                     onClick={() => handleNotificationClick(notification)}
                     className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-accent/50 transition-colors ${
@@ -160,15 +162,15 @@ export default function NotificationBell() {
           {/* Footer: Mark all as read */}
           {notifications.length > 0 && unreadCount > 0 && (
             <div className="border-t px-4 py-2">
-              <HelpTooltip content="Marquer toutes les notifications comme lues" side="bottom">
+              <HelpTooltip content={t('notification.markAllRead')} side="bottom">
                 <button
                   onClick={handleMarkAllRead}
                   disabled={markAllReadMutation.isPending}
                   className="w-full text-center text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
                 >
                   {markAllReadMutation.isPending
-                    ? 'Chargement...'
-                    : 'Tout marquer comme lu'}
+                    ? t('notification.markAllReadLoading')
+                    : t('notification.markAllRead')}
                 </button>
               </HelpTooltip>
             </div>

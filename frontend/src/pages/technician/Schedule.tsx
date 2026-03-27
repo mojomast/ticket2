@@ -7,6 +7,7 @@ import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 /** Format a Date to YYYY-MM-DD for API queries */
 function toDateString(d: Date): string {
@@ -34,6 +35,7 @@ export default function TechSchedule() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // ── Date filtering ──────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -61,10 +63,10 @@ export default function TechSchedule() {
     }) => api.appointments.changeStatus(id, status, cancelReason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Statut mis à jour');
+      toast.success(t('tech.schedule.statusUpdated'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Impossible de changer le statut');
+      toast.error(err.message || t('tech.schedule.statusError'));
     },
   });
 
@@ -105,40 +107,40 @@ export default function TechSchedule() {
   // ── Render ──────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Mon horaire</h1>
+      <h1 className="text-2xl font-bold">{t('tech.schedule.title')}</h1>
 
       {/* Date navigation bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <HelpTooltip content="Voir les rendez-vous du jour précédent" side="bottom">
+        <HelpTooltip content={t('tech.schedule.prevDayTooltip')} side="bottom">
           <button
             onClick={goToPreviousDay}
             className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-            aria-label="Jour précédent"
+            aria-label={t('tech.schedule.prevDay')}
           >
-            ← Préc.
+            {t('tech.schedule.prevDay')}
           </button>
         </HelpTooltip>
 
-        <HelpTooltip content="Revenir à la date d'aujourd'hui" side="bottom">
+        <HelpTooltip content={t('tech.schedule.todayTooltip')} side="bottom">
           <button
             onClick={goToToday}
             className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
           >
-            Aujourd&apos;hui
+            {t('tech.schedule.today')}
           </button>
         </HelpTooltip>
 
-        <HelpTooltip content="Voir les rendez-vous du jour suivant" side="bottom">
+        <HelpTooltip content={t('tech.schedule.nextDayTooltip')} side="bottom">
           <button
             onClick={goToNextDay}
             className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-            aria-label="Jour suivant"
+            aria-label={t('tech.schedule.nextDay')}
           >
-            Suiv. →
+            {t('tech.schedule.nextDay')}
           </button>
         </HelpTooltip>
 
-        <HelpTooltip content="Sélectionner une date spécifique" side="bottom">
+        <HelpTooltip content={t('tech.schedule.datePickTooltip')} side="bottom">
           <input
             type="date"
             value={dateFrom}
@@ -155,15 +157,15 @@ export default function TechSchedule() {
       {/* Appointment list */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Chargement…
+          {t('common.loadingEllipsis')}
         </div>
       ) : isError ? (
         <div className="text-center py-8 text-destructive">
-          Erreur lors du chargement des rendez-vous.
+          {t('tech.schedule.loadError')}
         </div>
       ) : appointments.length === 0 ? (
         <div className="bg-card border rounded-lg p-8 text-center text-muted-foreground">
-          Aucun rendez-vous pour cette journée
+          {t('appointment.noAppointmentsToday')}
         </div>
       ) : (
         <div className="bg-card border rounded-lg divide-y">
@@ -178,7 +180,7 @@ export default function TechSchedule() {
                   to={`/technicien/billets/${apt.ticketId}`}
                   className="text-sm font-medium text-primary hover:underline"
                 >
-                  {apt.ticket?.title ?? 'Sans titre'}
+                  {apt.ticket?.title ?? t('common.noTitle')}
                 </Link>
                 <p className="text-xs text-muted-foreground">
                   {formatDateTime(apt.scheduledStart)} –{' '}
@@ -192,7 +194,7 @@ export default function TechSchedule() {
               </div>
 
               {/* Status badge */}
-              <HelpTooltip content="Statut actuel du rendez-vous" side="left">
+              <HelpTooltip content={t('tech.schedule.statusTooltip')} side="left">
                 <span><StatusBadge status={apt.status} type="appointment" /></span>
               </HelpTooltip>
 
@@ -200,7 +202,7 @@ export default function TechSchedule() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 {/* Start */}
                 {canStart(apt.status) && (
-                  <HelpTooltip content="Marquer ce rendez-vous comme démarré" side="top">
+                  <HelpTooltip content={t('tech.schedule.startTooltip')} side="top">
                     <button
                       disabled={statusMutation.isPending}
                       onClick={() =>
@@ -211,14 +213,14 @@ export default function TechSchedule() {
                       }
                       className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Démarrer
+                      {t('tech.schedule.start')}
                     </button>
                   </HelpTooltip>
                 )}
 
                 {/* Complete */}
                 {canComplete(apt.status) && (
-                  <HelpTooltip content="Marquer ce rendez-vous comme terminé" side="top">
+                  <HelpTooltip content={t('tech.schedule.completeTooltip')} side="top">
                     <button
                       disabled={statusMutation.isPending}
                       onClick={() =>
@@ -229,14 +231,14 @@ export default function TechSchedule() {
                       }
                       className="inline-flex items-center rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Terminer
+                      {t('tech.schedule.complete')}
                     </button>
                   </HelpTooltip>
                 )}
 
                 {/* Cancel (permission-gated) */}
                 {canCancelAppointment(apt.status) && (
-                  <HelpTooltip content="Annuler ce rendez-vous (nécessite la permission)" side="top">
+                  <HelpTooltip content={t('tech.schedule.cancelTooltip')} side="top">
                     <button
                       disabled={statusMutation.isPending}
                       onClick={() =>
@@ -247,7 +249,7 @@ export default function TechSchedule() {
                       }
                       className="inline-flex items-center rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                   </HelpTooltip>
                 )}

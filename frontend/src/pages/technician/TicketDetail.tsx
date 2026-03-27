@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type Ticket, type AppointmentProposal } from '../../api/client';
 import StatusBadge from '../../components/shared/StatusBadge';
 import MessageThread from '../../components/shared/MessageThread';
+import AttachmentSection from '../../components/shared/AttachmentSection';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import { formatDateTime, formatCurrency } from '../../lib/utils';
@@ -1002,6 +1003,9 @@ export default function TechTicketDetail() {
               )}
             </div>
           )}
+
+          {/* ─── Attachments Section ─── */}
+          <AttachmentSection ticketId={id!} canUpload={true} isAdmin={false} />
 
           {/* Messages */}
           <div className="bg-card border rounded-lg p-6">

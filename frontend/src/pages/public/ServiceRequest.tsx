@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
+import { useTranslation } from '../../lib/i18n/hook';
 import { SERVICE_CATEGORY_LABELS, SERVICE_MODE_LABELS, PRIORITY_LABELS } from '../../lib/constants';
 
 export default function ServiceRequest() {
+  const { t } = useTranslation();
   const [submitted, setSubmitted] = useState(false);
   const toast = useToast();
 
@@ -38,7 +40,7 @@ export default function ServiceRequest() {
       setSubmitted(true);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Une erreur est survenue lors de la soumission.');
+      toast.error(error.message || t('serviceRequest.errorSubmit'));
     },
   });
 
@@ -53,13 +55,12 @@ export default function ServiceRequest() {
       <div className="min-h-screen flex items-center justify-center bg-muted/50">
         <div className="bg-card border rounded-lg p-8 shadow-sm text-center max-w-md">
           <div className="text-green-500 text-4xl mb-4">✓</div>
-          <h2 className="text-xl font-bold mb-2">Demande soumise</h2>
+          <h2 className="text-xl font-bold mb-2">{t('serviceRequest.submitted')}</h2>
           <p className="text-muted-foreground mb-4">
-            Votre demande de service a ete soumise avec succes.
-            Vous recevrez un courriel de confirmation.
+            {t('serviceRequest.submittedMessage')}
           </p>
           <Link to="/" className="text-primary hover:underline text-sm">
-            Retour a l'accueil
+            {t('serviceRequest.backHome')}
           </Link>
         </div>
       </div>
@@ -70,15 +71,15 @@ export default function ServiceRequest() {
     <div className="min-h-screen bg-muted/50">
       <header className="bg-card border-b px-4 py-4">
         <div className="container mx-auto flex justify-between items-center">
-          <Link to="/" className="text-xl font-bold text-primary">Valitek</Link>
+          <Link to="/" className="text-xl font-bold text-primary">{t('landing.brand')}</Link>
           <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">
-            Connexion
+            {t('auth.login')}
           </Link>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6">Demande de service</h1>
+        <h1 className="text-2xl font-bold mb-6">{t('serviceRequest.title')}</h1>
 
         <form
           onSubmit={handleSubmit}
@@ -87,13 +88,13 @@ export default function ServiceRequest() {
           {/* Inline error banner when mutation fails */}
           {mutation.isError && (
             <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive">
-              {mutation.error?.message || 'Une erreur est survenue lors de la soumission.'}
+              {mutation.error?.message || t('serviceRequest.errorSubmit')}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Prenom</label>
+              <label className="block text-sm font-medium mb-1">{t('serviceRequest.firstName')}</label>
               <input
                 type="text"
                 required
@@ -103,7 +104,7 @@ export default function ServiceRequest() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Nom</label>
+              <label className="block text-sm font-medium mb-1">{t('serviceRequest.lastName')}</label>
               <input
                 type="text"
                 required
@@ -115,7 +116,7 @@ export default function ServiceRequest() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Courriel</label>
+            <label className="block text-sm font-medium mb-1">{t('serviceRequest.email')}</label>
             <input
               type="email"
               required
@@ -126,7 +127,7 @@ export default function ServiceRequest() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Telephone</label>
+            <label className="block text-sm font-medium mb-1">{t('serviceRequest.phone')}</label>
             <input
               type="tel"
               value={phone}
@@ -136,7 +137,7 @@ export default function ServiceRequest() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Titre</label>
+            <label className="block text-sm font-medium mb-1">{t('serviceRequest.ticketTitle')}</label>
             <input
               type="text"
               required
@@ -147,7 +148,7 @@ export default function ServiceRequest() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1">{t('serviceRequest.description')}</label>
             <textarea
               required
               rows={4}
@@ -159,7 +160,7 @@ export default function ServiceRequest() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Categorie</label>
+              <label className="block text-sm font-medium mb-1">{t('serviceRequest.category')}</label>
               <select
                 value={serviceCategory}
                 onChange={(e) => setServiceCategory(e.target.value)}
@@ -171,7 +172,7 @@ export default function ServiceRequest() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Priorite</label>
+              <label className="block text-sm font-medium mb-1">{t('serviceRequest.priority')}</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
@@ -185,7 +186,7 @@ export default function ServiceRequest() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Mode de service</label>
+            <label className="block text-sm font-medium mb-1">{t('serviceRequest.serviceMode')}</label>
             <select
               value={serviceMode}
               onChange={(e) => setServiceMode(e.target.value)}
@@ -202,7 +203,7 @@ export default function ServiceRequest() {
             disabled={mutation.isPending}
             className="w-full py-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mutation.isPending ? 'Soumission...' : 'Soumettre la demande'}
+            {mutation.isPending ? t('serviceRequest.submitting') : t('serviceRequest.submit')}
           </button>
         </form>
       </main>

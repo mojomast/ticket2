@@ -3,6 +3,9 @@ import { AppError } from '../lib/errors.js';
 import type { CreateAppointmentInput, UpdateAppointmentInput, CreateProposalInput, RespondProposalInput } from '../validations/appointment.js';
 import type { AppointmentStatus, UserRole, TicketStatus } from '@prisma/client';
 import { getPagination, buildPaginatedResponse } from '../types/index.js';
+import { sendEmail } from './email.service.js';
+import { sendSms } from './sms.service.js';
+import { logger } from '../lib/logger.js';
 
 const APPOINTMENT_INCLUDE = {
   ticket: { select: { id: true, ticketNumber: true, title: true, status: true } },
@@ -93,6 +96,29 @@ export async function createAppointment(data: CreateAppointmentInput, userId: st
       where: { id: ticket.id },
       data: { status: 'PLANIFIEE' },
     });
+  }
+
+  // Fire-and-forget: email and SMS customer about the confirmed appointment
+  if (ticket.customerId) {
+    const scheduledDate = new Date(data.scheduledStart).toLocaleDateString('fr-CA');
+    const scheduledTime = new Date(data.scheduledStart).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+
+    prisma.user.findUnique({ where: { id: ticket.customerId }, select: { email: true, phone: true, firstName: true } })
+      .then(customer => {
+        if (customer?.email) {
+          sendEmail({
+            to: customer.email,
+            subject: `Rendez-vous confirmé — Billet ${ticket.ticketNumber}`,
+            body: `Bonjour ${customer.firstName},\n\nUn rendez-vous a été planifié pour votre billet ${ticket.ticketNumber}.\n\nDate: ${scheduledDate}\nHeure: ${scheduledTime}\n\nMerci!`,
+          }).catch(err => logger.error({ err }, 'Failed to send appointment created email'));
+        }
+        if (customer?.phone) {
+          sendSms({
+            to: customer.phone,
+            message: `Valitek — Rendez-vous planifié pour le ${scheduledDate} à ${scheduledTime} (billet ${ticket.ticketNumber}).`,
+          }).catch(err => logger.error({ err }, 'Failed to send appointment created SMS'));
+        }
+      }).catch(() => {});
   }
 
   return appointment;
@@ -425,6 +451,29 @@ export async function acceptProposal(proposalId: string, data: RespondProposalIn
 
     return { proposal: updatedProposal, appointment };
   });
+
+  // Fire-and-forget: SMS and email the customer that their appointment is confirmed
+  if (proposal.ticket.customerId) {
+    const scheduledDate = proposal.proposedStart.toLocaleDateString('fr-CA');
+    const scheduledTime = proposal.proposedStart.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+
+    prisma.user.findUnique({ where: { id: proposal.ticket.customerId }, select: { email: true, phone: true, firstName: true } })
+      .then(customer => {
+        if (customer?.email) {
+          sendEmail({
+            to: customer.email,
+            subject: `Rendez-vous confirmé — Billet ${proposal.ticket.ticketNumber}`,
+            body: `Bonjour ${customer.firstName},\n\nVotre rendez-vous pour le billet ${proposal.ticket.ticketNumber} a été confirmé.\n\nDate: ${scheduledDate}\nHeure: ${scheduledTime}\n\nMerci!`,
+          }).catch(err => logger.error({ err }, 'Failed to send appointment confirmed email'));
+        }
+        if (customer?.phone) {
+          sendSms({
+            to: customer.phone,
+            message: `Valitek — Rendez-vous confirmé pour le ${scheduledDate} à ${scheduledTime} (billet ${proposal.ticket.ticketNumber}).`,
+          }).catch(err => logger.error({ err }, 'Failed to send appointment confirmed SMS'));
+        }
+      }).catch(() => {});
+  }
 
   return result;
 }

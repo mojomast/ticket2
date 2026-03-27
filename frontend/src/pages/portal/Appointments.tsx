@@ -6,6 +6,7 @@ import StatusBadge from '../../components/shared/StatusBadge';
 import { formatDateTime } from '../../lib/utils';
 import { useToast } from '../../hooks/use-toast';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 /** Appointment statuses that allow cancellation */
 const CANCELLABLE_STATUSES = ['PLANIFIE', 'CONFIRME'];
@@ -16,6 +17,7 @@ export default function PortalAppointments() {
   const [filter, setFilter] = useState<FilterMode>('upcoming');
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useTranslation();
 
   // ─── Data fetching ───
   const {
@@ -32,10 +34,10 @@ export default function PortalAppointments() {
     mutationFn: (id: string) => api.appointments.cancel(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Rendez-vous annulé avec succès.');
+      toast.success(t('appointment.cancelSuccess'));
     },
     onError: () => {
-      toast.error('Impossible d\'annuler le rendez-vous. Veuillez réessayer.');
+      toast.error(t('appointment.cancelError'));
     },
   });
 
@@ -81,18 +83,18 @@ export default function PortalAppointments() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold">Mes rendez-vous</h1>
+        <h1 className="text-2xl font-bold">{t('appointment.myAppointments')}</h1>
 
         {/* Filter toggle */}
         <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-          <HelpTooltip content="Afficher les rendez-vous à venir" side="bottom">
-            <span>{filterButton('upcoming', 'À venir')}</span>
+          <HelpTooltip content={t('portal.appointments.upcomingTooltip')} side="bottom">
+            <span>{filterButton('upcoming', t('appointment.upcoming'))}</span>
           </HelpTooltip>
-          <HelpTooltip content="Afficher les rendez-vous passés" side="bottom">
-            <span>{filterButton('past', 'Passés')}</span>
+          <HelpTooltip content={t('portal.appointments.pastTooltip')} side="bottom">
+            <span>{filterButton('past', t('appointment.past'))}</span>
           </HelpTooltip>
-          <HelpTooltip content="Afficher tous les rendez-vous" side="bottom">
-            <span>{filterButton('all', 'Tous')}</span>
+          <HelpTooltip content={t('portal.appointments.allTooltip')} side="bottom">
+            <span>{filterButton('all', t('appointment.all'))}</span>
           </HelpTooltip>
         </div>
       </div>
@@ -101,14 +103,14 @@ export default function PortalAppointments() {
       {isLoading && (
         <div className="text-center py-12 text-muted-foreground">
           <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent mb-2" />
-          <p>Chargement des rendez-vous…</p>
+          <p>{t('appointment.loadingAppointments')}</p>
         </div>
       )}
 
       {/* Error state */}
       {isError && (
         <div className="text-center py-12 text-destructive">
-          <p>Erreur lors du chargement des rendez-vous.</p>
+          <p>{t('appointment.loadError')}</p>
         </div>
       )}
 
@@ -117,9 +119,9 @@ export default function PortalAppointments() {
         <>
           {sorted.length === 0 ? (
             <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
-              {filter === 'upcoming' && 'Aucun rendez-vous à venir.'}
-              {filter === 'past' && 'Aucun rendez-vous passé.'}
-              {filter === 'all' && 'Aucun rendez-vous.'}
+              {filter === 'upcoming' && t('appointment.noUpcoming')}
+              {filter === 'past' && t('appointment.noPast')}
+              {filter === 'all' && t('appointment.noAppointments')}
             </div>
           ) : (
             <div className="bg-card border rounded-lg divide-y">
@@ -131,7 +133,7 @@ export default function PortalAppointments() {
                       to={`/portail/billets/${apt.ticketId}`}
                       className="text-sm font-medium text-primary hover:underline truncate block"
                     >
-                      {apt.ticket?.title ?? 'Sans titre'}
+                      {apt.ticket?.title ?? t('common.noTitle')}
                     </Link>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {apt.ticket?.ticketNumber && (
@@ -141,7 +143,7 @@ export default function PortalAppointments() {
                     </p>
                     {apt.technician && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Technicien : {apt.technician.firstName} {apt.technician.lastName}
+                        {t('appointment.technicianLabel', { name: `${apt.technician.firstName} ${apt.technician.lastName}` })}
                       </p>
                     )}
                     {apt.notes && (
@@ -151,19 +153,19 @@ export default function PortalAppointments() {
 
                   {/* Right: status + actions */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <HelpTooltip content="Statut actuel du rendez-vous" side="left">
+                    <HelpTooltip content={t('portal.appointments.statusTooltip')} side="left">
                       <span><StatusBadge status={apt.status} type="appointment" /></span>
                     </HelpTooltip>
 
                     {isCancellable(apt.status) && (
-                      <HelpTooltip content="Annuler ce rendez-vous — possible seulement avant le début" side="left">
+                      <HelpTooltip content={t('portal.appointments.cancelTooltip')} side="left">
                         <button
                           type="button"
                           onClick={() => cancelMutation.mutate(apt.id)}
                           disabled={cancelMutation.isPending}
                           className="px-3 py-1.5 text-xs font-medium rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          {cancelMutation.isPending ? 'Annulation…' : 'Annuler'}
+                          {cancelMutation.isPending ? t('appointment.cancelling') : t('common.cancel')}
                         </button>
                       </HelpTooltip>
                     )}
@@ -176,8 +178,12 @@ export default function PortalAppointments() {
           {/* Summary count */}
           {sorted.length > 0 && (
             <p className="text-xs text-muted-foreground text-right">
-              {sorted.length} rendez-vous{sorted.length > 1 ? '' : ''}
-              {filter !== 'all' && ` (${filter === 'upcoming' ? 'à venir' : 'passés'})`}
+              {filter !== 'all'
+                ? t('appointment.countFiltered', {
+                    count: sorted.length,
+                    filter: filter === 'upcoming' ? t('appointment.upcoming').toLowerCase() : t('appointment.past').toLowerCase(),
+                  })
+                : t('appointment.count', { count: sorted.length })}
             </p>
           )}
         </>

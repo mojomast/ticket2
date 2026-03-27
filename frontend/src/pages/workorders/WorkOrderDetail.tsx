@@ -13,6 +13,7 @@ import {
   SERVICE_CATEGORY_LABELS, PRIORITY_LABELS,
   WO_TERMINAL_STATUSES,
 } from '../../lib/constants';
+import { useTranslation } from '../../lib/i18n/hook';
 
 // ─── State Machine (mirrors backend WO_ALLOWED_TRANSITIONS) ───
 
@@ -70,6 +71,7 @@ export default function WorkOrderDetail() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const basePath = user?.role === 'ADMIN' ? '/admin' : '/technicien';
   const isAdmin = user?.role === 'ADMIN';
@@ -129,11 +131,11 @@ export default function WorkOrderDetail() {
       queryClient.invalidateQueries({ queryKey: ['workorder-notes', id] });
       queryClient.invalidateQueries({ queryKey: ['workorders'] });
       queryClient.invalidateQueries({ queryKey: ['workorders-stats'] });
-      toast.success('Statut mis à jour');
+      toast.success(t('wo.detail.statusUpdated'));
       setShowStatusReason(null);
       setStatusReason('');
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur'),
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   const quoteMutation = useMutation({
@@ -144,13 +146,13 @@ export default function WorkOrderDetail() {
       queryClient.invalidateQueries({ queryKey: ['workorder-notes', id] });
       queryClient.invalidateQueries({ queryKey: ['workorders'] });
       queryClient.invalidateQueries({ queryKey: ['workorders-stats'] });
-      toast.success('Devis envoyé au client');
+      toast.success(t('wo.detail.quoteSuccess'));
       setShowQuoteForm(false);
       setQuoteEstimatedCost('');
       setQuoteDiagnosticNotes('');
       setQuotePickupDate('');
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur'),
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   const updateMutation = useMutation({
@@ -158,10 +160,10 @@ export default function WorkOrderDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workorder', id] });
       queryClient.invalidateQueries({ queryKey: ['workorders'] });
-      toast.success('Bon de travail mis à jour');
+      toast.success(t('wo.detail.woUpdated'));
       setEditSection(null);
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur'),
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   const addNoteMutation = useMutation({
@@ -169,22 +171,22 @@ export default function WorkOrderDetail() {
       api.workorders.notes.create(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workorder-notes', id] });
-      toast.success('Note ajoutée');
+      toast.success(t('wo.detail.noteAdded'));
       setNoteContent('');
       setNoteIsInternal(false);
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur'),
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => api.workorders.delete(id!),
     onSuccess: () => {
-      toast.success('Bon de travail supprimé');
+      toast.success(t('wo.detail.woDeleted'));
       queryClient.invalidateQueries({ queryKey: ['workorders'] });
       queryClient.invalidateQueries({ queryKey: ['workorders-stats'] });
       navigate(`${basePath}/bons-travail`);
     },
-    onError: (err: Error) => toast.error(err.message || 'Erreur'),
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   // ─── Handlers ───
@@ -197,7 +199,7 @@ export default function WorkOrderDetail() {
     }
     // For terminal transitions (REMIS), confirm first
     if (newStatus === 'REMIS') {
-      if (!confirm('Confirmer la remise de l\'appareil au client? Cette action est définitive.')) return;
+      if (!confirm(t('wo.detail.confirmRemise'))) return;
     }
     statusMutation.mutate({ status: newStatus });
   }
@@ -212,11 +214,11 @@ export default function WorkOrderDetail() {
     e.preventDefault();
     const cost = parseFloat(quoteEstimatedCost);
     if (isNaN(cost) || cost <= 0) {
-      toast.error('Le cout estime doit etre un nombre positif');
+      toast.error(t('wo.detail.quoteCostError'));
       return;
     }
     if (!quoteDiagnosticNotes.trim()) {
-      toast.error('Les notes de diagnostic sont requises');
+      toast.error(t('wo.detail.quoteDiagRequired'));
       return;
     }
     quoteMutation.mutate({
@@ -229,7 +231,7 @@ export default function WorkOrderDetail() {
   function handleAddNote(e: React.FormEvent) {
     e.preventDefault();
     if (!noteContent.trim()) {
-      toast.error('Le contenu de la note est requis');
+      toast.error(t('wo.detail.noteContentRequired'));
       return;
     }
     addNoteMutation.mutate({ content: noteContent.trim(), isInternal: noteIsInternal });
@@ -239,7 +241,7 @@ export default function WorkOrderDetail() {
     e.preventDefault();
     const cost = parseFloat(partCost);
     if (!partName.trim() || isNaN(cost)) {
-      toast.error('Nom et cout requis');
+      toast.error(t('wo.detail.partError'));
       return;
     }
     const currentParts = (wo.partsUsed as Array<{ name: string; cost: number; type?: string }>) || [];
@@ -258,16 +260,16 @@ export default function WorkOrderDetail() {
 
   // ─── Render ───
 
-  if (isLoading) return <div className="text-center py-8">Chargement...</div>;
-  if (!workOrder) return <div className="text-center py-8">Bon de travail introuvable</div>;
+  if (isLoading) return <div className="text-center py-8">{t('wo.detail.loading')}</div>;
+  if (!workOrder) return <div className="text-center py-8">{t('wo.detail.notFound')}</div>;
 
   const wo: WorkOrder = workOrder;
   const isTerminal = (WO_TERMINAL_STATUSES as readonly string[]).includes(wo.status);
 
   // Get allowed transitions for the user's role
   const transitions = (WO_TRANSITIONS[wo.status] || [])
-    .filter((t) => t.roles.includes(user?.role || ''))
-    .map((t) => t.to);
+    .filter((tr) => tr.roles.includes(user?.role || ''))
+    .map((tr) => tr.to);
 
   // Quote can be sent from DIAGNOSTIC status
   const canSendQuote = wo.status === 'DIAGNOSTIC' && (isAdmin || user?.role === 'TECHNICIAN');
@@ -280,13 +282,13 @@ export default function WorkOrderDetail() {
           to={`${basePath}/bons-travail`}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          &larr; Retour
+          {t('wo.detail.back')}
         </Link>
         <h1 className="text-2xl font-bold font-mono">{wo.orderNumber}</h1>
         <StatusBadge status={wo.status} type="workorder" />
         <StatusBadge status={wo.priority} type="priority" />
         {isTerminal && (
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Terminal</span>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">{t('wo.detail.terminal')}</span>
         )}
       </div>
 
@@ -297,29 +299,29 @@ export default function WorkOrderDetail() {
 
           {/* Device Info */}
           <div className="bg-card border rounded-lg p-6">
-            <HelpTooltip content="Informations sur l'appareil enregistré lors de la réception en atelier" side="right">
-              <h3 className="font-semibold mb-3">Appareil</h3>
+            <HelpTooltip content={t('wo.detail.deviceTooltip')} side="right">
+              <h3 className="font-semibold mb-3">{t('wo.detail.device')}</h3>
             </HelpTooltip>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <InfoField label="Type" value={DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType} />
-              <InfoField label="Marque" value={wo.deviceBrand} />
-              <InfoField label="Modele" value={wo.deviceModel} />
-              {wo.deviceSerial && <InfoField label="No. serie" value={wo.deviceSerial} />}
-              {wo.deviceColor && <InfoField label="Couleur" value={wo.deviceColor} />}
-              {wo.deviceOs && <InfoField label="Systeme" value={wo.deviceOs} />}
+              <InfoField label={t('wo.detail.typeLabel')} value={DEVICE_TYPE_LABELS[wo.deviceType] || wo.deviceType} />
+              <InfoField label={t('wo.detail.brandLabel')} value={wo.deviceBrand} />
+              <InfoField label={t('wo.detail.modelLabel')} value={wo.deviceModel} />
+              {wo.deviceSerial && <InfoField label={t('wo.detail.serialLabel')} value={wo.deviceSerial} />}
+              {wo.deviceColor && <InfoField label={t('wo.detail.colorLabel')} value={wo.deviceColor} />}
+              {wo.deviceOs && <InfoField label={t('wo.detail.osLabel')} value={wo.deviceOs} />}
               {wo.devicePassword && (
-                <InfoField label="Mot de passe" value={wo.devicePassword} sensitive />
+                <InfoField label={t('wo.detail.passwordLabel')} value={wo.devicePassword} sensitive showLabel={t('wo.detail.showPassword')} />
               )}
             </div>
           </div>
 
           {/* Reported Issue */}
           <div className="bg-card border rounded-lg p-6">
-            <h3 className="font-semibold mb-2">Probleme rapporte</h3>
+            <h3 className="font-semibold mb-2">{t('wo.detail.reportedIssue')}</h3>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{wo.reportedIssue}</p>
             {wo.serviceCategory && (
               <p className="text-xs text-muted-foreground mt-2">
-                Categorie: {SERVICE_CATEGORY_LABELS[wo.serviceCategory] || wo.serviceCategory}
+                {t('wo.detail.categoryLabel', { category: SERVICE_CATEGORY_LABELS[wo.serviceCategory] || wo.serviceCategory })}
               </p>
             )}
           </div>
@@ -327,16 +329,16 @@ export default function WorkOrderDetail() {
           {/* Condition & Accessories */}
           {(wo.conditionNotes || (wo.accessories && wo.accessories.length > 0) || wo.conditionChecklist) && (
             <div className="bg-card border rounded-lg p-6">
-              <h3 className="font-semibold mb-3">Etat et accessoires</h3>
+              <h3 className="font-semibold mb-3">{t('wo.detail.conditionTitle')}</h3>
               {wo.conditionNotes && (
                 <div className="mb-3">
-                  <span className="text-xs text-muted-foreground font-medium">Notes sur l'etat:</span>
+                  <span className="text-xs text-muted-foreground font-medium">{t('wo.detail.conditionNotes')}</span>
                   <p className="text-sm mt-1">{wo.conditionNotes}</p>
                 </div>
               )}
               {wo.accessories && wo.accessories.length > 0 && (
                 <div className="mb-3">
-                  <span className="text-xs text-muted-foreground font-medium">Accessoires:</span>
+                  <span className="text-xs text-muted-foreground font-medium">{t('wo.detail.accessoriesLabel')}</span>
                   <ul className="list-disc list-inside text-sm mt-1">
                     {wo.accessories.map((a, i) => <li key={i}>{a}</li>)}
                   </ul>
@@ -344,7 +346,7 @@ export default function WorkOrderDetail() {
               )}
               {wo.conditionChecklist && Object.keys(wo.conditionChecklist).length > 0 && (
                 <div>
-                  <span className="text-xs text-muted-foreground font-medium">Checklist:</span>
+                  <span className="text-xs text-muted-foreground font-medium">{t('wo.detail.checklistLabel')}</span>
                   <div className="grid grid-cols-2 gap-1 mt-1 text-sm">
                     {Object.entries(wo.conditionChecklist).map(([key, val]) => (
                       <div key={key} className="flex items-center gap-2">
@@ -361,17 +363,17 @@ export default function WorkOrderDetail() {
           {/* Quote Info (if exists) */}
           {wo.estimatedCost && (
             <div className="bg-card border rounded-lg p-6">
-              <h3 className="font-semibold mb-3">Devis</h3>
+              <h3 className="font-semibold mb-3">{t('wo.detail.quoteTitle')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <InfoField label="Cout estime" value={formatCurrency(wo.estimatedCost)} />
-                {wo.finalCost != null && <InfoField label="Cout final" value={formatCurrency(wo.finalCost)} />}
-                {wo.depositAmount != null && <InfoField label="Depot" value={formatCurrency(wo.depositAmount)} />}
-                {wo.diagnosticFee != null && <InfoField label="Frais diagnostic" value={formatCurrency(wo.diagnosticFee)} />}
-                {wo.maxAuthorizedSpend != null && <InfoField label="Max autorise" value={formatCurrency(wo.maxAuthorizedSpend)} />}
+                <InfoField label={t('wo.detail.estimatedCost')} value={formatCurrency(wo.estimatedCost)} />
+                {wo.finalCost != null && <InfoField label={t('wo.detail.finalCost')} value={formatCurrency(wo.finalCost)} />}
+                {wo.depositAmount != null && <InfoField label={t('wo.detail.depositLabel')} value={formatCurrency(wo.depositAmount)} />}
+                {wo.diagnosticFee != null && <InfoField label={t('wo.detail.diagnosticFee')} value={formatCurrency(wo.diagnosticFee)} />}
+                {wo.maxAuthorizedSpend != null && <InfoField label={t('wo.detail.maxAuthorized')} value={formatCurrency(wo.maxAuthorizedSpend)} />}
               </div>
               {wo.diagnosticNotes && (
                 <div className="mt-3">
-                  <span className="text-xs text-muted-foreground font-medium">Notes de diagnostic:</span>
+                  <span className="text-xs text-muted-foreground font-medium">{t('wo.detail.diagnosticNotesLabel')}</span>
                   <p className="text-sm mt-1 whitespace-pre-wrap">{wo.diagnosticNotes}</p>
                 </div>
               )}
@@ -382,11 +384,11 @@ export default function WorkOrderDetail() {
           {!isTerminal && (
             <div className="bg-card border rounded-lg p-6">
               <div className="flex items-center justify-between mb-3">
-                <HelpTooltip content="Notes de diagnostic et de réparation rédigées par le technicien. Visibles dans le devis client." side="right">
-                  <h3 className="font-semibold">Notes techniques</h3>
+                <HelpTooltip content={t('wo.detail.techNotesTooltip')} side="right">
+                  <h3 className="font-semibold">{t('wo.detail.techNotes')}</h3>
                 </HelpTooltip>
                 {editSection !== 'notes' && (
-                  <HelpTooltip content="Modifier les notes de diagnostic et de réparation" side="left">
+                  <HelpTooltip content={t('wo.detail.editNotesTooltip')} side="left">
                     <button
                       onClick={() => {
                         setEditSection('notes');
@@ -395,7 +397,7 @@ export default function WorkOrderDetail() {
                       }}
                       className="text-xs text-primary hover:underline"
                     >
-                      Modifier
+                      {t('wo.detail.editButton')}
                     </button>
                   </HelpTooltip>
                 )}
@@ -404,7 +406,7 @@ export default function WorkOrderDetail() {
               {editSection === 'notes' ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Notes de diagnostic</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.diagNotesLabel')}</label>
                     <textarea
                       value={editDiagNotes}
                       onChange={(e) => setEditDiagNotes(e.target.value)}
@@ -413,7 +415,7 @@ export default function WorkOrderDetail() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Notes de reparation</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.repairNotesLabel')}</label>
                     <textarea
                       value={editRepairNotes}
                       onChange={(e) => setEditRepairNotes(e.target.value)}
@@ -430,13 +432,13 @@ export default function WorkOrderDetail() {
                       disabled={updateMutation.isPending}
                       className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                     >
-                      {updateMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}
+                      {updateMutation.isPending ? t('wo.detail.saving') : t('wo.detail.saveButton')}
                     </button>
                     <button
                       onClick={() => setEditSection(null)}
                       className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
                     >
-                      Annuler
+                      {t('wo.detail.cancelButton')}
                     </button>
                   </div>
                 </div>
@@ -444,15 +446,15 @@ export default function WorkOrderDetail() {
                 <div className="space-y-3 text-sm">
                   {wo.diagnosticNotes ? (
                     <div>
-                      <span className="text-xs text-muted-foreground font-medium">Diagnostic:</span>
+                      <span className="text-xs text-muted-foreground font-medium">{t('wo.detail.diagnosticLabel')}</span>
                       <p className="mt-1 whitespace-pre-wrap">{wo.diagnosticNotes}</p>
                     </div>
                   ) : (
-                    <p className="text-muted-foreground italic text-xs">Aucune note de diagnostic</p>
+                    <p className="text-muted-foreground italic text-xs">{t('wo.detail.noDiagNotes')}</p>
                   )}
                   {wo.repairNotes && (
                     <div>
-                      <span className="text-xs text-muted-foreground font-medium">Reparation:</span>
+                      <span className="text-xs text-muted-foreground font-medium">{t('wo.detail.repairLabel')}</span>
                       <p className="mt-1 whitespace-pre-wrap">{wo.repairNotes}</p>
                     </div>
                   )}
@@ -464,16 +466,16 @@ export default function WorkOrderDetail() {
           {/* Parts Used */}
           <div className="bg-card border rounded-lg p-6">
             <div className="flex items-center justify-between mb-3">
-              <HelpTooltip content="Liste des pièces de rechange utilisées pour la réparation. Le coût total est calculé automatiquement." side="right">
-                <h3 className="font-semibold">Pieces utilisees</h3>
+              <HelpTooltip content={t('wo.detail.partsTooltip')} side="right">
+                <h3 className="font-semibold">{t('wo.detail.partsTitle')}</h3>
               </HelpTooltip>
               {!isTerminal && !showPartForm && (
-                <HelpTooltip content="Ajouter une pièce de rechange avec son coût et type (OEM, après-marché, reconditionné)" side="left">
+                <HelpTooltip content={t('wo.detail.addPartTooltip')} side="left">
                   <button
                     onClick={() => setShowPartForm(true)}
                     className="text-xs text-primary hover:underline"
                   >
-                    + Ajouter
+                    {t('wo.detail.addPart')}
                   </button>
                 </HelpTooltip>
               )}
@@ -492,12 +494,12 @@ export default function WorkOrderDetail() {
                     <div className="flex items-center gap-3">
                       <span>{formatCurrency(part.cost)}</span>
                       {!isTerminal && (
-                        <HelpTooltip content="Retirer cette pièce de la liste" side="left">
+                        <HelpTooltip content={t('wo.detail.removePartTooltip')} side="left">
                           <button
                             onClick={() => handleRemovePart(i)}
                             className="text-xs text-red-600 hover:underline"
                           >
-                            Retirer
+                            {t('wo.detail.removePart')}
                           </button>
                         </HelpTooltip>
                       )}
@@ -505,18 +507,18 @@ export default function WorkOrderDetail() {
                   </div>
                 ))}
                 <div className="text-sm text-right font-medium pt-2 border-t">
-                  Total: {formatCurrency(wo.partsUsed.reduce((sum, p) => sum + p.cost, 0))}
+                  {t('wo.detail.partsTotal', { amount: formatCurrency(wo.partsUsed.reduce((sum, p) => sum + p.cost, 0)) })}
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Aucune piece enregistree</p>
+              <p className="text-sm text-muted-foreground">{t('wo.detail.noParts')}</p>
             )}
 
             {showPartForm && (
               <form onSubmit={handleAddPart} className="mt-3 border rounded-md p-3 bg-muted/30 space-y-2">
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Nom</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.partName')}</label>
                     <input
                       type="text"
                       value={partName}
@@ -526,7 +528,7 @@ export default function WorkOrderDetail() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Cout ($)</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.partCost')}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -538,15 +540,15 @@ export default function WorkOrderDetail() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Type</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.partType')}</label>
                     <select
                       value={partType}
                       onChange={(e) => setPartType(e.target.value)}
                       className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
                     >
                       <option value="OEM">OEM</option>
-                      <option value="AFTERMARKET">Apres-marche</option>
-                      <option value="REFURBISHED">Reconditionne</option>
+                      <option value="AFTERMARKET">{t('wo.detail.partTypeAftermarket')}</option>
+                      <option value="REFURBISHED">{t('wo.detail.partTypeRefurbished')}</option>
                     </select>
                   </div>
                 </div>
@@ -556,14 +558,14 @@ export default function WorkOrderDetail() {
                     disabled={updateMutation.isPending}
                     className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   >
-                    Ajouter
+                    {t('wo.detail.addPartButton')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setShowPartForm(false); setPartName(''); setPartCost(''); }}
                     className="text-xs text-muted-foreground hover:underline"
                   >
-                    Annuler
+                    {t('wo.detail.cancelPartButton')}
                   </button>
                 </div>
               </form>
@@ -572,12 +574,12 @@ export default function WorkOrderDetail() {
 
           {/* Notes Thread */}
           <div className="bg-card border rounded-lg p-6">
-            <h3 className="font-semibold mb-4">Notes</h3>
+            <h3 className="font-semibold mb-4">{t('wo.detail.notesTitle')}</h3>
 
             {/* Notes list */}
             <div className="space-y-3 mb-4">
               {(notes as WorkOrderNote[]).length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucune note</p>
+                <p className="text-sm text-muted-foreground">{t('wo.detail.noNotes')}</p>
               ) : (
                 (notes as WorkOrderNote[]).map((note) => (
                   <div
@@ -591,7 +593,7 @@ export default function WorkOrderDetail() {
                       <span className="text-xs font-medium">
                         {note.author.firstName} {note.author.lastName}
                         {note.isInternal && (
-                          <span className="ml-2 text-amber-700 text-[10px] bg-amber-100 px-1.5 py-0.5 rounded">Interne</span>
+                          <span className="ml-2 text-amber-700 text-[10px] bg-amber-100 px-1.5 py-0.5 rounded">{t('wo.detail.internalBadge')}</span>
                         )}
                       </span>
                       <span className="text-xs text-muted-foreground">
@@ -610,12 +612,12 @@ export default function WorkOrderDetail() {
                 <textarea
                   value={noteContent}
                   onChange={(e) => setNoteContent(e.target.value)}
-                  placeholder="Ajouter une note..."
+                  placeholder={t('wo.detail.notePlaceholder')}
                   rows={3}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
                 />
                 <div className="flex items-center justify-between">
-                  <HelpTooltip content="Cochez pour rendre cette note visible uniquement par les techniciens et administrateurs. Non cochée, la note sera aussi visible par le client." side="right">
+                  <HelpTooltip content={t('wo.detail.noteInternalTooltip')} side="right">
                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                       <input
                         type="checkbox"
@@ -623,16 +625,16 @@ export default function WorkOrderDetail() {
                         onChange={(e) => setNoteIsInternal(e.target.checked)}
                         className="rounded border-input"
                       />
-                      Note interne (non visible par le client)
+                      {t('wo.detail.noteInternal')}
                     </label>
                   </HelpTooltip>
-                  <HelpTooltip content="Publier la note dans le fil de discussion de ce bon de travail" side="left">
+                  <HelpTooltip content={t('wo.detail.noteSubmitTooltip')} side="left">
                     <button
                       type="submit"
                       disabled={addNoteMutation.isPending || !noteContent.trim()}
                       className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                     >
-                      {addNoteMutation.isPending ? 'Envoi...' : 'Ajouter'}
+                      {addNoteMutation.isPending ? t('wo.detail.noteSending') : t('wo.detail.noteAdd')}
                     </button>
                   </HelpTooltip>
                 </div>
@@ -646,8 +648,8 @@ export default function WorkOrderDetail() {
 
           {/* Customer card */}
           <div className="bg-card border rounded-lg p-4 space-y-2">
-            <HelpTooltip content="Coordonnées du client associé à ce bon de travail" side="left">
-              <h3 className="font-semibold text-sm">Client</h3>
+            <HelpTooltip content={t('wo.detail.clientTooltip')} side="left">
+              <h3 className="font-semibold text-sm">{t('wo.detail.clientTitle')}</h3>
             </HelpTooltip>
             <p className="text-sm font-medium">{wo.customerName}</p>
             <p className="text-xs text-muted-foreground">{wo.customerPhone}</p>
@@ -663,57 +665,57 @@ export default function WorkOrderDetail() {
 
           {/* Details card */}
           <div className="bg-card border rounded-lg p-4 space-y-2">
-            <h3 className="font-semibold text-sm">Details</h3>
+            <h3 className="font-semibold text-sm">{t('wo.detail.detailsTitle')}</h3>
             <div className="text-sm space-y-1.5">
               <div>
-                <span className="text-muted-foreground">Priorite:</span>{' '}
+                <span className="text-muted-foreground">{t('wo.detail.priorityLabel')}</span>{' '}
                 {PRIORITY_LABELS[wo.priority] || wo.priority}
               </div>
               <div>
-                <span className="text-muted-foreground">Sauvegarde:</span>{' '}
+                <span className="text-muted-foreground">{t('wo.detail.backupLabel')}</span>{' '}
                 {DATA_BACKUP_CONSENT_LABELS[wo.dataBackupConsent] || wo.dataBackupConsent}
               </div>
               <div>
-                <span className="text-muted-foreground">Reception:</span>{' '}
+                <span className="text-muted-foreground">{t('wo.detail.receptionLabel')}</span>{' '}
                 {formatDateTime(wo.intakeDate)}
               </div>
               {wo.estimatedPickupDate && (
                 <div>
-                  <span className="text-muted-foreground">Ramassage prevu:</span>{' '}
+                  <span className="text-muted-foreground">{t('wo.detail.estimatedPickupLabel')}</span>{' '}
                   {new Date(wo.estimatedPickupDate).toLocaleDateString('fr-CA')}
                 </div>
               )}
               {wo.completedDate && (
                 <div>
-                  <span className="text-muted-foreground">Complete:</span>{' '}
+                  <span className="text-muted-foreground">{t('wo.detail.completedLabel')}</span>{' '}
                   {formatDateTime(wo.completedDate)}
                 </div>
               )}
               {wo.pickupDate && (
                 <div>
-                  <span className="text-muted-foreground">Remis:</span>{' '}
+                  <span className="text-muted-foreground">{t('wo.detail.pickedUpLabel')}</span>{' '}
                   {formatDateTime(wo.pickupDate)}
                 </div>
               )}
               {wo.warrantyDays != null && wo.warrantyDays > 0 && (
                 <div>
-                  <span className="text-muted-foreground">Garantie:</span>{' '}
-                  {wo.warrantyDays} jours
+                  <span className="text-muted-foreground">{t('wo.detail.warrantyLabel')}</span>{' '}
+                  {t('wo.detail.warrantyValue', { days: String(wo.warrantyDays) })}
                   {wo.warrantyStartDate && (
-                    <span className="text-xs"> (depuis {new Date(wo.warrantyStartDate).toLocaleDateString('fr-CA')})</span>
+                    <span className="text-xs"> {t('wo.detail.warrantySince', { date: new Date(wo.warrantyStartDate).toLocaleDateString('fr-CA') })}</span>
                   )}
                 </div>
               )}
               <div>
-                <span className="text-muted-foreground">Pris par:</span>{' '}
+                <span className="text-muted-foreground">{t('wo.detail.intakeByLabel')}</span>{' '}
                 {wo.intakeBy?.firstName} {wo.intakeBy?.lastName}
               </div>
               <div>
-                <span className="text-muted-foreground">Cree:</span>{' '}
+                <span className="text-muted-foreground">{t('wo.detail.createdLabel')}</span>{' '}
                 {formatDateTime(wo.createdAt)}
               </div>
               <div>
-                <span className="text-muted-foreground">Modifie:</span>{' '}
+                <span className="text-muted-foreground">{t('wo.detail.updatedLabel')}</span>{' '}
                 {formatDateTime(wo.updatedAt)}
               </div>
             </div>
@@ -721,14 +723,14 @@ export default function WorkOrderDetail() {
 
           {/* Technician card */}
           <div className="bg-card border rounded-lg p-4 space-y-2">
-            <h3 className="font-semibold text-sm">Technicien</h3>
+            <h3 className="font-semibold text-sm">{t('wo.detail.techTitle')}</h3>
             {wo.technician ? (
               <p className="text-sm">{wo.technician.firstName} {wo.technician.lastName}</p>
             ) : (
-              <p className="text-sm text-muted-foreground italic">Non assigne</p>
+              <p className="text-sm text-muted-foreground italic">{t('wo.detail.unassigned')}</p>
             )}
             {!isTerminal && (
-              <HelpTooltip content="Assigner ou réassigner un technicien à ce bon de travail" side="left">
+              <HelpTooltip content={t('wo.detail.techAssignTooltip')} side="left">
                 <select
                   value=""
                   onChange={(e) => {
@@ -740,7 +742,7 @@ export default function WorkOrderDetail() {
                   className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm disabled:opacity-50"
                 >
                   <option value="">
-                    {wo.technician ? 'Reassigner...' : 'Assigner...'}
+                    {wo.technician ? t('wo.detail.reassign') : t('wo.detail.assign')}
                   </option>
                   {(technicians as User[] | undefined)?.map((tech) => (
                     <option key={tech.id} value={tech.id}>
@@ -755,19 +757,19 @@ export default function WorkOrderDetail() {
           {/* Status Change */}
           {transitions.length > 0 && (
             <div className="bg-card border rounded-lg p-4 space-y-3">
-              <HelpTooltip content="Faire avancer le bon de travail dans le flux de réparation. Chaque statut représente une étape du processus." side="left">
-                <h3 className="font-semibold text-sm">Changer le statut</h3>
+              <HelpTooltip content={t('wo.detail.changeStatusTooltip')} side="left">
+                <h3 className="font-semibold text-sm">{t('wo.detail.changeStatus')}</h3>
               </HelpTooltip>
 
               {showStatusReason ? (
                 <form onSubmit={handleStatusWithReason} className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Raison pour {WO_STATUS_LABELS[showStatusReason]}:
+                    {t('wo.detail.statusReasonLabel', { status: WO_STATUS_LABELS[showStatusReason] || showStatusReason })}
                   </p>
                   <textarea
                     value={statusReason}
                     onChange={(e) => setStatusReason(e.target.value)}
-                    placeholder="Raison (optionnel)..."
+                    placeholder={t('wo.detail.statusReasonPlaceholder')}
                     rows={2}
                     className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm resize-none"
                   />
@@ -777,14 +779,14 @@ export default function WorkOrderDetail() {
                       disabled={statusMutation.isPending}
                       className="flex-1 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
                     >
-                      {statusMutation.isPending ? '...' : 'Confirmer'}
+                      {statusMutation.isPending ? '...' : t('wo.detail.confirmButton')}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setShowStatusReason(null); setStatusReason(''); }}
                       className="text-xs text-muted-foreground hover:underline"
                     >
-                      Annuler
+                      {t('wo.detail.cancelButton')}
                     </button>
                   </div>
                 </form>
@@ -793,21 +795,21 @@ export default function WorkOrderDetail() {
                   {transitions.map((status) => {
                     const colors = WO_STATUS_COLORS[status];
                     const isDestructive = ['ANNULE', 'ABANDONNE', 'REFUSE'].includes(status);
-                    const transitionTooltips: Record<string, string> = {
-                      DIAGNOSTIC: 'Démarrer le diagnostic technique de l\'appareil',
-                      ATTENTE_APPROBATION: 'Envoyer le devis au client et attendre son approbation',
-                      APPROUVE: 'Le client a approuvé le devis, prêt pour la réparation',
-                      ATTENTE_PIECES: 'Mettre en attente de pièces de rechange nécessaires',
-                      EN_REPARATION: 'Démarrer ou reprendre la réparation de l\'appareil',
-                      VERIFICATION: 'Réparation terminée, passer en vérification qualité',
-                      PRET: 'Appareil réparé et vérifié, prêt pour le ramassage client',
-                      REMIS: 'Confirmer la remise de l\'appareil au client (action définitive)',
-                      ANNULE: 'Annuler ce bon de travail (une raison sera demandée)',
-                      ABANDONNE: 'Marquer comme abandonné par le client (une raison sera demandée)',
-                      REFUSE: 'Le client refuse le devis proposé',
+                    const transitionTooltipMap: Record<string, string> = {
+                      DIAGNOSTIC: t('wo.detail.transitionDiagnostic'),
+                      ATTENTE_APPROBATION: t('wo.detail.transitionAttenteApprobation'),
+                      APPROUVE: t('wo.detail.transitionApprouve'),
+                      ATTENTE_PIECES: t('wo.detail.transitionAttentePieces'),
+                      EN_REPARATION: t('wo.detail.transitionEnReparation'),
+                      VERIFICATION: t('wo.detail.transitionVerification'),
+                      PRET: t('wo.detail.transitionPret'),
+                      REMIS: t('wo.detail.transitionRemis'),
+                      ANNULE: t('wo.detail.transitionAnnule'),
+                      ABANDONNE: t('wo.detail.transitionAbandonne'),
+                      REFUSE: t('wo.detail.transitionRefuse'),
                     };
                     return (
-                      <HelpTooltip key={status} content={transitionTooltips[status] || `Passer au statut ${WO_STATUS_LABELS[status]}`} side="left">
+                      <HelpTooltip key={status} content={transitionTooltipMap[status] || t('wo.detail.transitionDefault', { status: WO_STATUS_LABELS[status] || status })} side="left">
                         <button
                           onClick={() => handleStatusChange(status)}
                           disabled={statusMutation.isPending}
@@ -832,16 +834,16 @@ export default function WorkOrderDetail() {
           {canSendQuote && (
             <div className="bg-card border rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <HelpTooltip content="Créez et envoyez un devis au client avec le coût estimé et les résultats du diagnostic" side="left">
-                  <h3 className="font-semibold text-sm">Envoyer un devis</h3>
+                <HelpTooltip content={t('wo.detail.sendQuoteTooltip')} side="left">
+                  <h3 className="font-semibold text-sm">{t('wo.detail.sendQuote')}</h3>
                 </HelpTooltip>
                 {!showQuoteForm && (
-                  <HelpTooltip content="Ouvrir le formulaire pour rédiger et envoyer un devis au client" side="left">
+                  <HelpTooltip content={t('wo.detail.createQuoteTooltip')} side="left">
                     <button
                       onClick={() => setShowQuoteForm(true)}
                       className="text-xs text-primary hover:underline"
                     >
-                      Creer
+                      {t('wo.detail.createQuote')}
                     </button>
                   </HelpTooltip>
                 )}
@@ -850,7 +852,7 @@ export default function WorkOrderDetail() {
               {showQuoteForm && (
                 <form onSubmit={handleQuoteSubmit} className="space-y-3">
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Cout estime ($)</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.quoteCostLabel')}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -862,18 +864,18 @@ export default function WorkOrderDetail() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Notes de diagnostic</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.quoteDiagNotes')}</label>
                     <textarea
                       value={quoteDiagnosticNotes}
                       onChange={(e) => setQuoteDiagnosticNotes(e.target.value)}
                       required
                       rows={3}
-                      placeholder="Description du probleme trouve et travaux proposes..."
+                      placeholder={t('wo.detail.quoteDiagPlaceholder')}
                       className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm resize-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1">Date ramassage estimee</label>
+                    <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.quotePickupLabel')}</label>
                     <input
                       type="date"
                       value={quotePickupDate}
@@ -883,13 +885,13 @@ export default function WorkOrderDetail() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <HelpTooltip content="Envoyer le devis au client. Le bon passera en attente d'approbation." side="top">
+                    <HelpTooltip content={t('wo.detail.quoteSubmitTooltip')} side="top">
                       <button
                         type="submit"
                         disabled={quoteMutation.isPending}
                         className="flex-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                       >
-                        {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
+                        {quoteMutation.isPending ? t('wo.detail.quoteSending') : t('wo.detail.quoteSubmit')}
                       </button>
                     </HelpTooltip>
                     <button
@@ -897,7 +899,7 @@ export default function WorkOrderDetail() {
                       onClick={() => { setShowQuoteForm(false); setQuoteEstimatedCost(''); setQuoteDiagnosticNotes(''); setQuotePickupDate(''); }}
                       className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
                     >
-                      Annuler
+                      {t('wo.detail.cancelButton')}
                     </button>
                   </div>
                 </form>
@@ -907,16 +909,16 @@ export default function WorkOrderDetail() {
 
           {/* Financial summary */}
           <div className="bg-card border rounded-lg p-4 space-y-2">
-            <h3 className="font-semibold text-sm">Finances</h3>
+            <h3 className="font-semibold text-sm">{t('wo.detail.financeTitle')}</h3>
             <div className="text-sm space-y-1.5">
-              <FinanceRow label="Devis" value={wo.estimatedCost} />
-              <FinanceRow label="Cout final" value={wo.finalCost} />
-              <FinanceRow label="Max autorise" value={wo.maxAuthorizedSpend} />
-              <FinanceRow label="Depot" value={wo.depositAmount} />
-              <FinanceRow label="Frais diag." value={wo.diagnosticFee} />
+              <FinanceRow label={t('wo.detail.financeQuote')} value={wo.estimatedCost} />
+              <FinanceRow label={t('wo.detail.financeFinalCost')} value={wo.finalCost} />
+              <FinanceRow label={t('wo.detail.financeMaxAuthorized')} value={wo.maxAuthorizedSpend} />
+              <FinanceRow label={t('wo.detail.financeDeposit')} value={wo.depositAmount} />
+              <FinanceRow label={t('wo.detail.financeDiagFee')} value={wo.diagnosticFee} />
               {wo.partsUsed && wo.partsUsed.length > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pieces ({wo.partsUsed.length})</span>
+                  <span className="text-muted-foreground">{t('wo.detail.financeParts', { count: String(wo.partsUsed.length) })}</span>
                   <span>{formatCurrency(wo.partsUsed.reduce((s, p) => s + p.cost, 0))}</span>
                 </div>
               )}
@@ -924,7 +926,7 @@ export default function WorkOrderDetail() {
 
             {/* Editable final cost (only visible for non-terminal + admin/tech) */}
             {!isTerminal && editSection !== 'finance' && (
-              <HelpTooltip content="Ajuster le coût final de la réparation avant la remise au client" side="left">
+              <HelpTooltip content={t('wo.detail.financeEditTooltip')} side="left">
                 <button
                   onClick={() => {
                     setEditSection('finance');
@@ -932,14 +934,14 @@ export default function WorkOrderDetail() {
                   }}
                   className="text-xs text-primary hover:underline mt-2"
                 >
-                  Modifier les coûts
+                  {t('wo.detail.financeEdit')}
                 </button>
               </HelpTooltip>
             )}
             {editSection === 'finance' && (
               <div className="space-y-2 mt-2 border-t pt-2">
                 <div>
-                  <label className="block text-xs text-muted-foreground mb-1">Coût final ($)</label>
+                  <label className="block text-xs text-muted-foreground mb-1">{t('wo.detail.financeFinalCostLabel')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -957,13 +959,13 @@ export default function WorkOrderDetail() {
                     disabled={updateMutation.isPending}
                     className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   >
-                    Sauvegarder
+                    {t('wo.detail.saveButton')}
                   </button>
                   <button
                     onClick={() => setEditSection(null)}
                     className="text-xs text-muted-foreground hover:underline"
                   >
-                    Annuler
+                    {t('wo.detail.cancelButton')}
                   </button>
                 </div>
               </div>
@@ -973,17 +975,17 @@ export default function WorkOrderDetail() {
           {/* Delete (admin only, terminal statuses only) */}
           {isAdmin && isTerminal && (
             <div className="bg-card border rounded-lg p-4">
-              <HelpTooltip content="Supprimer définitivement ce bon de travail et toutes ses données associées. Cette action est irréversible." side="left">
+              <HelpTooltip content={t('wo.detail.deleteTooltip')} side="left">
                 <button
                   onClick={() => {
-                    if (confirm('Supprimer définitivement ce bon de travail?')) {
+                    if (confirm(t('wo.detail.deleteConfirm'))) {
                       deleteMutation.mutate();
                     }
                   }}
                   disabled={deleteMutation.isPending}
                   className="w-full rounded-md border border-red-300 bg-background px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                 >
-                  {deleteMutation.isPending ? 'Suppression...' : 'Supprimer le bon de travail'}
+                  {deleteMutation.isPending ? t('wo.detail.deleting') : t('wo.detail.deleteButton')}
                 </button>
               </HelpTooltip>
             </div>
@@ -996,7 +998,7 @@ export default function WorkOrderDetail() {
 
 // ─── Helper Components ───
 
-function InfoField({ label, value, sensitive }: { label: string; value: string; sensitive?: boolean }) {
+function InfoField({ label, value, sensitive, showLabel }: { label: string; value: string; sensitive?: boolean; showLabel?: string }) {
   const [revealed, setRevealed] = useState(!sensitive);
 
   return (
@@ -1005,7 +1007,7 @@ function InfoField({ label, value, sensitive }: { label: string; value: string; 
       <p className="text-sm font-medium">
         {sensitive && !revealed ? (
           <button onClick={() => setRevealed(true)} className="text-primary text-xs hover:underline">
-            Afficher
+            {showLabel || 'Show'}
           </button>
         ) : (
           value || '—'
