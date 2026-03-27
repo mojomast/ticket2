@@ -163,3 +163,57 @@ Rebuilt the technician Schedule page (`frontend/src/pages/technician/Schedule.ts
 - `backend/src/routes/config.routes.ts` — secret masking + merge logic
 - `backend/src/services/email.service.ts` — DB config lookup with env fallback
 - `backend/src/services/sms.service.ts` — DB config lookup with env fallback
+
+### Session 3 — Admin Calendar Rebuild (Month/Week/Day Views)
+
+Rebuilt the admin Calendar page (`frontend/src/pages/admin/Calendar.tsx`) from a day-only appointment list into a full calendar with three view modes, matching the technician Schedule pattern:
+
+#### Month View
+- 7-column grid (Mon–Sun) showing the full month with overflow weeks
+- Days outside the current month are dimmed
+- Each day cell shows appointment dots with status colors, start times, and technician initials
+- Shows up to 3 appointments per cell with "+N" overflow indicator
+- Today is highlighted with a primary-color circle
+- Clicking any day drills into Day view
+
+#### Week View
+- 7-column layout (Mon–Sun) with hourly rows (8:00–18:00)
+- Appointment blocks are color-coded by status (from APPOINTMENT_STATUS_COLORS constant)
+- Blocks show start time, ticket title, and technician name (admin sees all techs)
+- Today's column is highlighted
+- Scrollable timeline (max 600px height)
+- Clicking a day header or appointment block drills into Day view
+
+#### Day View
+- Hourly timeline (8:00–18:00) with full appointment cards
+- Each card shows: ticket title + number, time range with duration, travel buffer, technician name, notes, status badge
+- Admin-specific controls: status change dropdown (all statuses) + cancel button
+- Hours without appointments are dimmed for visual clarity
+- Empty state shows centered calendar icon with "no appointments" message
+- Summary bar shows total appointment count
+
+#### Appointment Creation Form (Preserved)
+- "+ Nouveau rendez-vous" button toggles the creation form
+- Form includes: ticket select (filtered to open tickets), technician select, availability slots, datetime inputs, travel buffer, notes
+- Availability slots fetched from API when technician is selected
+- Click a slot to auto-fill start/end times
+- Form extracted into a separate `CreationForm` component for clarity
+
+#### Key Improvements Over Previous Version
+- Replaced hardcoded `APPOINTMENT_STATUS_LABELS` with import from `lib/constants.ts` (single source of truth)
+- Fixed variable shadowing bug: `openTickets.map((t) =>` renamed to `openTickets.map((tk) =>` to avoid shadowing the `t` translation function
+- API query range now adapts per view mode (full month grid, Mon–Sun week, single day) — previously only queried single day
+- Uses date-fns for all date manipulation instead of manual Date arithmetic
+- View mode defaults to `week` (was day-only before)
+
+#### Technical Details
+- Uses date-fns 4.x with fr locale for French day/month names
+- date-fns functions: startOfMonth, endOfMonth, startOfWeek, endOfWeek, addMonths, addWeeks, addDays, format, isSameDay, isSameMonth, isToday, eachDayOfInterval, getHours, getMinutes, parseISO
+- lucide-react icons: ChevronLeft, ChevronRight, Calendar, CalendarDays, Clock, LayoutGrid
+- Single useQuery call with from/to params, limit: 100
+- 17 new i18n keys added to both fr.ts and en.ts under `admin.calendar.*` prefix
+
+#### Files Modified (Session 3)
+- `frontend/src/pages/admin/Calendar.tsx` — complete rewrite (~700 lines, was 609)
+- `frontend/src/lib/i18n/locales/fr.ts` — 17 new admin.calendar keys (viewMonth/Week/Day, prevMonth/nextMonth, prevWeek/nextWeek, mon-sun, appointmentsCount, loadError)
+- `frontend/src/lib/i18n/locales/en.ts` — matching 17 English keys
