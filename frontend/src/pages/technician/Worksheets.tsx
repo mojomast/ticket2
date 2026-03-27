@@ -55,6 +55,7 @@ export default function TechWorksheets() {
       </div>
 
       <select
+        value={status}
         onChange={(e) => handleStatusChange(e.target.value)}
         className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
@@ -73,7 +74,7 @@ export default function TechWorksheets() {
               <Link
                 key={ws.id}
                 to={`/technicien/feuilles-travail/${ws.id}`}
-                className="p-4 flex justify-between items-center hover:bg-muted/30 block"
+                className="p-4 flex justify-between items-center hover:bg-muted/30"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">

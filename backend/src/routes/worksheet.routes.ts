@@ -40,7 +40,7 @@ app.get('/:id', async (c) => {
 app.patch('/:id', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updateWorksheetSchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const worksheet = await worksheetService.updateWorksheet(c.req.param('id'), data, session.user.id);
+  const worksheet = await worksheetService.updateWorksheet(c.req.param('id'), data, session.user.id, session.user.role);
   return c.json({ data: worksheet, error: null });
 });
 
@@ -75,26 +75,26 @@ app.get('/:id/pdf', async (c) => {
 app.post('/:id/labor', requireRole('ADMIN', 'TECHNICIAN'), validateBody(createLaborEntrySchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const entry = await worksheetService.addLaborEntry(c.req.param('id'), data, session.user.id);
+  const entry = await worksheetService.addLaborEntry(c.req.param('id'), data, session.user.id, session.user.role);
   return c.json({ data: entry, error: null }, 201);
 });
 
 app.patch('/:id/labor/:entryId', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updateLaborEntrySchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const entry = await worksheetService.updateLaborEntry(c.req.param('id'), c.req.param('entryId'), data, session.user.id);
+  const entry = await worksheetService.updateLaborEntry(c.req.param('id'), c.req.param('entryId'), data, session.user.id, session.user.role);
   return c.json({ data: entry, error: null });
 });
 
 app.delete('/:id/labor/:entryId', requireRole('ADMIN', 'TECHNICIAN'), async (c) => {
   const session = c.get('session');
-  await worksheetService.deleteLaborEntry(c.req.param('id'), c.req.param('entryId'), session.user.id);
+  await worksheetService.deleteLaborEntry(c.req.param('id'), c.req.param('entryId'), session.user.id, session.user.role);
   return c.json({ data: { success: true }, error: null });
 });
 
 app.post('/:id/labor/:entryId/stop', requireRole('ADMIN', 'TECHNICIAN'), async (c) => {
   const session = c.get('session');
-  const entry = await worksheetService.stopTimer(c.req.param('id'), c.req.param('entryId'), session.user.id);
+  const entry = await worksheetService.stopTimer(c.req.param('id'), c.req.param('entryId'), session.user.id, session.user.role);
   return c.json({ data: entry, error: null });
 });
 
@@ -103,20 +103,20 @@ app.post('/:id/labor/:entryId/stop', requireRole('ADMIN', 'TECHNICIAN'), async (
 app.post('/:id/parts', requireRole('ADMIN', 'TECHNICIAN'), validateBody(createPartSchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const part = await worksheetService.addPart(c.req.param('id'), data, session.user.id);
+  const part = await worksheetService.addPart(c.req.param('id'), data, session.user.id, session.user.role);
   return c.json({ data: part, error: null }, 201);
 });
 
 app.patch('/:id/parts/:partId', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updatePartSchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const part = await worksheetService.updatePart(c.req.param('id'), c.req.param('partId'), data, session.user.id);
+  const part = await worksheetService.updatePart(c.req.param('id'), c.req.param('partId'), data, session.user.id, session.user.role);
   return c.json({ data: part, error: null });
 });
 
 app.delete('/:id/parts/:partId', requireRole('ADMIN', 'TECHNICIAN'), async (c) => {
   const session = c.get('session');
-  await worksheetService.deletePart(c.req.param('id'), c.req.param('partId'), session.user.id);
+  await worksheetService.deletePart(c.req.param('id'), c.req.param('partId'), session.user.id, session.user.role);
   return c.json({ data: { success: true }, error: null });
 });
 
@@ -125,20 +125,20 @@ app.delete('/:id/parts/:partId', requireRole('ADMIN', 'TECHNICIAN'), async (c) =
 app.post('/:id/travel', requireRole('ADMIN', 'TECHNICIAN'), validateBody(createTravelEntrySchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const entry = await worksheetService.addTravelEntry(c.req.param('id'), data, session.user.id);
+  const entry = await worksheetService.addTravelEntry(c.req.param('id'), data, session.user.id, session.user.role);
   return c.json({ data: entry, error: null }, 201);
 });
 
 app.patch('/:id/travel/:entryId', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updateTravelEntrySchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const entry = await worksheetService.updateTravelEntry(c.req.param('id'), c.req.param('entryId'), data, session.user.id);
+  const entry = await worksheetService.updateTravelEntry(c.req.param('id'), c.req.param('entryId'), data, session.user.id, session.user.role);
   return c.json({ data: entry, error: null });
 });
 
 app.delete('/:id/travel/:entryId', requireRole('ADMIN', 'TECHNICIAN'), async (c) => {
   const session = c.get('session');
-  await worksheetService.deleteTravelEntry(c.req.param('id'), c.req.param('entryId'), session.user.id);
+  await worksheetService.deleteTravelEntry(c.req.param('id'), c.req.param('entryId'), session.user.id, session.user.role);
   return c.json({ data: { success: true }, error: null });
 });
 
@@ -192,7 +192,7 @@ app.delete('/:id/follow-ups/:followUpId', requireRole('ADMIN', 'TECHNICIAN'), as
 app.post('/:id/signature', requireRole('ADMIN', 'TECHNICIAN'), validateBody(saveSignatureSchema), async (c) => {
   const session = c.get('session');
   const data = c.get('body') as any;
-  const worksheet = await worksheetService.saveSignature(c.req.param('id'), data, session.user.id);
+  const worksheet = await worksheetService.saveSignature(c.req.param('id'), data, session.user.id, session.user.role);
   return c.json({ data: worksheet, error: null });
 });
 

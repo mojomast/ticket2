@@ -23,7 +23,10 @@ const followUpTypeEnum = z.enum([
 export const createWorksheetSchema = z.object({
   workOrderId: z.string().uuid('L\'identifiant du bon de travail doit être un UUID valide').optional(),
   ticketId: z.string().uuid('L\'identifiant du billet doit être un UUID valide').optional(),
-});
+}).refine(
+  (data) => !(data.workOrderId && data.ticketId),
+  'Impossible de lier à la fois un bon de travail et un billet',
+);
 
 export type CreateWorksheetInput = z.infer<typeof createWorksheetSchema>;
 
@@ -177,7 +180,7 @@ export type UpdateFollowUpInput = z.infer<typeof updateFollowUpSchema>;
 
 export const saveSignatureSchema = z.object({
   type: z.enum(['tech', 'customer']),
-  signatureData: z.string().min(1, 'Les données de signature sont requises')
+  signatureData: z.string().min(1, 'Les données de signature sont requises').max(500000, 'La signature ne peut pas dépasser 500 Ko')
     .refine(
       (val) => val.startsWith('data:image/'),
       'Les données de signature doivent être un URI data base64 valide (data:image/...)',

@@ -1322,6 +1322,7 @@ export const fr: Record<string, string> = {
   'worksheet.warrantyMonthsShort': 'mois',
   'worksheet.confirmApprove': 'Êtes-vous sûr de vouloir approuver cette feuille de travail ?',
   'worksheet.confirmCancel': 'Êtes-vous sûr de vouloir annuler cette feuille de travail ?',
+  'worksheet.confirmBilled': 'Êtes-vous sûr de vouloir marquer cette feuille de travail comme facturée ?',
   'worksheet.created': 'Feuille de travail créée avec succès',
   'worksheet.startWorksheet': 'Démarrer une feuille de travail',
   'worksheet.newWorksheet': 'Nouvelle feuille',

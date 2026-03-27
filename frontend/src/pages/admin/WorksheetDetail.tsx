@@ -96,6 +96,7 @@ export default function AdminWorksheetDetail() {
 
   const handleMarkBilled = () => {
     if (isChangingStatus) return;
+    if (!window.confirm(t('worksheet.confirmBilled'))) return;
     setIsChangingStatus(true);
     statusMutation.mutate({ status: 'FACTUREE' });
   };

@@ -33,6 +33,7 @@ const WORKSHEET_LIST_INCLUDE = {
   technician: { select: USER_SELECT },
   workOrder: {
     select: {
+      id: true,
       orderNumber: true,
       status: true,
       customerName: true,
@@ -172,18 +173,26 @@ async function findWorksheetOrThrow(id: string) {
   return ws;
 }
 
-// ─── Internal: Verify worksheet is in BROUILLON status ───
+// ─── Internal: Verify worksheet is in editable status (BROUILLON or REVISEE) ───
 
-async function requireDraftStatus(worksheetId: string) {
+async function requireEditableStatus(worksheetId: string) {
   const ws = await prisma.worksheet.findFirst({
     where: { id: worksheetId, deletedAt: null },
     select: { id: true, status: true, technicianId: true },
   });
   if (!ws) throw AppError.notFound('Feuille de travail introuvable');
-  if (ws.status !== 'BROUILLON') {
-    throw AppError.badRequest('Cette action n\'est permise que sur une feuille de travail en brouillon');
+  if (ws.status !== 'BROUILLON' && ws.status !== 'REVISEE') {
+    throw AppError.badRequest('Cette action n\'est permise que sur une feuille de travail en brouillon ou en révision');
   }
   return ws;
+}
+
+// ─── Internal: Verify technician owns the worksheet ───
+
+function requireOwnership(ws: { technicianId: string }, userId: string, role: UserRole) {
+  if (role === 'TECHNICIAN' && ws.technicianId !== userId) {
+    throw AppError.forbidden('Vous ne pouvez modifier que vos propres feuilles de travail');
+  }
 }
 
 // ─── Internal: Get high-value threshold from SystemConfig ───
@@ -292,7 +301,7 @@ export async function listWorksheets(query: WorksheetListQuery, userId: string, 
 
   // Filters
   if (query.status) where.status = query.status;
-  if (query.technicianId) where.technicianId = query.technicianId;
+  if (query.technicianId && role !== 'TECHNICIAN') where.technicianId = query.technicianId;
   if (query.workOrderId) where.workOrderId = query.workOrderId;
   if (query.search) {
     conditions.push({
@@ -327,16 +336,18 @@ export async function listWorksheets(query: WorksheetListQuery, userId: string, 
   return buildPaginatedResponse(worksheets, total, page, limit);
 }
 
-export async function updateWorksheet(id: string, data: UpdateWorksheetInput, userId: string) {
+export async function updateWorksheet(id: string, data: UpdateWorksheetInput, userId: string, role: UserRole) {
   const ws = await prisma.worksheet.findFirst({
     where: { id, deletedAt: null },
-    select: { id: true, status: true },
+    select: { id: true, status: true, technicianId: true },
   });
   if (!ws) throw AppError.notFound('Feuille de travail introuvable');
 
-  if (ws.status !== 'BROUILLON') {
-    throw AppError.badRequest('La feuille de travail ne peut etre modifiee qu\'en statut brouillon');
+  if (ws.status !== 'BROUILLON' && ws.status !== 'REVISEE') {
+    throw AppError.badRequest('La feuille de travail ne peut etre modifiee qu\'en statut brouillon ou en révision');
   }
+
+  requireOwnership(ws, userId, role);
 
   const updated = await prisma.worksheet.update({
     where: { id },
@@ -400,6 +411,11 @@ export async function changeStatus(
   role: UserRole,
 ) {
   const ws = await findWorksheetOrThrow(id);
+
+  // Technicians can only change status on their own worksheets
+  if (role === 'TECHNICIAN' && ws.technicianId !== userId) {
+    throw AppError.forbidden('Vous ne pouvez modifier que vos propres feuilles de travail');
+  }
 
   // Validate transition
   const transitions = WS_ALLOWED_TRANSITIONS[ws.status as WorksheetStatus] || [];
@@ -525,8 +541,9 @@ export async function changeStatus(
 //  LABOR ENTRIES
 // ═══════════════════════════════════════════════════════
 
-export async function addLaborEntry(worksheetId: string, data: CreateLaborEntryInput, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function addLaborEntry(worksheetId: string, data: CreateLaborEntryInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const startTime = new Date(data.startTime);
   const endTime = data.endTime ? new Date(data.endTime) : null;
@@ -561,8 +578,9 @@ export async function addLaborEntry(worksheetId: string, data: CreateLaborEntryI
   return entry;
 }
 
-export async function updateLaborEntry(worksheetId: string, entryId: string, data: UpdateLaborEntryInput, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function updateLaborEntry(worksheetId: string, entryId: string, data: UpdateLaborEntryInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const existing = await prisma.laborEntry.findFirst({
     where: { id: entryId, worksheetId },
@@ -605,8 +623,9 @@ export async function updateLaborEntry(worksheetId: string, entryId: string, dat
   return updated;
 }
 
-export async function deleteLaborEntry(worksheetId: string, entryId: string, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function deleteLaborEntry(worksheetId: string, entryId: string, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const existing = await prisma.laborEntry.findFirst({
     where: { id: entryId, worksheetId },
@@ -626,8 +645,9 @@ export async function deleteLaborEntry(worksheetId: string, entryId: string, use
   }).catch(() => {});
 }
 
-export async function stopTimer(worksheetId: string, entryId: string, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function stopTimer(worksheetId: string, entryId: string, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const existing = await prisma.laborEntry.findFirst({
     where: { id: entryId, worksheetId },
@@ -664,8 +684,9 @@ export async function stopTimer(worksheetId: string, entryId: string, userId: st
 //  PARTS
 // ═══════════════════════════════════════════════════════
 
-export async function addPart(worksheetId: string, data: CreatePartInput, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function addPart(worksheetId: string, data: CreatePartInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const quantity = data.quantity ?? 1;
   const lineTotal = parseFloat((quantity * data.unitPrice).toFixed(2));
@@ -699,8 +720,9 @@ export async function addPart(worksheetId: string, data: CreatePartInput, userId
   return part;
 }
 
-export async function updatePart(worksheetId: string, partId: string, data: UpdatePartInput, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function updatePart(worksheetId: string, partId: string, data: UpdatePartInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const existing = await prisma.partUsed.findFirst({
     where: { id: partId, worksheetId },
@@ -741,8 +763,9 @@ export async function updatePart(worksheetId: string, partId: string, data: Upda
   return updated;
 }
 
-export async function deletePart(worksheetId: string, partId: string, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function deletePart(worksheetId: string, partId: string, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const existing = await prisma.partUsed.findFirst({
     where: { id: partId, worksheetId },
@@ -766,8 +789,9 @@ export async function deletePart(worksheetId: string, partId: string, userId: st
 //  TRAVEL ENTRIES
 // ═══════════════════════════════════════════════════════
 
-export async function addTravelEntry(worksheetId: string, data: CreateTravelEntryInput, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function addTravelEntry(worksheetId: string, data: CreateTravelEntryInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const lineTotal = parseFloat((data.distanceKm * data.ratePerKm).toFixed(2));
 
@@ -799,8 +823,9 @@ export async function addTravelEntry(worksheetId: string, data: CreateTravelEntr
   return entry;
 }
 
-export async function updateTravelEntry(worksheetId: string, entryId: string, data: UpdateTravelEntryInput, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function updateTravelEntry(worksheetId: string, entryId: string, data: UpdateTravelEntryInput, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const existing = await prisma.travelEntry.findFirst({
     where: { id: entryId, worksheetId },
@@ -840,8 +865,9 @@ export async function updateTravelEntry(worksheetId: string, entryId: string, da
   return updated;
 }
 
-export async function deleteTravelEntry(worksheetId: string, entryId: string, userId: string) {
-  await requireDraftStatus(worksheetId);
+export async function deleteTravelEntry(worksheetId: string, entryId: string, userId: string, role: UserRole) {
+  const ws = await requireEditableStatus(worksheetId);
+  requireOwnership(ws, userId, role);
 
   const existing = await prisma.travelEntry.findFirst({
     where: { id: entryId, worksheetId },
@@ -872,9 +898,9 @@ export async function addNote(worksheetId: string, data: CreateWorksheetNoteInpu
   });
   if (!ws) throw AppError.notFound('Feuille de travail introuvable');
 
-  // Notes can be added when BROUILLON (tech filling in) or SOUMISE (admin adding review notes)
-  if (ws.status !== 'BROUILLON' && ws.status !== 'SOUMISE') {
-    throw AppError.badRequest('Les notes ne peuvent etre ajoutees qu\'en statut brouillon ou soumise');
+  // Notes can be added when BROUILLON (tech filling in), SOUMISE (admin adding review notes), or REVISEE (tech fixing)
+  if (ws.status !== 'BROUILLON' && ws.status !== 'SOUMISE' && ws.status !== 'REVISEE') {
+    throw AppError.badRequest('Les notes ne peuvent etre ajoutees qu\'en statut brouillon, soumise ou en révision');
   }
 
   // Only ADMIN can add notes when status is SOUMISE
@@ -905,6 +931,17 @@ export async function addNote(worksheetId: string, data: CreateWorksheetNoteInpu
 }
 
 export async function deleteNote(worksheetId: string, noteId: string, userId: string, role: UserRole) {
+  // Check worksheet status — notes can only be deleted in editable statuses
+  const ws = await prisma.worksheet.findFirst({
+    where: { id: worksheetId, deletedAt: null },
+    select: { id: true, status: true },
+  });
+  if (!ws) throw AppError.notFound('Feuille de travail introuvable');
+
+  if (ws.status !== 'BROUILLON' && ws.status !== 'SOUMISE' && ws.status !== 'REVISEE') {
+    throw AppError.badRequest('Les notes ne peuvent être supprimées qu\'en statut brouillon, soumise ou en révision');
+  }
+
   const note = await prisma.worksheetNote.findFirst({
     where: { id: noteId, worksheetId },
   });
@@ -1015,12 +1052,19 @@ export async function deleteFollowUp(worksheetId: string, followUpId: string, us
 //  SIGNATURE
 // ═══════════════════════════════════════════════════════
 
-export async function saveSignature(worksheetId: string, data: SaveSignatureInput, userId: string) {
+export async function saveSignature(worksheetId: string, data: SaveSignatureInput, userId: string, role: UserRole) {
   const ws = await prisma.worksheet.findFirst({
     where: { id: worksheetId, deletedAt: null },
-    select: { id: true },
+    select: { id: true, status: true, technicianId: true },
   });
   if (!ws) throw AppError.notFound('Feuille de travail introuvable');
+
+  // Cannot save signatures on terminal statuses
+  if (ws.status === 'FACTUREE' || ws.status === 'ANNULEE') {
+    throw AppError.badRequest('Impossible de signer une feuille de travail facturée ou annulée');
+  }
+
+  requireOwnership(ws, userId, role);
 
   const updatePayload: any = {};
   if (data.type === 'tech') {

@@ -918,7 +918,7 @@ export default function WorkOrderDetail() {
           )}
 
           {/* Start Worksheet */}
-          {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && (
+          {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && !isTerminal && (
             <div className="bg-card border rounded-lg p-4">
               <Button
                 className="w-full"

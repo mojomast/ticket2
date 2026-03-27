@@ -1,50 +1,53 @@
 # Handoff — Valitek v2
 
-## Last Completed: Flexible Worksheet Creation (from ticket, WO, or standalone)
+## Last Completed: Worksheet Code Review Fixes (Session 7c)
 ## Commit: (pending)
 ## Branch: main
 
 ## Session Summary
 
-Extended the worksheet system to allow technicians to start a worksheet from three entry points:
-1. **From a ticket** — "Start Worksheet" button on tech ticket detail page
-2. **From a work order** — "Start Worksheet" button on WO detail page (admin + tech)
-3. **From nothing** — "New Worksheet" button on the worksheet list page (standalone/unscheduled service calls)
+Applied 13 bug fixes from the second worksheet code review across backend service, validations, routes, and frontend pages.
 
-### What Changed
+### Fixes Applied
 
-**Backend (4 files):**
-1. `backend/prisma/schema.prisma` — `workOrderId` now optional (`String?`), added `ticketId String?` with relation, added `@@index([ticketId])`, added `worksheets Worksheet[]` back-reference on Ticket model
-2. `backend/src/validations/worksheet.ts` — `createWorksheetSchema` now has both `workOrderId` and `ticketId` as optional UUIDs
-3. `backend/src/services/worksheet.service.ts` — `createWorksheet` handles all 3 modes (WO, ticket, standalone); `WORKSHEET_DETAIL_INCLUDE` and `WORKSHEET_LIST_INCLUDE` now include `ticket` data; `listWorksheets` CUSTOMER filter uses OR clause for WO/ticket ownership; `getWorksheetById` ownership check covers both WO and ticket; `changeStatus` notifications use safe optional chaining; `createKbFromNote` handles null workOrder
-4. `backend/src/services/worksheet-pdf.service.ts` — PDF generation adapts to WO/ticket/standalone context (reference number, customer info, device info)
+**HIGH PRIORITY (3):**
+1. **SECURITY: `listWorksheets` technicianId query param override** — `query.technicianId` no longer overrides the TECHNICIAN role filter; only applied for non-TECHNICIAN roles
+2. **LOGIC: `requireDraftStatus` renamed to `requireEditableStatus`** — now allows both `BROUILLON` and `REVISEE`, so techs can edit worksheets after admin review
+3. **DATA: `workOrder.id` added to `WORKSHEET_LIST_INCLUDE`** — fixes undefined `ws.workOrder.id` in list views
 
-**Frontend (9 files):**
-1. `frontend/src/api/client.ts` — `Worksheet` and `WorksheetListItem` types: `workOrder` now optional, added `ticket` field; `create` method accepts `{ workOrderId?, ticketId? }`
-2. `frontend/src/pages/technician/TicketDetail.tsx` — Added `createWorksheetMutation` + "Start Worksheet" button card in right column; resolved `t` variable shadowing (renamed `t` ticket alias to `tk`)
-3. `frontend/src/pages/workorders/WorkOrderDetail.tsx` — Added `createWorksheetMutation` + "Start Worksheet" button for ADMIN/TECHNICIAN roles
-4. `frontend/src/pages/technician/Worksheets.tsx` — Added "New Worksheet" button in header for standalone creation; updated list items with null-safe WO access and ticket fallbacks
-5. `frontend/src/pages/technician/WorksheetDetail.tsx` — 3-way conditional for WO info section (WO / ticket / standalone); null-safe `wo` access
-6. `frontend/src/pages/admin/WorksheetDetail.tsx` — Dynamic card title/content for WO/ticket/standalone context; null-safe throughout
-7. `frontend/src/pages/admin/Worksheets.tsx` — Table cells use null-safe WO access with ticket fallbacks
-8. `frontend/src/lib/i18n/locales/fr.ts` — 7 new keys (107 total worksheet keys)
-9. `frontend/src/lib/i18n/locales/en.ts` — 7 new keys (107 total worksheet keys)
+**MEDIUM PRIORITY (8):**
+4. **SECURITY: Technician ownership checks** — added `requireOwnership` helper + ownership verification on `updateWorksheet`, `addLaborEntry`, `updateLaborEntry`, `deleteLaborEntry`, `stopTimer`, `addPart`, `updatePart`, `deletePart`, `addTravelEntry`, `updateTravelEntry`, `deleteTravelEntry`, `changeStatus`, `saveSignature`. All routes updated to pass `role` parameter.
+5. **VALIDATION: Mutual exclusivity on `createWorksheetSchema`** — `.refine()` prevents providing both `workOrderId` and `ticketId`
+6. **VALIDATION: Signature data max size** — `signatureData` now has `.max(500000)` (500 KB)
+7. **LOGIC: `deleteNote` status check** — notes can only be deleted in `BROUILLON`, `SOUMISE`, or `REVISEE`
+8. **LOGIC: `saveSignature` status restriction** — blocked on `FACTUREE` and `ANNULEE`
+9. **LOGIC: `addNote` allows REVISEE** — techs can add notes while fixing issues after review
+10. **UX: `handleMarkBilled` confirm dialog** — added `window.confirm()` before billing; new i18n keys `worksheet.confirmBilled`
+11. **UX: Start Worksheet button hidden for terminal WO statuses** — added `!isTerminal` guard
 
-### New i18n Keys
-- `worksheet.created` — success toast
-- `worksheet.startWorksheet` — button label
-- `worksheet.newWorksheet` — standalone create button
-- `worksheet.unscheduledCall` — label for worksheets with no WO/ticket
-- `worksheet.ticketRef` — "Billet" / "Ticket"
-- `worksheet.ticketInfo` — card title
-- `worksheet.referenceLabel` — generic reference label
+**LOW PRIORITY (2):**
+12. **UX: Status filter `<select>` value binding** — tech Worksheets list now has `value={status}`
+13. **CSS: Removed conflicting `block` class** — `<Link>` in tech Worksheets only uses `flex`
+
+### Files Changed
+
+**Backend (3 files):**
+- `backend/src/services/worksheet.service.ts` — `requireDraftStatus` → `requireEditableStatus` + `requireOwnership` helper; all mutation functions now accept `role` param and enforce ownership; `listWorksheets` protects technicianId filter; `deleteNote` status check; `saveSignature` status guard; `addNote` allows REVISEE; `WORKSHEET_LIST_INCLUDE` includes `workOrder.id`
+- `backend/src/validations/worksheet.ts` — `createWorksheetSchema` refine for mutual exclusivity; `saveSignatureSchema` max size
+- `backend/src/routes/worksheet.routes.ts` — all mutation routes now pass `session.user.role` to service functions
+
+**Frontend (5 files):**
+- `frontend/src/pages/admin/WorksheetDetail.tsx` — `handleMarkBilled` confirm dialog
+- `frontend/src/pages/workorders/WorkOrderDetail.tsx` — `!isTerminal` guard on Start Worksheet button
+- `frontend/src/pages/technician/Worksheets.tsx` — `value={status}` on select; removed conflicting `block` class
+- `frontend/src/lib/i18n/locales/fr.ts` — +1 key (`worksheet.confirmBilled`)
+- `frontend/src/lib/i18n/locales/en.ts` — +1 key (`worksheet.confirmBilled`)
 
 ### Build Status
 - Backend tsc: PASS
 - Frontend tsc: PASS
 - Frontend vite build: PASS
-- Prisma db push: SUCCESS
-- i18n: 107 worksheet keys in sync (fr + en)
+- i18n: 108 worksheet keys in sync (fr + en)
 
 ## Running Services
 - **Backend**: screen `valitek-backend`, port 3200
@@ -52,7 +55,8 @@ Extended the worksheet system to allow technicians to start a worksheet from thr
 - **Database**: Docker `valitek-db`, port 5433, PostgreSQL 16
 
 ## What's Next
-- Manual QA testing (create worksheets from all 3 entry points)
+- Restart backend to pick up service changes
+- Manual QA testing of worksheet REVISEE workflow
 - Signature capture canvas component
 - Customer portal worksheet read-only view
 - SystemConfig `worksheet_alert_threshold` admin UI

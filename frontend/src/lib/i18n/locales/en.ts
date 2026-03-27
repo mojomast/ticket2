@@ -1322,6 +1322,7 @@ export const en: Record<string, string> = {
   'worksheet.warrantyMonthsShort': 'mo',
   'worksheet.confirmApprove': 'Are you sure you want to approve this worksheet?',
   'worksheet.confirmCancel': 'Are you sure you want to cancel this worksheet?',
+  'worksheet.confirmBilled': 'Are you sure you want to mark this worksheet as billed?',
   'worksheet.created': 'Worksheet created successfully',
   'worksheet.startWorksheet': 'Start Worksheet',
   'worksheet.newWorksheet': 'New Worksheet',
