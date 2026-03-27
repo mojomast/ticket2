@@ -1,6 +1,6 @@
 # Valitek v2 - Gestion de billets IT
 
-A complete IT ticket management and in-shop repair work order system built for Valitek. Three role-based portals (Admin, Technician, Customer), appointment scheduling, quote workflows, Kanban boards, and a full work order lifecycle for in-shop device repairs.
+A complete IT ticket management and in-shop repair work order system built for Valitek. Three role-based portals (Admin, Technician, Customer), appointment scheduling, quote workflows, Kanban boards, a full work order lifecycle for in-shop device repairs, technician worksheets with PDF generation, a knowledge base, and customer notes.
 
 **Production domain:** `ticket.ussyco.de`
 
@@ -18,7 +18,9 @@ A complete IT ticket management and in-shop repair work order system built for V
 - [API Reference](#api-reference)
 - [Authentication & Authorization](#authentication--authorization)
 - [Work Order System](#work-order-system)
+- [Worksheet System](#worksheet-system)
 - [Ticket System](#ticket-system)
+- [Knowledge Base](#knowledge-base)
 - [Frontend](#frontend)
 - [Testing](#testing)
 - [Deployment](#deployment)
@@ -47,6 +49,34 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Order numbers in `BDT-YYMMNN` format
 - Parts tracking, warranty management, data backup consent
 
+### Worksheet System (Feuilles de Travail)
+- 6-state lifecycle: Brouillon → Soumise → Révisée → Approuvée → Facturée (+ Annulée)
+- Links to work orders or tickets
+- Labor time tracking with start/stop timers, break minutes, labor types (6 types)
+- Parts used with supplier cost, quantity, unit price, warranty tracking
+- Travel entries with distance, rate per km, addresses
+- 4 note types: Interne, Visible Client, Diagnostic Finding, Procédure
+- Follow-up reminders (5 types) with hourly scheduler and notification delivery
+- Tech and customer signature capture (base64)
+- PDF generation via pdf-lib with labor/parts/travel tables and signatures
+- Automatic financial total recalculation on every mutation
+- Notes-to-KB integration (create knowledge base article from diagnostic findings)
+- Admin worksheet configuration (hourly rates, travel rates, section toggles via SystemConfig)
+- High-value worksheet alerts (configurable threshold, triggers admin notification)
+
+### Knowledge Base (Base de Connaissances)
+- Article management with Markdown content, categories (6), tags, and slugs
+- Visibility control: internal (staff-only) or public
+- Entity linking: link articles to tickets, work orders, or customers
+- Soft-delete with unique slug handling
+- Created from worksheet diagnostic notes or manually
+
+### Customer Notes (Notes Client)
+- Per-customer notes created by staff (admin/technician)
+- Pin/unpin important notes
+- Displayed on client detail page
+- Soft-delete support
+
 ### Appointment Scheduling
 - Appointment proposals with accept/reject/counter-propose negotiation
 - Day schedule view with visual timeline (08:00-18:00)
@@ -54,22 +84,23 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Travel buffer support for on-site appointments
 
 ### Three Role-Based Portals
-- **Admin:** Full management dashboard, Kanban board, calendar, client management, technician management, system settings, database backups, work order dashboard
-- **Technician:** Ticket queue, schedule view, work order dashboard and intake, ticket detail with inline tools
-- **Customer Portal:** Ticket list, ticket detail with appointment proposals, work order status tracking with quote approval
+- **Admin:** Full management dashboard, Kanban board, calendar, client management (with customer notes and detail), technician management, knowledge base, worksheets (review/approve), system settings (including worksheet config), database backups, work order dashboard
+- **Technician:** Ticket queue, schedule view (with follow-up reminders), work order dashboard and intake, worksheets (create/edit/submit), ticket detail with inline tools
+- **Customer Portal:** Ticket list, ticket detail with appointment proposals, work order status tracking with quote approval, worksheet viewing
 
 ### Additional
 - In-app notification system with bell dropdown and navigation to related ticket/WO
-- Email notifications via Microsoft 365 Graph API (ticket events, quote sent, tech assigned, messages, WO events)
+- Email notifications via Microsoft 365 Graph API (ticket events, quote sent, tech assigned, messages, WO events, worksheet submitted/approved, follow-up reminders)
 - SMS notifications via VoIP.ms (quote sent, WO ready for pickup, appointment confirmed)
 - Message threads with internal (staff-only) messages, edit window (5 min), admin-only delete
 - File attachments on tickets (drag-and-drop upload, download, delete) with 10MB limit and MIME validation
 - Database backup/restore (admin) with transactional restore and confirmation dialog
 - Audit logging for ticket, work order, and user changes
-- Full French/English internationalization (1000+ translation keys) wired into all 31 pages
+- Full French/English internationalization (~1400 translation keys) wired into all 38 pages
 - Demo mode with persona selector (dropdown for customers) and data reset (admin-only)
 - User profile management with password change
 - Contextual help system with sidebar, keyboard shortcuts, and 170+ French tooltips
+- Follow-up reminder scheduler (runs hourly, sends notifications for due follow-ups)
 
 ---
 
@@ -87,7 +118,7 @@ Browser ──► Caddy (HTTPS + static) ──► Hono API (port 3000)
 
 - **Backend:** Pure REST API server. No SSR, no templates. Services throw `AppError`, global error middleware catches.
 - **Frontend:** Pure SPA. React Router for client-side routing, TanStack Query for server state.
-- **Database:** PostgreSQL 16 with Prisma 6 ORM. 12 models, 14 enums.
+- **Database:** PostgreSQL 16 with Prisma 6 ORM. 21 models, 21 enums.
 - **Proxy (production):** Caddy with auto-HTTPS, security headers, gzip compression.
 
 ### Key Design Principles
@@ -95,8 +126,9 @@ Browser ──► Caddy (HTTPS + static) ──► Hono API (port 3000)
 1. **No Prisma in routes** -- routes call services, services call Prisma
 2. **Consistent response envelope** -- all endpoints return `{ data, error: null }` or `{ data: null, error: { message, code } }`
 3. **Paginated lists** return `{ data: [...], pagination: { page, limit, total, totalPages } }`
-4. **State machine enforcement** -- ticket and work order status transitions are role-gated
+4. **State machine enforcement** -- ticket, work order, and worksheet status transitions are role-gated
 5. **French-first** UI with English translation support
+6. **Transactional mutations** -- financial and multi-table operations wrapped in `prisma.$transaction()`
 
 ---
 
@@ -113,6 +145,7 @@ Browser ──► Caddy (HTTPS + static) ──► Hono API (port 3000)
 | Validation | Zod | 3.23 |
 | Auth tokens | jose | 5.x |
 | Password hashing | hash-wasm (argon2id) | 4.x |
+| PDF generation | pdf-lib | 1.17 |
 | Logging | pino | 9.x |
 | Testing | Vitest | 3.x |
 | Build | tsup | 8.x |
@@ -122,17 +155,17 @@ Browser ──► Caddy (HTTPS + static) ──► Hono API (port 3000)
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Build | Vite | 5.x |
-| UI Library | React | 18.x |
-| Routing | React Router | 6.x |
-| Server State | TanStack Query | 5.x |
+| Build | Vite | 5.4 |
+| UI Library | React | 18.3 |
+| Routing | React Router | 6.27 |
+| Server State | TanStack Query | 5.59 |
 | Client State | Zustand | 5.x |
-| Forms | react-hook-form + Zod | 7.x |
+| Forms | react-hook-form + Zod | 7.53 |
 | Styling | Tailwind CSS + shadcn/ui | 3.4 |
 | Drag & Drop | @dnd-kit | 6.x / 8.x |
 | Icons | lucide-react | 0.454 |
 | Toasts | sonner | 1.7 |
-| Dates | date-fns | 4.x |
+| Dates | date-fns | 4.1 |
 | Testing | Vitest + Testing Library | 2.x |
 
 ---
@@ -159,10 +192,10 @@ ticket2/
 │   ├── tsconfig.json
 │   ├── vitest.config.ts
 │   ├── prisma/
-│   │   ├── schema.prisma           # Database schema (12 models, 14 enums)
+│   │   ├── schema.prisma           # Database schema (21 models, 21 enums)
 │   │   └── seed.ts                 # Demo data seeder
 │   └── src/
-│       ├── index.ts                # App entry, route mounting, middleware
+│       ├── index.ts                # App entry, route mounting, middleware, follow-up scheduler
 │       ├── lib/
 │       │   ├── auth.ts             # JWT create/verify, password hash/verify
 │       │   ├── config.ts           # Zod-validated env config
@@ -182,8 +215,10 @@ ticket2/
 │       │   ├── auth.routes.ts
 │       │   ├── backup.routes.ts
 │       │   ├── config.routes.ts
+│       │   ├── customer-note.routes.ts
 │       │   ├── demo.routes.ts
 │       │   ├── health.routes.ts
+│       │   ├── knowledgebase.routes.ts
 │       │   ├── message.routes.ts
 │       │   ├── notification.routes.ts
 │       │   ├── profile.routes.ts
@@ -191,29 +226,37 @@ ticket2/
 │       │   ├── technician.routes.ts
 │       │   ├── ticket.routes.ts
 │       │   ├── user.routes.ts
-│       │   └── workorder.routes.ts
+│       │   ├── workorder.routes.ts
+│       │   └── worksheet.routes.ts
 │       ├── services/
 │       │   ├── attachment.service.ts
 │       │   ├── audit.service.ts
 │       │   ├── backup.service.ts
+│       │   ├── customer-note.service.ts
 │       │   ├── email.service.ts
+│       │   ├── followup-reminder.service.ts
+│       │   ├── knowledgebase.service.ts
 │       │   ├── message.service.ts
 │       │   ├── notification.service.ts
 │       │   ├── scheduling.service.ts
 │       │   ├── sms.service.ts
 │       │   ├── ticket.service.ts
 │       │   ├── user.service.ts
-│       │   └── workorder.service.ts
+│       │   ├── workorder.service.ts
+│       │   ├── worksheet.service.ts
+│       │   └── worksheet-pdf.service.ts
 │       ├── types/
 │       │   └── index.ts            # State machines, interfaces, enums
 │       └── validations/
 │           ├── appointment.ts
 │           ├── backup.ts
 │           ├── config.ts           # Branding + config value schemas
+│           ├── knowledgebase.ts    # KB articles, links, customer notes
 │           ├── message.ts
 │           ├── ticket.ts           # Includes serviceRequestSchema
 │           ├── user.ts
-│           └── workorder.ts
+│           ├── workorder.ts
+│           └── worksheet.ts        # Worksheet, labor, parts, travel, notes, follow-ups, signatures
 │
 └── frontend/
     ├── index.html
@@ -245,17 +288,19 @@ ticket2/
         │   └── i18n/
         │       ├── hook.ts        # useTranslation()
         │       └── locales/
-        │           ├── fr.ts      # French translations (1000+ keys)
-        │           └── en.ts      # English translations (1000+ keys)
+        │           ├── fr.ts      # French translations (~1400 keys)
+        │           └── en.ts      # English translations (~1400 keys)
         ├── components/
         │   ├── shared/
         │   │   ├── AppSidebar.tsx      # Role-based sidebar navigation
         │   │   ├── AttachmentSection.tsx # Drag-drop file upload/download/delete
         │   │   ├── DemoBanner.tsx      # Demo mode banner + persona selector
+        │   │   ├── FileViewer.tsx      # File preview component
         │   │   ├── HelpSidebar.tsx     # Contextual help slide-out panel
         │   │   ├── HelpTooltip.tsx     # Tooltip convenience wrapper
         │   │   ├── MessageThread.tsx   # Ticket message thread
         │   │   ├── NotificationBell.tsx # In-app notification dropdown
+        │   │   ├── SignaturePad.tsx    # Signature capture component
         │   │   └── StatusBadge.tsx     # Status badge (ticket/appointment/workorder)
         │   └── ui/                     # shadcn/ui primitives (18 components)
         └── pages/
@@ -271,9 +316,14 @@ ticket2/
             │   ├── KanbanBoard.tsx     # Drag-and-drop Kanban
             │   ├── Calendar.tsx        # Appointment calendar
             │   ├── Clients.tsx         # Customer management
+            │   ├── ClientDetail.tsx    # Client detail with notes and history
             │   ├── Technicians.tsx     # Technician management + permissions
-            │   ├── Settings.tsx        # System configuration
-            │   └── Backups.tsx         # Database backup management
+            │   ├── KnowledgeBase.tsx   # KB article list, search, categories
+            │   ├── KbArticleDetail.tsx # KB article view/edit with entity links
+            │   ├── Settings.tsx        # System configuration (incl. worksheet config)
+            │   ├── Backups.tsx         # Database backup management
+            │   ├── Worksheets.tsx      # Worksheet list (review queue)
+            │   └── WorksheetDetail.tsx # Worksheet detail (review/approve)
             ├── portal/
             │   ├── PortalLayout.tsx    # Customer portal shell
             │   ├── Dashboard.tsx       # Customer dashboard
@@ -281,13 +331,17 @@ ticket2/
             │   ├── TicketDetail.tsx    # Ticket detail with proposal negotiation
             │   ├── Appointments.tsx    # Appointment list
             │   ├── WorkOrders.tsx      # Work order list
-            │   └── WorkOrderDetail.tsx # Work order detail + quote approval
+            │   ├── WorkOrderDetail.tsx # Work order detail + quote approval
+            │   ├── Worksheets.tsx      # Worksheet list (customer view)
+            │   └── WorksheetDetail.tsx # Worksheet detail (customer view)
             ├── technician/
             │   ├── TechLayout.tsx      # Technician shell
             │   ├── Dashboard.tsx       # Technician dashboard
             │   ├── Tickets.tsx         # Ticket queue
             │   ├── TicketDetail.tsx    # Ticket detail with proposals
-            │   └── Schedule.tsx        # Technician schedule view
+            │   ├── Schedule.tsx        # Technician schedule view + follow-ups
+            │   ├── Worksheets.tsx      # Worksheet list (own worksheets)
+            │   └── WorksheetDetail.tsx # Worksheet detail (create/edit/submit)
             ├── workorders/             # Shared admin/technician work order pages
             │   ├── WorkOrdersDashboard.tsx  # Kanban + list view + stats
             │   ├── WorkOrderDetail.tsx      # Full detail/edit page
@@ -328,19 +382,21 @@ cd ../frontend && npm install
 docker compose -f docker-compose.dev.yml up db -d
 ```
 
-This starts PostgreSQL 16 on port 5432.
+This starts PostgreSQL 16 on port **5433** (mapped from container port 5432).
+
+> **Note:** The dev compose exposes the DB on the host at port 5432 by default in `docker-compose.dev.yml`. If you use a custom port (e.g. 5433), update your `DATABASE_URL` accordingly.
 
 ### 3. Configure environment
 
 ```bash
 # Backend
 cp .env.example backend/.env
-# Edit backend/.env -- set DATABASE_URL, AUTH_SECRET, etc.
+# Edit backend/.env -- set DATABASE_URL, AUTH_SECRET, PORT, etc.
 ```
 
-Minimal `backend/.env`:
+Minimal `backend/.env` for local development:
 ```
-DATABASE_URL=postgresql://valitek:yourpassword@localhost:5432/valitek
+DATABASE_URL=postgresql://valitek:yourpassword@localhost:5433/valitek
 AUTH_SECRET=your-secret-at-least-32-characters-long
 FRONTEND_URL=http://localhost:5173
 PORT=3200
@@ -352,14 +408,18 @@ DEMO_MODE=true
 ```bash
 cd backend
 
-# Push schema to database
+# Push schema to database (no migration history needed for dev)
 npx prisma db push
 
 # Seed demo data
 npx prisma db seed
 ```
 
+> **Important:** This project uses `prisma db push` for schema synchronization, not `prisma migrate dev`. There is no migration history.
+
 ### 5. Start development servers
+
+You can use separate terminals or `screen` sessions:
 
 ```bash
 # Terminal 1 - Backend (port 3200)
@@ -369,7 +429,13 @@ cd backend && npm run dev
 cd frontend && npm run dev
 ```
 
-The frontend dev server proxies `/api` requests to `localhost:3200`.
+Using `screen` (recommended for persistent sessions):
+```bash
+screen -S valitek-backend -d -m bash -c "cd backend && npm run dev"
+screen -S valitek-frontend -d -m bash -c "cd frontend && npm run dev"
+```
+
+The frontend Vite dev server proxies `/api` requests to `localhost:3200`.
 
 Open `http://localhost:5173` in your browser.
 
@@ -384,7 +450,7 @@ See `.env.example` for the full template. Key variables:
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `AUTH_SECRET` | Yes | JWT signing secret (min 32 chars) |
 | `FRONTEND_URL` | Yes | Frontend origin for CORS/CSRF (e.g. `http://localhost:5173`) |
-| `PORT` | No | Backend port (default: 3000) |
+| `PORT` | No | Backend port (default: 3000, dev typically uses 3200) |
 | `DEMO_MODE` | No | Enable demo login/reset (default: false) |
 | `LOG_LEVEL` | No | pino log level (default: info) |
 | `NODE_ENV` | No | development / production |
@@ -402,7 +468,7 @@ See `.env.example` for the full template. Key variables:
 
 ### Schema Overview
 
-**14 enums, 12 models** defined in `backend/prisma/schema.prisma`.
+**21 enums, 21 models** defined in `backend/prisma/schema.prisma`.
 
 #### Models
 
@@ -413,10 +479,19 @@ See `.env.example` for the full template. Key variables:
 | `Appointment` | Scheduled appointments linked to tickets |
 | `AppointmentProposal` | Negotiated appointment time proposals (self-referencing for threads) |
 | `Message` | Ticket messages (supports internal/staff-only) |
-| `Notification` | In-app notifications |
+| `Notification` | In-app notifications (21 notification types) |
 | `Attachment` | File attachments on tickets/messages |
 | `WorkOrder` | In-shop repair work orders with 12-state lifecycle |
 | `WorkOrderNote` | Notes on work orders (internal/external) |
+| `KbArticle` | Knowledge base articles with Markdown content, categories, tags, visibility |
+| `KbArticleLink` | Links between KB articles and entities (tickets, work orders, customers) |
+| `CustomerNote` | Per-customer staff notes with pin support |
+| `Worksheet` | Technician work logs with 6-state lifecycle, signatures, totals |
+| `LaborEntry` | Labor time entries on worksheets (start/stop timer, hourly rate, labor type) |
+| `PartUsed` | Parts used on worksheets (supplier cost, unit price, warranty) |
+| `TravelEntry` | Travel entries on worksheets (distance, rate per km, addresses) |
+| `WorksheetNote` | Notes on worksheets (4 types: internal, client-visible, diagnostic, procedure) |
+| `FollowUp` | Follow-up reminders on worksheets (5 types, hourly scheduler) |
 | `SystemConfig` | Key-value system configuration |
 | `AuditLog` | Audit trail for entity changes |
 | `BackupRecord` | Database backup metadata |
@@ -428,23 +503,32 @@ See `.env.example` for the full template. Key variables:
 | `UserRole` | CUSTOMER, TECHNICIAN, ADMIN |
 | `TicketStatus` | NOUVELLE, EN_ATTENTE_APPROBATION, EN_ATTENTE_REPONSE_CLIENT, APPROUVEE, PLANIFIEE, EN_COURS, BLOCAGE, TERMINEE, FERMEE, ANNULEE |
 | `WorkOrderStatus` | RECEPTION, DIAGNOSTIC, ATTENTE_APPROBATION, APPROUVE, ATTENTE_PIECES, EN_REPARATION, VERIFICATION, PRET, REMIS, REFUSE, ABANDONNE, ANNULE |
+| `WorksheetStatus` | BROUILLON, SOUMISE, REVISEE, APPROUVEE, FACTUREE, ANNULEE |
+| `LaborType` | DIAGNOSTIC, REPARATION, INSTALLATION, CONSULTATION, GARANTIE, REPRISE |
+| `WorksheetNoteType` | INTERNE, VISIBLE_CLIENT, DIAGNOSTIC_FINDING, PROCEDURE |
+| `FollowUpType` | VERIFICATION_GARANTIE, RAPPEL_CLIENT, REVERIFICATION, ARRIVEE_PIECES, SUIVI_DEVIS |
+| `KbCategory` | MATERIEL, LOGICIEL, RESEAU, PROCEDURE, FAQ, AUTRE |
+| `KbVisibility` | INTERNAL, PUBLIC |
+| `KbLinkEntityType` | TICKET, WORKORDER, CUSTOMER |
 | `Priority` | BASSE, NORMALE, HAUTE, URGENTE |
 | `DeviceType` | LAPTOP, DESKTOP, TABLETTE, TELEPHONE, TOUT_EN_UN, IMPRIMANTE, SERVEUR, RESEAU_EQUIP, AUTRE |
 | `DataBackupConsent` | CLIENT_FAIT, ATELIER_FAIT, DECLINE, NON_APPLICABLE |
+| `AppointmentStatus` | DEMANDE, PLANIFIE, CONFIRME, EN_COURS, TERMINE, ANNULE |
+| `ProposalStatus` | PROPOSEE, ACCEPTEE, REFUSEE, ANNULEE |
+| `NotificationType` | 21 types (ticket, appointment, WO, worksheet, follow-up events) |
+| `BackupStatus` | PENDING, COMPLETED, FAILED, RESTORED |
+| `BackupType` | FULL, PARTIAL |
+| `CustomerType` | RESIDENTIAL, COMMERCIAL |
+| `ServiceMode` | SUR_ROUTE, EN_CUBICULE |
+| `ServiceCategory` | REPARATION, LOGICIEL, RESEAU, DONNEES, INSTALLATION, MAINTENANCE, CONSULTATION, FORMATION, AUTRE |
 
 ### Commands
 
 ```bash
 cd backend
 
-# Push schema changes (dev)
+# Push schema changes (dev — no migration history)
 npx prisma db push
-
-# Create migration
-npx prisma migrate dev --name description
-
-# Deploy migrations (production)
-npx prisma migrate deploy
 
 # Seed demo data
 npx prisma db seed
@@ -542,6 +626,63 @@ All authenticated endpoints require a `valitek-auth` httpOnly cookie (set on log
 | POST | `/api/workorders/:id/decline-quote` | Customer | Decline quote |
 | GET | `/api/workorders/:id/notes` | Any | List notes |
 | POST | `/api/workorders/:id/notes` | Admin, Tech | Add note |
+
+#### Worksheets
+| Method | Path | Roles | Description |
+|--------|------|-------|-------------|
+| GET | `/api/worksheets` | Any | List (filtered by role) |
+| POST | `/api/worksheets` | Admin, Tech | Create worksheet |
+| GET | `/api/worksheets/follow-ups/schedule` | Admin, Tech | Follow-ups for schedule view |
+| GET | `/api/worksheets/:id` | Any | Detail (internal notes hidden from customers) |
+| PATCH | `/api/worksheets/:id` | Admin, Tech | Update |
+| DELETE | `/api/worksheets/:id` | Admin | Soft-delete |
+| PATCH | `/api/worksheets/:id/status` | Admin, Tech | Status change (6-state lifecycle) |
+| GET | `/api/worksheets/:id/pdf` | Any | Generate PDF |
+| POST | `/api/worksheets/:id/labor` | Admin, Tech | Add labor entry |
+| PATCH | `/api/worksheets/:id/labor/:entryId` | Admin, Tech | Update labor entry |
+| DELETE | `/api/worksheets/:id/labor/:entryId` | Admin, Tech | Delete labor entry |
+| POST | `/api/worksheets/:id/labor/:entryId/stop` | Admin, Tech | Stop labor timer |
+| POST | `/api/worksheets/:id/parts` | Admin, Tech | Add part used |
+| PATCH | `/api/worksheets/:id/parts/:partId` | Admin, Tech | Update part |
+| DELETE | `/api/worksheets/:id/parts/:partId` | Admin, Tech | Delete part |
+| POST | `/api/worksheets/:id/travel` | Admin, Tech | Add travel entry |
+| PATCH | `/api/worksheets/:id/travel/:entryId` | Admin, Tech | Update travel entry |
+| DELETE | `/api/worksheets/:id/travel/:entryId` | Admin, Tech | Delete travel entry |
+| POST | `/api/worksheets/:id/notes` | Admin, Tech | Add note |
+| DELETE | `/api/worksheets/:id/notes/:noteId` | Admin, Tech | Delete note |
+| POST | `/api/worksheets/:id/notes/:noteId/to-kb` | Admin, Tech | Create KB article from note |
+| POST | `/api/worksheets/:id/follow-ups` | Admin, Tech | Create follow-up |
+| PATCH | `/api/worksheets/:id/follow-ups/:followUpId` | Admin, Tech | Update follow-up |
+| DELETE | `/api/worksheets/:id/follow-ups/:followUpId` | Admin, Tech | Delete follow-up |
+| POST | `/api/worksheets/:id/signature` | Admin, Tech | Save signature |
+
+#### Knowledge Base
+| Method | Path | Roles | Description |
+|--------|------|-------|-------------|
+| GET | `/api/kb/articles` | Any | List articles (paginated, filtered by visibility/category) |
+| POST | `/api/kb/articles` | Admin, Tech | Create article |
+| GET | `/api/kb/articles/by-slug/:slug` | Any | Get article by slug |
+| GET | `/api/kb/articles/:id` | Any | Get article by ID |
+| PATCH | `/api/kb/articles/:id` | Admin, Tech | Update article |
+| DELETE | `/api/kb/articles/:id` | Admin, Tech | Soft-delete article |
+| GET | `/api/kb/articles/:id/links` | Any | List entity links for article |
+| GET | `/api/kb/links` | Any | Get links for entity (by entityType + entityId) |
+| POST | `/api/kb/links` | Admin, Tech | Link article to entity |
+| DELETE | `/api/kb/links/:id` | Admin, Tech | Remove entity link |
+
+#### Customer Notes
+| Method | Path | Roles | Description |
+|--------|------|-------|-------------|
+| GET | `/api/customer-notes` | Any auth | List notes for customer |
+| POST | `/api/customer-notes` | Admin, Tech | Create note |
+| PATCH | `/api/customer-notes/:id` | Admin, Tech | Update note |
+| PATCH | `/api/customer-notes/:id/toggle-pin` | Admin, Tech | Toggle pin status |
+| DELETE | `/api/customer-notes/:id` | Admin, Tech | Soft-delete note |
+
+#### Config (Authenticated)
+| Method | Path | Roles | Description |
+|--------|------|-------|-------------|
+| GET | `/api/config/:key` | Any auth | Read specific config (worksheet_config, worksheet_alert_threshold) |
 
 #### Messages
 | Method | Path | Roles | Description |
@@ -684,6 +825,56 @@ Defined in `backend/src/types/index.ts` as `WO_ALLOWED_TRANSITIONS`. Each transi
 
 ---
 
+## Worksheet System
+
+The worksheet (Feuille de Travail) is a detailed technician work log attached to a work order or ticket. It tracks labor, parts, travel, and generates PDF documents for billing.
+
+### Lifecycle (6 States)
+
+```
+BROUILLON --> SOUMISE --> REVISEE --> APPROUVEE --> FACTUREE
+                                        |
+                                        v
+                                     ANNULEE (admin only, voids an approved worksheet)
+```
+
+- **BROUILLON (Draft):** Tech fills in labor/parts/travel/notes. Fully editable.
+- **SOUMISE (Submitted):** Tech submits for admin review. No further edits by tech.
+- **REVISEE (Reviewed):** Admin reviewed, may request changes (returns to editable).
+- **APPROUVEE (Approved):** Ready for billing. No further edits.
+- **FACTUREE (Billed):** Invoice generated. Terminal state.
+- **ANNULEE (Voided):** Cancelled after approval. Admin only.
+
+### Financial Tracking
+
+- **Labor:** Hourly rate × billable hours (with break deduction), 6 labor types
+- **Parts:** Supplier cost + customer-facing unit price × quantity, optional warranty
+- **Travel:** Distance (km) × rate per km
+- **Auto-totals:** `totalLabor`, `totalParts`, `totalTravel`, `grandTotal` recalculated on every mutation (rounded to 2 decimals)
+
+### Follow-Up Reminders
+
+5 follow-up types (warranty check, customer callback, re-check, parts arrival, quote follow-up). The backend runs an hourly scheduler (`followup-reminder.service.ts`) that checks for due follow-ups and sends in-app notifications.
+
+### PDF Generation
+
+Uses `pdf-lib` to generate professional PDF documents including:
+- Header with company info and worksheet metadata
+- Labor, parts, and travel tables with line totals
+- Notes (client-visible only)
+- Tech and customer signatures (rendered side-by-side)
+- Grand total summary
+
+### Admin Worksheet Config
+
+Stored in `SystemConfig` as `worksheet_config`:
+- Default hourly rate
+- Default travel rate per km
+- Section toggles (labor, parts, travel)
+- High-value alert threshold (`worksheet_alert_threshold`)
+
+---
+
 ## Ticket System
 
 ### Lifecycle (10 States)
@@ -693,8 +884,8 @@ NOUVELLE --> EN_ATTENTE_APPROBATION --> APPROUVEE --> PLANIFIEE --> EN_COURS -->
                 |                                                     |
                 v                                                     v
          EN_ATTENTE_REPONSE_CLIENT                                 BLOCAGE
-                                                                      |
-                                                                      v
+                                                                       |
+                                                                       v
 Any non-terminal state --> ANNULEE (terminal)                      EN_COURS
 ```
 
@@ -710,6 +901,25 @@ Customers and staff can propose appointment times. Proposals support:
 - Accept (auto-creates appointment)
 - Reject (with optional message)
 - Counter-propose (creates child proposal with new times)
+
+---
+
+## Knowledge Base
+
+The knowledge base (`/api/kb/*`) provides article management for internal documentation and customer-facing FAQs.
+
+### Features
+
+- **Articles:** Markdown content, 6 categories (Matériel, Logiciel, Réseau, Procédure, FAQ, Autre), tags, auto-generated slugs
+- **Visibility:** `INTERNAL` (staff-only) or `PUBLIC` (visible to customers)
+- **Entity linking:** Articles can be linked to tickets, work orders, or customers for contextual reference
+- **Creation from worksheets:** Diagnostic findings and procedure notes can be promoted to KB articles directly
+- **Soft-delete:** Articles are soft-deleted, slug uniqueness accounts for deleted records
+
+### Frontend
+
+- Admin: `/admin/base-connaissances` (list) and `/admin/base-connaissances/:id` (detail/edit)
+- Entity links shown in ticket detail, work order detail, and client detail pages
 
 ---
 
@@ -730,12 +940,17 @@ All routes use French-language paths. Components are lazy-loaded.
 | `/admin/billets/kanban` | Kanban board | ADMIN |
 | `/admin/calendrier` | Calendar | ADMIN |
 | `/admin/clients` | Client management | ADMIN |
-| `/admin/techniciens` | Technician management | ADMIN |
+| `/admin/clients/:id` | Client detail (notes, history) | ADMIN |
+| `/admin/base-connaissances` | Knowledge base | ADMIN |
+| `/admin/base-connaissances/:id` | KB article detail | ADMIN |
 | `/admin/parametres` | System settings | ADMIN |
 | `/admin/sauvegardes` | Database backups | ADMIN |
+| `/admin/techniciens` | Technician management | ADMIN |
 | `/admin/bons-travail` | Work order dashboard | ADMIN |
 | `/admin/bons-travail/nouveau` | Work order intake | ADMIN |
 | `/admin/bons-travail/:id` | Work order detail | ADMIN |
+| `/admin/feuilles-travail` | Worksheet list (review queue) | ADMIN |
+| `/admin/feuilles-travail/:id` | Worksheet detail (review/approve) | ADMIN |
 | `/admin/profil` | Profile | ADMIN |
 | `/portail` | Customer dashboard | CUSTOMER |
 | `/portail/billets` | Customer tickets | CUSTOMER |
@@ -743,29 +958,36 @@ All routes use French-language paths. Components are lazy-loaded.
 | `/portail/rendez-vous` | Appointments | CUSTOMER |
 | `/portail/bons-travail` | Work orders | CUSTOMER |
 | `/portail/bons-travail/:id` | Work order detail + quote approval | CUSTOMER |
+| `/portail/feuilles-travail` | Worksheets (customer view) | CUSTOMER |
+| `/portail/feuilles-travail/:id` | Worksheet detail (customer view) | CUSTOMER |
 | `/portail/profil` | Profile | CUSTOMER |
 | `/technicien` | Technician dashboard | TECHNICIAN |
 | `/technicien/billets` | Ticket queue | TECHNICIAN |
 | `/technicien/billets/:id` | Ticket detail + proposals | TECHNICIAN |
-| `/technicien/horaire` | Schedule | TECHNICIAN |
+| `/technicien/horaire` | Schedule + follow-ups | TECHNICIAN |
 | `/technicien/bons-travail` | Work order dashboard | TECHNICIAN |
 | `/technicien/bons-travail/nouveau` | Work order intake | TECHNICIAN |
 | `/technicien/bons-travail/:id` | Work order detail | TECHNICIAN |
+| `/technicien/feuilles-travail` | Worksheet list (own) | TECHNICIAN |
+| `/technicien/feuilles-travail/:id` | Worksheet detail (create/edit) | TECHNICIAN |
 | `/technicien/profil` | Profile | TECHNICIAN |
+
+**Total: 38 page components (3 layouts + 35 content pages), 40 routes**
 
 ### Key Frontend Patterns
 
-- **API client** (`src/api/client.ts`): Typed `request<T>()` function reads `json.data` from response envelope. Namespaced API calls (`api.tickets.list()`, `api.workorders.create()`, etc.)
+- **API client** (`src/api/client.ts`): Typed `request<T>()` function reads `json.data` from response envelope. Namespaced API calls (`api.tickets.list()`, `api.workorders.create()`, `api.worksheets.get()`, etc.)
 - **Auth hook** (`src/hooks/use-auth.ts`): Single `useAuth()` hook returns `{ user, isLoading, isAuthenticated, logout }`
 - **Constants** (`src/lib/constants.ts`): All status labels, colors, and priority mappings in one file
 - **StatusBadge** (`src/components/shared/StatusBadge.tsx`): Supports `type="ticket"`, `type="appointment"`, `type="workorder"`
-- **TanStack Query keys**: `['tickets']`, `['workorders']`, `['workorders-stats']`, `['portal-workorders']`, `['notifications']`, etc.
+- **SignaturePad** (`src/components/shared/SignaturePad.tsx`): Canvas-based signature capture component
+- **TanStack Query keys**: `['tickets']`, `['workorders']`, `['worksheets']`, `['kb-articles']`, `['customer-notes']`, `['notifications']`, etc.
 
 ---
 
 ## Testing
 
-### Backend (83 tests)
+### Backend (9 test files)
 
 ```bash
 cd backend
@@ -787,7 +1009,7 @@ Tested modules:
 - Auth routes, ticket routes
 - User service, ticket service, message service, backup service, scheduling service
 
-### Frontend
+### Frontend (4 test files)
 
 ```bash
 cd frontend
@@ -803,6 +1025,9 @@ npm run build
 ```
 
 Test files: `*.test.ts` / `*.test.tsx` alongside source files. Tests use Vitest + Testing Library (jsdom).
+
+Tested modules:
+- StatusBadge, MessageThread, Dashboard, use-auth hook
 
 ---
 
@@ -836,13 +1061,15 @@ GitHub Actions (`.github/workflows/ci.yml`):
 
 - httpOnly, Secure, SameSite=Strict cookies
 - CSRF protection via Origin header validation
-- argon2id password hashing
+- argon2id password hashing (via hash-wasm, no native dependencies)
 - Parameterized queries only (no raw SQL injection vectors)
 - Read-only container filesystem in production
 - All capabilities dropped (`cap_drop: ALL`)
 - Database on internal-only Docker network
 - Security headers via Caddy (HSTS, X-Frame-Options DENY, etc.)
+- Secure headers middleware via Hono
 - Trivy image scanning in CI
+- Rate limiting on auth endpoints (10 req/min) and general API (100 req/min)
 
 ---
 

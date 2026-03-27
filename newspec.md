@@ -1,3 +1,8 @@
+> **📄 ORIGINAL REBUILD SPECIFICATION (historical)** — This document was the design
+> spec used to build the current `ticket2` codebase. The rebuild is complete and the
+> app is running. This file is retained as an architectural reference; some details
+> may no longer match the implemented code exactly.
+
 # Valitek v2 -- Rebuild Specification
 
 This document provides precise instructions to rebuild the Valitek IT ticket management system from scratch, eliminating the architectural debt, security issues, and unnecessary complexity identified in the current codebase. It is written so that a developer (or AI agent) can implement the entire system without referencing the old code.

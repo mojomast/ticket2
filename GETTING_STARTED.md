@@ -1,6 +1,11 @@
 # Getting Started with Valitek
 
 > **Who this is for:** You don't need to be a developer to understand this guide. Whether you're a business owner, a non-technical collaborator, or an AI assistant helping someone build software — this document explains what Valitek is, what it does, and how to use it to build your own custom application.
+>
+> **⚠️ Note:** Sections 4–6, 8, and parts of 9–10 describe the **planned modular framework**
+> (`ticket3`), which is **not yet implemented**. The current `ticket2` codebase is a
+> monolithic application. See `MODULARITY_SPEC.md` for the full future design.
+> Sections 1–3 and 7 accurately describe the current working application.
 
 ---
 
@@ -97,6 +102,9 @@ The current `ticket2` codebase is a **fully working application** — not a demo
 
 ## 4. What You Can Build With It
 
+> **⚠️ FUTURE PLANS** — This section describes capabilities of the planned modular framework,
+> not the current `ticket2` application. See `MODULARITY_SPEC.md`.
+
 Once the modular framework migration is complete (see `MODULARITY_SPEC.md`), new apps are created by:
 
 1. Choosing which built-in modules to include
@@ -181,6 +189,9 @@ There are three built-in roles. Every deployment uses these same three roles, bu
 ---
 
 ## 6. How to Build a New App (Step by Step)
+
+> **⚠️ FUTURE PLANS** — This section describes the workflow for the planned modular framework.
+> The module system, ConfigOption table, and deployment folders do not exist yet in `ticket2`.
 
 This section walks you through what it takes to go from zero to a deployed custom application using the Valitek framework. You'll need a developer (or AI assistant) to write the actual code, but this explains what decisions *you* need to make.
 
@@ -335,6 +346,10 @@ If `DEMO_MODE=true` is set in the environment, a persona selector appears at log
 ---
 
 ## 8. For AI Assistants: How to Help a Human Build a Vertical
+
+> **⚠️ FUTURE PLANS** — This section references the modular framework (module manifests,
+> deployments, event bus) which is not yet implemented. The coding patterns and rules
+> (AppError, validateBody, TanStack Query, i18n) **do** apply to the current codebase.
 
 If you're an AI assistant (like Claude, GPT, Copilot, etc.) helping someone build a new vertical on top of this codebase, follow this checklist.
 

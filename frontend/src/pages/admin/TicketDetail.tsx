@@ -8,12 +8,7 @@ import AttachmentSection from '../../components/shared/AttachmentSection';
 import HelpTooltip from '../../components/shared/HelpTooltip';
 import { useToast } from '../../hooks/use-toast';
 import { formatDateTime, formatCurrency } from '../../lib/utils';
-import {
-  STATUS_LABELS,
-  SERVICE_CATEGORY_LABELS,
-  SERVICE_MODE_LABELS,
-  APPOINTMENT_STATUS_LABELS,
-} from '../../lib/constants';
+import { useTranslation } from '../../lib/i18n/hook';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -96,6 +91,7 @@ function InlineDayCalendar({
   date: string;
   technicianId: string;
 }) {
+  const { t } = useTranslation();
   const { data: daySchedule, isLoading } = useQuery({
     queryKey: ['daySchedule', date, technicianId],
     queryFn: () => api.appointments.daySchedule(date, technicianId),
@@ -105,7 +101,7 @@ function InlineDayCalendar({
   if (isLoading) {
     return (
       <p className="text-xs text-muted-foreground py-2">
-        Chargement de l&apos;horaire du jour...
+        {t('admin.ticketDetail.dayScheduleLoading')}
       </p>
     );
   }
@@ -199,7 +195,7 @@ function InlineDayCalendar({
                 </span>
                 {' '}
                 <span className="opacity-60">
-                  [{APPOINTMENT_STATUS_LABELS[occ.status] || occ.status}]
+                  [{t(`label.appointmentStatus.${occ.status}`) || occ.status}]
                 </span>
               </div>
             );
@@ -212,9 +208,9 @@ function InlineDayCalendar({
   return (
     <div className="mt-3">
       <p className="text-xs font-medium text-muted-foreground mb-2">
-        Horaire du technicien — {date}
+        {t('admin.ticketDetail.dayScheduleTitle', { date })}
         {appts.length === 0 && (
-          <span className="ml-2 text-green-600">(Journée libre)</span>
+          <span className="ml-2 text-green-600">{t('admin.ticketDetail.dayFree')}</span>
         )}
       </p>
       <div className="border rounded-md bg-background overflow-hidden max-h-[400px] overflow-y-auto">
@@ -222,7 +218,7 @@ function InlineDayCalendar({
       </div>
       {appts.length > 0 && (
         <p className="text-[10px] text-muted-foreground mt-1">
-          {appts.filter((a: any) => a.status !== 'ANNULE').length} rendez-vous planifié(s) ce jour
+          {t('admin.ticketDetail.appointmentCount', { count: appts.filter((a: any) => a.status !== 'ANNULE').length })}
         </p>
       )}
     </div>
@@ -238,6 +234,7 @@ function ProposalsSection({
   ticketId: string;
   technicianId?: string | null;
 }) {
+  const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -265,10 +262,10 @@ function ProposalsSection({
       queryClient.invalidateQueries({ queryKey: ['proposals', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['appointments', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] });
-      toast.success('Proposition acceptée — rendez-vous créé automatiquement');
+      toast.success(t('admin.ticketDetail.acceptSuccess'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de l\'acceptation');
+      toast.error(err.message || t('admin.ticketDetail.acceptError'));
     },
   });
 
@@ -277,12 +274,12 @@ function ProposalsSection({
       api.appointments.proposals.reject(id, responseMessage),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proposals', ticketId] });
-      toast.success('Proposition refusée');
+      toast.success(t('admin.ticketDetail.rejectSuccess'));
       setRejectFor(null);
       setRejectMessage('');
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors du refus');
+      toast.error(err.message || t('admin.ticketDetail.rejectError'));
     },
   });
 
@@ -296,7 +293,7 @@ function ProposalsSection({
     }) => api.appointments.proposals.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proposals', ticketId] });
-      toast.success('Contre-proposition envoyée');
+      toast.success(t('admin.ticketDetail.counterSuccess'));
       setCounterProposeFor(null);
       setCounterDate('');
       setCounterStart('');
@@ -304,14 +301,14 @@ function ProposalsSection({
       setCounterMessage('');
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la contre-proposition');
+      toast.error(err.message || t('admin.ticketDetail.counterError'));
     },
   });
 
   function handleCounterSubmit(e: React.FormEvent, parentId: string) {
     e.preventDefault();
     if (!counterDate || !counterStart || !counterEnd) {
-      toast.error('Veuillez remplir la date, l\'heure de début et de fin');
+      toast.error(t('admin.ticketDetail.counterFieldsRequired'));
       return;
     }
     const proposedStart = `${counterDate}T${counterStart}:00`;
@@ -339,10 +336,10 @@ function ProposalsSection({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Propositions de rendez-vous</CardTitle>
+          <CardTitle>{t('admin.ticketDetail.proposals')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Chargement...</p>
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         </CardContent>
       </Card>
     );
@@ -351,13 +348,13 @@ function ProposalsSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Propositions de rendez-vous</CardTitle>
+        <CardTitle>{t('admin.ticketDetail.proposals')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
 
       {proposalList.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Aucune proposition de rendez-vous pour ce billet.
+          {t('admin.ticketDetail.proposalsEmpty')}
         </p>
       ) : (
         <div className="space-y-3">
@@ -378,8 +375,10 @@ function ProposalsSection({
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  Par {proposal.proposedBy.firstName} {proposal.proposedBy.lastName}
-                  {' '}({proposal.proposedBy.role === 'CUSTOMER' ? 'Client' : proposal.proposedBy.role === 'ADMIN' ? 'Admin' : 'Tech'})
+                  {t('admin.ticketDetail.proposalBy', {
+                    name: `${proposal.proposedBy.firstName} ${proposal.proposedBy.lastName}`,
+                    role: proposal.proposedBy.role === 'CUSTOMER' ? t('admin.ticketDetail.proposalRoleCustomer') : proposal.proposedBy.role === 'ADMIN' ? t('admin.ticketDetail.proposalRoleAdmin') : t('admin.ticketDetail.proposalRoleTech'),
+                  })}
                 </span>
               </div>
 
@@ -393,7 +392,7 @@ function ProposalsSection({
               {/* Response message (if already responded) */}
               {proposal.responseMessage && (
                 <p className="text-xs text-muted-foreground">
-                  Réponse: &laquo; {proposal.responseMessage} &raquo;
+                  {t('admin.ticketDetail.proposalResponse')} &laquo; {proposal.responseMessage} &raquo;
                   {proposal.respondedBy && (
                     <span className="ml-1">
                       — {proposal.respondedBy.firstName} {proposal.respondedBy.lastName}
@@ -405,7 +404,7 @@ function ProposalsSection({
               {/* Parent reference (if this is a reply) */}
               {proposal.parent && (
                 <p className="text-[10px] text-muted-foreground">
-                  En réponse à la proposition du{' '}
+                  {t('admin.ticketDetail.proposalReplyTo')}{' '}
                   {new Date(proposal.parent.proposedStart).toLocaleDateString('fr-CA')}{' '}
                   {formatSlotTime(proposal.parent.proposedStart)}–{formatSlotTime(proposal.parent.proposedEnd)}
                 </p>
@@ -418,7 +417,7 @@ function ProposalsSection({
                     <div key={reply.id} className="text-xs text-muted-foreground">
                       <StatusBadge status={reply.status} type="proposal" className="mr-1" />
                       {formatSlotTime(reply.proposedStart)}–{formatSlotTime(reply.proposedEnd)}
-                      {' le '}
+                      {t('admin.ticketDetail.appointmentLe')}
                       {new Date(reply.proposedStart).toLocaleDateString('fr-CA')}
                       {' — '}
                       {reply.proposedBy.firstName} {reply.proposedBy.lastName}
@@ -434,14 +433,14 @@ function ProposalsSection({
               {proposal.status === 'PROPOSEE' && (
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {/* Accept button */}
-                  <HelpTooltip content="Accepter cette proposition — un rendez-vous sera créé automatiquement" side="top">
+                  <HelpTooltip content={t('admin.ticketDetail.acceptTooltip')} side="top">
                     <Button
                       size="sm"
                       onClick={() => acceptMutation.mutate({ id: proposal.id })}
                       disabled={acceptMutation.isPending}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      {acceptMutation.isPending ? 'Acceptation...' : 'Accepter'}
+                      {acceptMutation.isPending ? t('admin.ticketDetail.accepting') : t('admin.ticketDetail.accept')}
                     </Button>
                   </HelpTooltip>
 
@@ -455,7 +454,7 @@ function ProposalsSection({
                         type="text"
                         value={rejectMessage}
                         onChange={(e) => setRejectMessage(e.target.value)}
-                        placeholder="Raison du refus (optionnel)..."
+                        placeholder={t('admin.ticketDetail.rejectReasonPlaceholder')}
                         className="flex-1 h-8 text-xs"
                       />
                       <Button
@@ -464,7 +463,7 @@ function ProposalsSection({
                         variant="destructive"
                         disabled={rejectMutation.isPending}
                       >
-                        {rejectMutation.isPending ? '...' : 'Confirmer refus'}
+                        {rejectMutation.isPending ? '...' : t('admin.ticketDetail.rejectConfirm')}
                       </Button>
                       <Button
                         type="button"
@@ -475,11 +474,11 @@ function ProposalsSection({
                           setRejectMessage('');
                         }}
                       >
-                        Annuler
+                        {t('common.cancel')}
                       </Button>
                     </form>
                   ) : (
-                    <HelpTooltip content="Refuser cette proposition de rendez-vous" side="top">
+                    <HelpTooltip content={t('admin.ticketDetail.rejectTooltip')} side="top">
                       <Button
                         variant="outline"
                         size="sm"
@@ -489,7 +488,7 @@ function ProposalsSection({
                         }}
                         className="border-red-300 text-red-700 hover:bg-red-50"
                       >
-                        Refuser
+                        {t('admin.ticketDetail.reject')}
                       </Button>
                     </HelpTooltip>
                   )}
@@ -500,10 +499,10 @@ function ProposalsSection({
                       onSubmit={(e) => handleCounterSubmit(e, proposal.id)}
                       className="w-full mt-2 border rounded-md p-3 bg-muted/30 space-y-2"
                     >
-                      <p className="text-xs font-semibold">Contre-proposition</p>
+                      <p className="text-xs font-semibold">{t('admin.ticketDetail.counterProposeTitle')}</p>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <Label className="text-[10px] text-muted-foreground">Date</Label>
+                          <Label className="text-[10px] text-muted-foreground">{t('admin.ticketDetail.counterDate')}</Label>
                           <input
                             type="date"
                             value={counterDate}
@@ -514,7 +513,7 @@ function ProposalsSection({
                           />
                         </div>
                         <div>
-                          <Label className="text-[10px] text-muted-foreground">Début</Label>
+                          <Label className="text-[10px] text-muted-foreground">{t('admin.ticketDetail.counterStart')}</Label>
                           <Input
                             type="time"
                             value={counterStart}
@@ -524,7 +523,7 @@ function ProposalsSection({
                           />
                         </div>
                         <div>
-                          <Label className="text-[10px] text-muted-foreground">Fin</Label>
+                          <Label className="text-[10px] text-muted-foreground">{t('admin.ticketDetail.counterEnd')}</Label>
                           <Input
                             type="time"
                             value={counterEnd}
@@ -535,12 +534,12 @@ function ProposalsSection({
                         </div>
                       </div>
                       <div>
-                        <Label className="text-[10px] text-muted-foreground">Message (optionnel)</Label>
+                        <Label className="text-[10px] text-muted-foreground">{t('admin.ticketDetail.counterMessage')}</Label>
                         <Input
                           type="text"
                           value={counterMessage}
                           onChange={(e) => setCounterMessage(e.target.value)}
-                          placeholder="Proposition alternative..."
+                          placeholder={t('admin.ticketDetail.counterMessagePlaceholder')}
                           className="h-8 text-xs"
                         />
                       </div>
@@ -551,13 +550,13 @@ function ProposalsSection({
                       )}
 
                       <div className="flex gap-2">
-                        <HelpTooltip content="Envoyer cette contre-proposition au client" side="top">
+                        <HelpTooltip content={t('admin.ticketDetail.counterSendTooltip')} side="top">
                           <Button
                             type="submit"
                             size="sm"
                             disabled={counterProposeMutation.isPending}
                           >
-                            {counterProposeMutation.isPending ? 'Envoi...' : 'Envoyer la contre-proposition'}
+                            {counterProposeMutation.isPending ? t('admin.ticketDetail.counterSending') : t('admin.ticketDetail.counterSendButton')}
                           </Button>
                         </HelpTooltip>
                         <Button
@@ -572,12 +571,12 @@ function ProposalsSection({
                             setCounterMessage('');
                           }}
                         >
-                          Annuler
+                          {t('common.cancel')}
                         </Button>
                       </div>
                     </form>
                   ) : (
-                    <HelpTooltip content="Proposer un autre créneau horaire en réponse" side="top">
+                    <HelpTooltip content={t('admin.ticketDetail.counterProposeTooltip')} side="top">
                       <Button
                         variant="outline"
                         size="sm"
@@ -587,7 +586,7 @@ function ProposalsSection({
                         }}
                         className="border-primary/50 text-primary"
                       >
-                        Contre-proposer
+                        {t('admin.ticketDetail.counterPropose')}
                       </Button>
                     </HelpTooltip>
                   )}
@@ -608,6 +607,7 @@ export default function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   // ─── Quote form state ───
   const [showQuoteForm, setShowQuoteForm] = useState(false);
@@ -656,10 +656,10 @@ export default function AdminTicketDetail() {
     mutationFn: (techId: string) => api.tickets.assign(id!, techId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      toast.success('Technicien assigné avec succès');
+      toast.success(t('admin.ticketDetail.techAssigned'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de l\'assignation du technicien');
+      toast.error(err.message || t('admin.ticketDetail.techAssignError'));
     },
   });
 
@@ -667,10 +667,10 @@ export default function AdminTicketDetail() {
     mutationFn: (newStatus: string) => api.tickets.changeStatus(id!, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      toast.success('Statut mis à jour');
+      toast.success(t('admin.ticketDetail.statusUpdated'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors du changement de statut');
+      toast.error(err.message || t('admin.ticketDetail.statusError'));
     },
   });
 
@@ -679,14 +679,14 @@ export default function AdminTicketDetail() {
       api.tickets.sendQuote(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      toast.success('Devis envoyé avec succès');
+      toast.success(t('admin.ticketDetail.quoteSuccess'));
       setShowQuoteForm(false);
       setQuotedPrice('');
       setQuoteDescription('');
       setQuoteDuration('');
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de l\'envoi du devis');
+      toast.error(err.message || t('admin.ticketDetail.quoteError'));
     },
   });
 
@@ -694,12 +694,12 @@ export default function AdminTicketDetail() {
     mutationFn: (reason: string) => api.tickets.addBlocker(id!, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      toast.success('Blocage ajouté');
+      toast.success(t('admin.ticketDetail.blockerAdded'));
       setShowBlockerForm(false);
       setBlockerReason('');
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de l\'ajout du blocage');
+      toast.error(err.message || t('admin.ticketDetail.blockerAddError'));
     },
   });
 
@@ -707,10 +707,10 @@ export default function AdminTicketDetail() {
     mutationFn: () => api.tickets.removeBlocker(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      toast.success('Blocage retiré');
+      toast.success(t('admin.ticketDetail.blockerRemoved'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors du retrait du blocage');
+      toast.error(err.message || t('admin.ticketDetail.blockerRemoveError'));
     },
   });
 
@@ -725,14 +725,14 @@ export default function AdminTicketDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments', id] });
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      toast.success('Rendez-vous planifié avec succès');
+      toast.success(t('admin.ticketDetail.apptCreated'));
       setShowAppointmentForm(false);
       setSelectedDate('');
       setSelectedSlot(null);
       setAppointmentNotes('');
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la planification du rendez-vous');
+      toast.error(err.message || t('admin.ticketDetail.apptCreateError'));
     },
   });
 
@@ -741,10 +741,10 @@ export default function AdminTicketDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments', id] });
       queryClient.invalidateQueries({ queryKey: ['ticket', id] });
-      toast.success('Rendez-vous annulé');
+      toast.success(t('admin.ticketDetail.apptCancelled'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de l\'annulation du rendez-vous');
+      toast.error(err.message || t('admin.ticketDetail.apptCancelError'));
     },
   });
 
@@ -753,10 +753,10 @@ export default function AdminTicketDetail() {
       api.appointments.changeStatus(appointmentId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments', id] });
-      toast.success('Statut du rendez-vous mis à jour');
+      toast.success(t('admin.ticketDetail.apptStatusUpdated'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors du changement de statut');
+      toast.error(err.message || t('admin.ticketDetail.apptStatusError'));
     },
   });
 
@@ -772,15 +772,15 @@ export default function AdminTicketDetail() {
     e.preventDefault();
     const price = parseFloat(quotedPrice);
     if (isNaN(price) || price <= 0) {
-      toast.error('Le prix doit être un nombre positif');
+      toast.error(t('admin.ticketDetail.quotePriceError'));
       return;
     }
     if (!quoteDescription.trim()) {
-      toast.error('La description du devis est requise');
+      toast.error(t('admin.ticketDetail.quoteDescRequired'));
       return;
     }
     if (!quoteDuration.trim()) {
-      toast.error('La durée estimée est requise');
+      toast.error(t('admin.ticketDetail.quoteDurationRequired'));
       return;
     }
     quoteMutation.mutate({
@@ -793,7 +793,7 @@ export default function AdminTicketDetail() {
   function handleAddBlocker(e: React.FormEvent) {
     e.preventDefault();
     if (!blockerReason.trim()) {
-      toast.error('La raison du blocage est requise');
+      toast.error(t('admin.ticketDetail.blockerReasonRequired'));
       return;
     }
     addBlockerMutation.mutate(blockerReason.trim());
@@ -802,7 +802,7 @@ export default function AdminTicketDetail() {
   function handleAppointmentSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedSlot) {
-      toast.error('Veuillez sélectionner un créneau horaire');
+      toast.error(t('admin.ticketDetail.selectSlotRequired'));
       return;
     }
     createAppointmentMutation.mutate({
@@ -816,14 +816,14 @@ export default function AdminTicketDetail() {
 
   // ─── Render ───
 
-  if (isLoading) return <div className="text-center py-8">Chargement...</div>;
-  if (!ticket) return <div className="text-center py-8">Billet introuvable</div>;
+  if (isLoading) return <div className="text-center py-8">{t('admin.ticketDetail.loading')}</div>;
+  if (!ticket) return <div className="text-center py-8">{t('admin.ticketDetail.notFound')}</div>;
 
-  const t: Ticket = ticket;
-  const allowedNextStatuses = ADMIN_TRANSITIONS[t.status] || [];
-  const canSendQuote = QUOTABLE_STATUSES.includes(t.status);
-  const canSchedule = SCHEDULABLE_STATUSES.includes(t.status);
-  const hasBlocker = !!t.blockerReason;
+  const tk: Ticket = ticket;
+  const allowedNextStatuses = ADMIN_TRANSITIONS[tk.status] || [];
+  const canSendQuote = QUOTABLE_STATUSES.includes(tk.status);
+  const canSchedule = SCHEDULABLE_STATUSES.includes(tk.status);
+  const hasBlocker = !!tk.blockerReason;
   const anyMutationPending =
     assignMutation.isPending ||
     statusMutation.isPending ||
@@ -838,20 +838,20 @@ export default function AdminTicketDetail() {
     <div className="space-y-6">
       {/* ─── Header ─── */}
       <div className="flex items-center gap-4">
-        <HelpTooltip content="Retourner à la liste des billets" side="bottom">
+        <HelpTooltip content={t('admin.ticketDetail.backTooltip')} side="bottom">
           <Link
             to="/admin/billets"
             className="text-sm text-muted-foreground hover:text-foreground"
           >
-            &larr; Retour
+            {t('admin.ticketDetail.back')}
           </Link>
         </HelpTooltip>
-        <h1 className="text-2xl font-bold">{t.ticketNumber}</h1>
-        <HelpTooltip content="Statut actuel du billet dans son cycle de vie" side="bottom">
-          <span><StatusBadge status={t.status} /></span>
+        <h1 className="text-2xl font-bold">{tk.ticketNumber}</h1>
+        <HelpTooltip content={t('admin.ticketDetail.statusTooltip')} side="bottom">
+          <span><StatusBadge status={tk.status} /></span>
         </HelpTooltip>
-        <HelpTooltip content="Niveau de priorité attribué à ce billet" side="bottom">
-          <span><StatusBadge status={t.priority} type="priority" /></span>
+        <HelpTooltip content={t('admin.ticketDetail.priorityTooltip')} side="bottom">
+          <span><StatusBadge status={tk.priority} type="priority" /></span>
         </HelpTooltip>
       </div>
 
@@ -862,32 +862,32 @@ export default function AdminTicketDetail() {
           {/* Ticket description */}
           <Card>
             <CardContent className="pt-6">
-              <h2 className="font-semibold mb-2">{t.title}</h2>
+              <h2 className="font-semibold mb-2">{tk.title}</h2>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {t.description}
+                {tk.description}
               </p>
             </CardContent>
           </Card>
 
           {/* Quote info (if exists) */}
-          {t.quotedPrice && (
+          {tk.quotedPrice && (
             <Card>
               <CardHeader>
-                <CardTitle>Devis</CardTitle>
+                <CardTitle>{t('admin.ticketDetail.quoteTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Prix:</span>{' '}
-                    {formatCurrency(t.quotedPrice)}
+                    <span className="text-muted-foreground">{t('admin.ticketDetail.quotePrice')}</span>{' '}
+                    {formatCurrency(tk.quotedPrice)}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Durée:</span>{' '}
-                    {t.quoteDuration}
+                    <span className="text-muted-foreground">{t('admin.ticketDetail.quoteDuration')}</span>{' '}
+                    {tk.quoteDuration}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Description:</span>{' '}
-                    {t.quoteDescription}
+                    <span className="text-muted-foreground">{t('admin.ticketDetail.quoteDesc')}</span>{' '}
+                    {tk.quoteDescription}
                   </div>
                 </div>
               </CardContent>
@@ -895,29 +895,29 @@ export default function AdminTicketDetail() {
           )}
 
           {/* Blocker banner */}
-          {t.blockerReason && (
+          {tk.blockerReason && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="font-semibold text-red-800 mb-1">Blocage</h3>
-              <p className="text-sm text-red-700">{t.blockerReason}</p>
+              <h3 className="font-semibold text-red-800 mb-1">{t('admin.ticketDetail.blockerTitle')}</h3>
+              <p className="text-sm text-red-700">{tk.blockerReason}</p>
             </div>
           )}
 
           {/* ─── Appointment Proposals Section ─── */}
-          <ProposalsSection ticketId={id!} technicianId={t.technicianId} />
+          <ProposalsSection ticketId={id!} technicianId={tk.technicianId} />
 
           {/* ─── Appointments Section ─── */}
           {canSchedule && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Rendez-vous</CardTitle>
+                  <CardTitle>{t('admin.ticketDetail.appointments')}</CardTitle>
                   {!showAppointmentForm && (
-                    <HelpTooltip content="Planifier un nouveau rendez-vous pour ce billet avec un technicien" side="left">
+                    <HelpTooltip content={t('admin.ticketDetail.scheduleTooltip')} side="left">
                       <Button
                         size="sm"
                         onClick={() => setShowAppointmentForm(true)}
                       >
-                        Planifier un rendez-vous
+                        {t('admin.ticketDetail.scheduleButton')}
                       </Button>
                     </HelpTooltip>
                   )}
@@ -947,7 +947,7 @@ export default function AdminTicketDetail() {
 
                       {apt.technician && (
                         <p className="text-xs text-muted-foreground">
-                          Technicien: {apt.technician.firstName} {apt.technician.lastName}
+                          {t('admin.ticketDetail.techLabel')} {apt.technician.firstName} {apt.technician.lastName}
                         </p>
                       )}
 
@@ -958,7 +958,7 @@ export default function AdminTicketDetail() {
                       {/* Actions: status change + cancel */}
                       {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
                         <div className="flex items-center gap-2 pt-1">
-                          <HelpTooltip content="Changer le statut de ce rendez-vous" side="top">
+                          <HelpTooltip content={t('admin.ticketDetail.changeApptStatus')} side="top">
                             <select
                               value=""
                               onChange={(e) => {
@@ -972,19 +972,19 @@ export default function AdminTicketDetail() {
                               disabled={changeAppointmentStatusMutation.isPending}
                               className="flex h-8 rounded-md border border-input bg-background px-2 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                             >
-                              <option value="">Changer le statut...</option>
+                              <option value="">{t('admin.ticketDetail.changeApptStatusOption')}</option>
                               {apt.status === 'PLANIFIE' && (
-                                <option value="CONFIRME">Confirmer</option>
+                                <option value="CONFIRME">{t('admin.ticketDetail.confirm')}</option>
                               )}
                               {(apt.status === 'PLANIFIE' || apt.status === 'CONFIRME') && (
-                                <option value="EN_COURS">Démarrer</option>
+                                <option value="EN_COURS">{t('admin.ticketDetail.start')}</option>
                               )}
                               {apt.status === 'EN_COURS' && (
-                                <option value="TERMINE">Terminer</option>
+                                <option value="TERMINE">{t('admin.ticketDetail.complete')}</option>
                               )}
                             </select>
                           </HelpTooltip>
-                          <HelpTooltip content="Annuler ce rendez-vous" side="top">
+                          <HelpTooltip content={t('admin.ticketDetail.cancelApptTooltip')} side="top">
                             <Button
                               variant="outline"
                               size="sm"
@@ -992,7 +992,7 @@ export default function AdminTicketDetail() {
                               disabled={cancelAppointmentMutation.isPending}
                               className="border-red-300 text-red-700 hover:bg-red-50"
                             >
-                              {cancelAppointmentMutation.isPending ? 'Annulation...' : 'Annuler'}
+                              {cancelAppointmentMutation.isPending ? t('admin.ticketDetail.cancelling') : t('admin.ticketDetail.cancelAppt')}
                             </Button>
                           </HelpTooltip>
                         </div>
@@ -1002,7 +1002,7 @@ export default function AdminTicketDetail() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Aucun rendez-vous planifié pour ce billet.
+                  {t('admin.ticketDetail.noAppointments')}
                 </p>
               )}
 
@@ -1012,12 +1012,12 @@ export default function AdminTicketDetail() {
                   onSubmit={handleAppointmentSubmit}
                   className="border rounded-md p-4 space-y-4 bg-muted/30"
                 >
-                  <h4 className="text-sm font-semibold">Nouveau rendez-vous</h4>
+                  <h4 className="text-sm font-semibold">{t('admin.ticketDetail.newAppointment')}</h4>
 
                   {/* Date picker */}
                   <div>
                     <Label className="text-xs text-muted-foreground">
-                      Date
+                      {t('admin.ticketDetail.dateLabel')}
                     </Label>
                     <input
                       type="date"
@@ -1033,25 +1033,25 @@ export default function AdminTicketDetail() {
                   </div>
 
                   {/* ─── Inline Day Calendar (shows technician's schedule for selected date) ─── */}
-                  {selectedDate && t.technicianId && (
-                    <InlineDayCalendar date={selectedDate} technicianId={t.technicianId} />
+                  {selectedDate && tk.technicianId && (
+                    <InlineDayCalendar date={selectedDate} technicianId={tk.technicianId} />
                   )}
 
                   {/* Availability slots grid */}
                   {selectedDate && (
                     <div>
                       <Label className="text-xs text-muted-foreground mb-2">
-                        Créneaux disponibles
+                        {t('admin.ticketDetail.slotsLabel')}
                       </Label>
-                      {!t.technicianId ? (
+                      {!tk.technicianId ? (
                         <p className="text-xs text-amber-600">
-                          Veuillez d&apos;abord assigner un technicien pour voir les disponibilités.
+                          {t('admin.ticketDetail.assignTechFirst')}
                         </p>
                       ) : !availabilitySlots ? (
-                        <p className="text-xs text-muted-foreground">Chargement des créneaux...</p>
+                        <p className="text-xs text-muted-foreground">{t('admin.ticketDetail.slotsLoading')}</p>
                       ) : (availabilitySlots as any[]).length === 0 ? (
                         <p className="text-xs text-muted-foreground">
-                          Aucun créneau disponible pour cette date.
+                          {t('admin.ticketDetail.slotsEmpty')}
                         </p>
                       ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -1087,7 +1087,7 @@ export default function AdminTicketDetail() {
                   {/* Selected slot display */}
                   {selectedSlot && (
                     <p className="text-xs text-muted-foreground">
-                      Créneau sélectionné:{' '}
+                      {t('admin.ticketDetail.selectedSlot')}{' '}
                       <span className="font-medium text-foreground">
                         {formatSlotTime(selectedSlot.start)} – {formatSlotTime(selectedSlot.end)}
                       </span>
@@ -1097,12 +1097,12 @@ export default function AdminTicketDetail() {
                   {/* Notes textarea */}
                   <div>
                     <Label className="text-xs text-muted-foreground">
-                      Notes (optionnel)
+                      {t('admin.ticketDetail.notesLabel')}
                     </Label>
                     <Textarea
                       value={appointmentNotes}
                       onChange={(e) => setAppointmentNotes(e.target.value)}
-                      placeholder="Notes pour le rendez-vous..."
+                      placeholder={t('admin.ticketDetail.notesPlaceholder')}
                       rows={2}
                       className="resize-none"
                     />
@@ -1110,15 +1110,15 @@ export default function AdminTicketDetail() {
 
                   {/* Submit / Cancel buttons */}
                   <div className="flex gap-2">
-                    <HelpTooltip content="Valider et créer le rendez-vous au créneau sélectionné" side="top">
+                    <HelpTooltip content={t('admin.ticketDetail.confirmApptTooltip')} side="top">
                       <Button
                         type="submit"
                         disabled={createAppointmentMutation.isPending || !selectedSlot}
                         className="flex-1"
                       >
                         {createAppointmentMutation.isPending
-                          ? 'Planification...'
-                          : 'Confirmer le rendez-vous'}
+                          ? t('admin.ticketDetail.scheduling')
+                          : t('admin.ticketDetail.confirmAppt')}
                       </Button>
                     </HelpTooltip>
                     <Button
@@ -1132,7 +1132,7 @@ export default function AdminTicketDetail() {
                       }}
                       disabled={createAppointmentMutation.isPending}
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </form>
@@ -1147,7 +1147,7 @@ export default function AdminTicketDetail() {
           {/* Messages */}
           <Card>
             <CardHeader>
-              <CardTitle>Messages</CardTitle>
+              <CardTitle>{t('admin.ticketDetail.messages')}</CardTitle>
             </CardHeader>
             <CardContent>
               <MessageThread ticketId={id!} />
@@ -1160,28 +1160,28 @@ export default function AdminTicketDetail() {
           {/* Details card */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Détails</CardTitle>
+              <CardTitle className="text-sm">{t('admin.ticketDetail.details')}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-2">
-              <HelpTooltip content="Type de service demandé par le client" side="left">
+              <HelpTooltip content={t('admin.ticketDetail.categoryTooltip')} side="left">
                 <div>
-                  <span className="text-muted-foreground">Catégorie:</span>{' '}
-                  {SERVICE_CATEGORY_LABELS[t.serviceCategory] || t.serviceCategory}
+                  <span className="text-muted-foreground">{t('admin.ticketDetail.categoryLabel')}</span>{' '}
+                  {t(`label.serviceCategory.${tk.serviceCategory}`) || tk.serviceCategory}
                 </div>
               </HelpTooltip>
-              <HelpTooltip content="Mode d'intervention : sur site, à distance ou dépôt en atelier" side="left">
+              <HelpTooltip content={t('admin.ticketDetail.modeTooltip')} side="left">
                 <div>
-                  <span className="text-muted-foreground">Mode:</span>{' '}
-                  {SERVICE_MODE_LABELS[t.serviceMode] || t.serviceMode}
+                  <span className="text-muted-foreground">{t('admin.ticketDetail.modeLabel')}</span>{' '}
+                  {t(`label.serviceMode.${tk.serviceMode}`) || tk.serviceMode}
                 </div>
               </HelpTooltip>
               <div>
-                <span className="text-muted-foreground">Créé:</span>{' '}
-                {formatDateTime(t.createdAt)}
+                <span className="text-muted-foreground">{t('admin.ticketDetail.createdLabel')}</span>{' '}
+                {formatDateTime(tk.createdAt)}
               </div>
               <div>
-                <span className="text-muted-foreground">Modifié:</span>{' '}
-                {formatDateTime(t.updatedAt)}
+                <span className="text-muted-foreground">{t('admin.ticketDetail.updatedLabel')}</span>{' '}
+                {formatDateTime(tk.updatedAt)}
               </div>
             </CardContent>
           </Card>
@@ -1189,28 +1189,28 @@ export default function AdminTicketDetail() {
           {/* Client card */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Client</CardTitle>
+              <CardTitle className="text-sm">{t('admin.ticketDetail.clientTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm">
-                {t.customer?.firstName} {t.customer?.lastName}
+                {tk.customer?.firstName} {tk.customer?.lastName}
               </p>
-              <p className="text-xs text-muted-foreground">{t.customer?.email}</p>
+              <p className="text-xs text-muted-foreground">{tk.customer?.email}</p>
             </CardContent>
           </Card>
 
           {/* Technician card — always allow (re)assignment */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Technicien</CardTitle>
+              <CardTitle className="text-sm">{t('admin.ticketDetail.techTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {t.technician && (
+              {tk.technician && (
                 <p className="text-sm mb-1">
-                  {t.technician.firstName} {t.technician.lastName}
+                  {tk.technician.firstName} {tk.technician.lastName}
                 </p>
               )}
-              <HelpTooltip content="Assigner ou réassigner un technicien à ce billet" side="left">
+              <HelpTooltip content={t('admin.ticketDetail.assignTooltip')} side="left">
                 <select
                   value=""
                   onChange={(e) => e.target.value && assignMutation.mutate(e.target.value)}
@@ -1218,7 +1218,7 @@ export default function AdminTicketDetail() {
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                   <option value="">
-                    {t.technician ? 'Réassigner...' : 'Assigner...'}
+                    {tk.technician ? t('admin.ticketDetail.reassign') : t('admin.ticketDetail.assign')}
                   </option>
                   {(technicians as User[] | undefined)?.map((tech) => (
                     <option key={tech.id} value={tech.id}>
@@ -1234,26 +1234,26 @@ export default function AdminTicketDetail() {
           {allowedNextStatuses.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Changer le statut</CardTitle>
+                <CardTitle className="text-sm">{t('admin.ticketDetail.changeStatus')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <HelpTooltip content="Faire avancer le billet vers l'étape suivante de son cycle de vie" side="left">
+                <HelpTooltip content={t('admin.ticketDetail.changeStatusTooltip')} side="left">
                   <select
                     value=""
                     onChange={(e) => handleStatusChange(e.target.value)}
                     disabled={statusMutation.isPending}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                   >
-                    <option value="">Sélectionner un statut...</option>
+                    <option value="">{t('admin.ticketDetail.selectStatus')}</option>
                     {allowedNextStatuses.map((status) => (
                       <option key={status} value={status}>
-                        {STATUS_LABELS[status] || status}
+                        {t(`label.status.${status}`) || status}
                       </option>
                     ))}
                   </select>
                 </HelpTooltip>
                 {statusMutation.isPending && (
-                  <p className="text-xs text-muted-foreground">Mise à jour...</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.ticketDetail.updating')}</p>
                 )}
               </CardContent>
             </Card>
@@ -1264,16 +1264,16 @@ export default function AdminTicketDetail() {
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">Envoyer un devis</CardTitle>
+                  <CardTitle className="text-sm">{t('admin.ticketDetail.sendQuote')}</CardTitle>
                   {!showQuoteForm && (
-                    <HelpTooltip content="Créer ou modifier le devis à envoyer au client pour approbation" side="left">
+                    <HelpTooltip content={t('admin.ticketDetail.quoteCreateTooltip')} side="left">
                       <Button
                         variant="link"
                         size="sm"
                         onClick={() => setShowQuoteForm(true)}
                         className="h-auto p-0 text-xs"
                       >
-                        {t.quotedPrice ? 'Modifier' : 'Créer'}
+                        {tk.quotedPrice ? t('admin.ticketDetail.quoteModify') : t('admin.ticketDetail.quoteCreate')}
                       </Button>
                     </HelpTooltip>
                   )}
@@ -1284,7 +1284,7 @@ export default function AdminTicketDetail() {
                   <form onSubmit={handleQuoteSubmit} className="space-y-3">
                     <div>
                       <Label className="text-xs text-muted-foreground">
-                        Prix ($)
+                        {t('admin.ticketDetail.quotePriceLabel')}
                       </Label>
                       <Input
                         type="number"
@@ -1298,12 +1298,12 @@ export default function AdminTicketDetail() {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">
-                        Description du devis
+                        {t('admin.ticketDetail.quoteDescLabel')}
                       </Label>
                       <Textarea
                         value={quoteDescription}
                         onChange={(e) => setQuoteDescription(e.target.value)}
-                        placeholder="Détails du travail à effectuer..."
+                        placeholder={t('admin.ticketDetail.quoteDescPlaceholder')}
                         required
                         rows={3}
                         className="resize-none"
@@ -1311,25 +1311,25 @@ export default function AdminTicketDetail() {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">
-                        Durée estimée
+                        {t('admin.ticketDetail.quoteDurationLabel')}
                       </Label>
                       <Input
                         type="text"
                         value={quoteDuration}
                         onChange={(e) => setQuoteDuration(e.target.value)}
-                        placeholder="ex: 2 heures, 1 jour..."
+                        placeholder={t('admin.ticketDetail.quoteDurationPlaceholder')}
                         required
                       />
                     </div>
                     <div className="flex gap-2">
-                      <HelpTooltip content="Envoyer ce devis au client — il recevra une notification pour l'approuver" side="top">
+                      <HelpTooltip content={t('admin.ticketDetail.quoteSendTooltip')} side="top">
                         <Button
                           type="submit"
                           size="sm"
                           disabled={quoteMutation.isPending}
                           className="flex-1"
                         >
-                          {quoteMutation.isPending ? 'Envoi...' : 'Envoyer le devis'}
+                          {quoteMutation.isPending ? t('admin.ticketDetail.quoteSending') : t('admin.ticketDetail.quoteSendButton')}
                         </Button>
                       </HelpTooltip>
                       <Button
@@ -1344,7 +1344,7 @@ export default function AdminTicketDetail() {
                         }}
                         disabled={quoteMutation.isPending}
                       >
-                        Annuler
+                        {t('common.cancel')}
                       </Button>
                     </div>
                   </form>
@@ -1356,15 +1356,15 @@ export default function AdminTicketDetail() {
           {/* ─── Blocker Management ─── */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Gestion des blocages</CardTitle>
+              <CardTitle className="text-sm">{t('admin.ticketDetail.blockerManagement')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {hasBlocker ? (
                 <div className="space-y-2">
                   <div className="rounded-md bg-red-50 border border-red-200 p-2">
-                    <p className="text-xs text-red-700">{t.blockerReason}</p>
+                    <p className="text-xs text-red-700">{tk.blockerReason}</p>
                   </div>
-                  <HelpTooltip content="Retirer le blocage et permettre la reprise du travail sur ce billet" side="left">
+                  <HelpTooltip content={t('admin.ticketDetail.removeBlockerTooltip')} side="left">
                     <Button
                       variant="destructive"
                       size="sm"
@@ -1373,22 +1373,22 @@ export default function AdminTicketDetail() {
                       className="w-full"
                     >
                       {removeBlockerMutation.isPending
-                        ? 'Retrait...'
-                        : 'Retirer le blocage'}
+                        ? t('admin.ticketDetail.removingBlocker')
+                        : t('admin.ticketDetail.removeBlocker')}
                     </Button>
                   </HelpTooltip>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {!showBlockerForm ? (
-                    <HelpTooltip content="Signaler un blocage qui empêche l'avancement du billet" side="left">
+                    <HelpTooltip content={t('admin.ticketDetail.addBlockerTooltip')} side="left">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowBlockerForm(true)}
                         className="w-full border-red-300 text-red-700 hover:bg-red-50"
                       >
-                        Ajouter un blocage
+                        {t('admin.ticketDetail.addBlocker')}
                       </Button>
                     </HelpTooltip>
                   ) : (
@@ -1396,13 +1396,13 @@ export default function AdminTicketDetail() {
                       <Textarea
                         value={blockerReason}
                         onChange={(e) => setBlockerReason(e.target.value)}
-                        placeholder="Raison du blocage..."
+                        placeholder={t('admin.ticketDetail.blockerPlaceholder')}
                         required
                         rows={3}
                         className="resize-none"
                       />
                       <div className="flex gap-2">
-                        <HelpTooltip content="Confirmer le blocage — le billet passera en statut Blocage" side="top">
+                        <HelpTooltip content={t('admin.ticketDetail.confirmBlockerTooltip')} side="top">
                           <Button
                             type="submit"
                             variant="destructive"
@@ -1411,8 +1411,8 @@ export default function AdminTicketDetail() {
                             className="flex-1"
                           >
                             {addBlockerMutation.isPending
-                              ? 'Ajout...'
-                              : 'Confirmer le blocage'}
+                              ? t('admin.ticketDetail.addingBlocker')
+                              : t('admin.ticketDetail.confirmBlocker')}
                           </Button>
                         </HelpTooltip>
                         <Button
@@ -1425,7 +1425,7 @@ export default function AdminTicketDetail() {
                           }}
                           disabled={addBlockerMutation.isPending}
                         >
-                          Annuler
+                          {t('common.cancel')}
                         </Button>
                       </div>
                     </form>

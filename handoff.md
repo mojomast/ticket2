@@ -1,76 +1,73 @@
 # Handoff — Valitek v2
 
-## Completed: Full code review + 22 fixes (7 critical, 8 high, 7 medium)
-## Branch: main
+## Completed: Docs, help system, and i18n update pass
+## Next Task: UI polish (empty states, accessibility, responsive tables, confirmation dialogs)
+## Context: All builds pass (tsc + vite). Ready to commit.
 
-## Code Review Session Changes
+## What Was Done (This Session — 3 phases)
 
-### CRITICAL Fixes (7)
-1. **Follow-ups schedule endpoint response envelope** — `c.json(followUps)` → `c.json({ data: followUps, error: null })`. Feature was completely broken (frontend got `undefined`).
-2. **Follow-up CRUD ownership + status checks** — Added `requireEditableStatus()` + `requireOwnership()` to `createFollowUp`, `updateFollowUp`, `deleteFollowUp`. Previously any tech could modify any worksheet's follow-ups in any status.
-3. **Internal notes leaked to customers** — `getWorksheetById` now filters out `INTERNE` notes when `role === 'CUSTOMER'`.
-4. **Backup service missing 9 models** — Added Worksheet, LaborEntry, PartUsed, TravelEntry, WorksheetNote, FollowUp, KbArticle, KbArticleLink, CustomerNote to MODELS/DELETE_ORDER/INSERT_ORDER.
-5. **Demo reset missing models** — Added same 9 models to the transaction delete chain in proper FK order.
-6. **Worksheet mutations not transactional** — All labor/parts/travel create/update/delete now wrapped in `prisma.$transaction()`. `recalculateTotals` accepts optional transaction client.
-7. **API client non-JSON crash** — `request()` and `requestPaginated()` now wrap `res.json()` in try-catch. Header merging bug also fixed.
+### Phase 1: Session 9 Features (commit `18098fc`)
+1. **Admin Worksheet Config UI** — Settings page card for worksheet defaults (tax rates, thresholds, require-signature, auto-submit); tech WorksheetDetail reads config on creation
+2. **Manual Labor Time Entry** — Timer vs manual toggle on tech WorksheetDetail; validates hours/minutes/break
+3. **Follow-ups in Technician Schedule** — New `GET /api/worksheets/schedule/followups` endpoint; orange markers in day/week/month calendar views
+4. **Admin Worksheet Editing** — Full rewrite of admin WorksheetDetail (645→1691 lines); inline editing of all child records, status transitions, note management
+5. **PDF Generation Fix** — sanitizeForPdf strips Unicode chars that crash pdf-lib; fixed `win1252` encoding issues
 
-### HIGH Fixes (8)
-8. **Financial totals rounding** — `recalculateTotals` rounds all subtotals and grandTotal to 2 decimals via `parseFloat(toFixed(2))`.
-9. **WorkOrder status+note transactions** — `changeStatus`, `approveQuote`, `declineQuote` now wrap update+note in `prisma.$transaction()`.
-10. **Labor endTime > startTime validation** — Throws `AppError.badRequest` if endTime <= startTime.
-11. **PDF signature Y position overlap** — `drawSignature` now decrements `this.y`. Tech/customer signatures render side-by-side without text overlap.
-12. **Schedule follow-ups date validation** — `from`/`to` query params validated with `isNaN(getTime())` check.
-13. **Note deletion blocked in SOUMISE for techs** — Technicians restricted to BROUILLON/REVISEE. Admins can delete in BROUILLON/SOUMISE/REVISEE.
-14. **addNote ownership check** — Now calls `requireOwnership()` consistent with labor/parts/travel.
-15. **Frontend loading/error states** — Added to admin, technician, portal Dashboard pages.
+### Phase 2: Code Review (commit `2de90b6`)
+7 subagents audited entire codebase, found 36 issues, fixed 22:
+- **7 CRITICAL**: follow-ups schedule envelope, follow-up CRUD auth, internal notes leak to customers, backup/demo-reset missing 9 models, transaction wrapping, API client error handling
+- **8 HIGH**: financial rounding, WO transactions, labor time validation, PDF signature overlap, date validation, note status/ownership checks, dashboard loading states
+- **7 MEDIUM**: getDashboardStats optimization (9→2 queries), schema indexes, KB slug fix, service request transaction, PDF column widths, notification typing, breakMinutes validation
+- **Bonus**: KanbanBoard t() shadowing fix, i18n label map wiring across ~20 pages
 
-### MEDIUM Fixes (7)
-16. **getDashboardStats 9→2 queries** — Replaced 8 separate `count()` calls with single `groupBy()`.
-17. **Schema indexes** — Added 5 missing indexes (WorkOrder.customerName, estimatedPickupDate; Notification.userId+createdAt; Ticket.priority; Appointment.technicianId+scheduledStart+scheduledEnd). Removed redundant `@@index([orderNumber])`.
-18. **KB slug soft-delete fix** — `generateUniqueSlug` no longer filters by `deletedAt`, avoiding P2002 constraint violations.
-19. **Service request race condition** — `createServiceRequest` user-find-or-create + ticket-create wrapped in transaction.
-20. **PDF table column widths** — Parts (455→495px) and travel (475→495px) tables now fill CONTENT_WIDTH.
-21. **Notification service typing** — `query: any` → `query: NotificationQuery` interface.
-22. **breakMinutes validation** — Throws error if break minutes exceed total work time.
+### Phase 3: Docs & Help Update (this commit)
+- **README.md** rewritten (926→1153 lines): updated model/enum counts, added worksheet/KB/customer-notes sections, fixed ports, added missing routes/endpoints
+- **backend/.env.example** created with all 16 env vars documented
+- **docker-compose.dev.yml** fixed: DB port 5432→5433 mapping
+- **Aspirational docs** marked: MODULARITY_SPEC.md ("PLANNED"), GETTING_STARTED.md ("FUTURE PLANS"), newspec.md ("HISTORICAL")
+- **devplan.md** all 11 phases marked complete
+- **use-page-help.ts**: 9 missing route mappings added (worksheet, KB, client detail pages)
+- **help-content.ts**: 9 new HelpArticle entries (admin/tech/customer worksheets + KB + client detail)
+- **Profile.tsx**: remaining i18n strings wired with t()
+- **TicketDetail pages** (admin, tech, portal): HelpTooltip strings converted to t() keys
+- **i18n catalogs** (fr.ts + en.ts): ~40 new keys for Profile + TicketDetail tooltips
 
-### Additional Fix
-- **KanbanBoard t() shadowing** — `.map((t) =>` renamed to `.map((tk) =>` to prevent shadowing translation function.
-
-## Files Modified
-
-### Backend (10 files)
-- `backend/src/services/worksheet.service.ts` — Fixes 2,3,6,8,10,13,14,22
-- `backend/src/services/worksheet-pdf.service.ts` — Fixes 11,20
-- `backend/src/services/workorder.service.ts` — Fixes 9,16
-- `backend/src/services/backup.service.ts` — Fix 4
-- `backend/src/services/knowledgebase.service.ts` — Fix 18
-- `backend/src/services/ticket.service.ts` — Fix 19
-- `backend/src/services/notification.service.ts` — Fix 21
-- `backend/src/routes/worksheet.routes.ts` — Fixes 1,2,12
-- `backend/src/routes/demo.routes.ts` — Fix 5
-- `backend/prisma/schema.prisma` — Fix 17
-
-### Frontend (5 files)
-- `frontend/src/api/client.ts` — Fix 7
-- `frontend/src/pages/admin/Dashboard.tsx` — Fix 15
-- `frontend/src/pages/admin/KanbanBoard.tsx` — t() shadowing fix
-- `frontend/src/pages/technician/Dashboard.tsx` — Fix 15
-- `frontend/src/pages/portal/Dashboard.tsx` — Fix 15
-
-## Build Status
-- Backend tsc: PASS
-- Frontend tsc: PASS
-- Vite build: PASS
-- Prisma db push: PASS (indexes applied)
-
-## Known Issues Not Fixed (documented for future)
-- `Float` for currency fields (should be `Decimal`) — requires schema migration + code changes across entire app
+## Known Issues NOT Fixed (documented for future)
+- `Float` for currency fields should be `Decimal` — requires schema migration + code changes across entire app
 - `WorkOrder.devicePassword` stored in plaintext — needs encryption implementation
 - User soft-delete doesn't cascade to child records — needs transaction + policy decision
 - `AuditLog.userId` has no FK relation — by design (audit survives user deletion)
 - Notification table grows unbounded — needs TTL/purge mechanism
 - Ticket number generation race condition — needs DB sequence or advisory lock
-- README.md significantly stale (missing 8 models, 7 enums, 9 route groups)
+
+## Suggested Next Steps (UI Polish from audit)
+- Empty states on tables/lists — add "no data" messages
+- Some forms missing client-side validation feedback
+- Responsive table issues on mobile
+- Accessibility gaps (aria-labels on icon-only buttons)
+- Missing confirmation dialogs on some destructive actions
+- Inconsistent button styles across similar actions
+- ~53 hardcoded French HelpTooltip strings remaining in TicketDetail pages (partially addressed)
+
+## Files Modified (this commit — Phase 3)
+```
+GETTING_STARTED.md                              # Added "FUTURE PLANS" banners
+MODULARITY_SPEC.md                              # Added "PLANNED" banner
+README.md                                       # Full rewrite (926→1153 lines)
+devplan.md                                      # All 11 phases marked complete
+docker-compose.dev.yml                          # Fixed DB port mapping 5432→5433
+newspec.md                                      # Added "HISTORICAL" banner
+backend/.env.example                            # NEW — all 16 env vars documented
+frontend/src/hooks/use-page-help.ts             # 9 missing route mappings added
+frontend/src/lib/help-content.ts                # 9 new HelpArticle entries
+frontend/src/lib/i18n/locales/fr.ts             # ~40 new keys (Profile + TicketDetail tooltips)
+frontend/src/lib/i18n/locales/en.ts             # ~40 new keys (in sync with fr.ts)
+frontend/src/pages/admin/TicketDetail.tsx        # HelpTooltip i18n wiring
+frontend/src/pages/technician/TicketDetail.tsx   # HelpTooltip i18n wiring
+frontend/src/pages/portal/TicketDetail.tsx       # HelpTooltip i18n wiring
+frontend/src/pages/shared/Profile.tsx            # i18n wiring for remaining strings
+handoff.md                                       # This file
+```
 
 ## Running Services
 - **Backend**: screen `valitek-backend`, port 3200
@@ -78,9 +75,13 @@
 - **Database**: Docker `valitek-db`, port 5433, PostgreSQL 16
 
 ## Key Architecture Notes
-- Backend: Hono v4, TypeScript, Prisma 6, Zod, jose JWT, pdf-lib
+- Backend: Hono v4, TypeScript, Prisma 6, Zod, jose JWT, pdf-lib, hash-wasm (argon2id), pino
 - Frontend: React 18, Vite 5, TanStack Query v5, React Router v6, Zustand, Tailwind + shadcn/ui
-- French primary language, all UI uses t('key') from useTranslation()
-- Services throw AppError, NO Prisma in routes, { data, error: null } response envelope
-- TanStack Query v5: no onSuccess in useQuery, use useEffect instead
-- DB uses `prisma db push` (no migration history), all models use uuid IDs
+- French is primary language; all UI text uses `t('key')` from `useTranslation()` hook
+- i18n catalogs: `frontend/src/lib/i18n/locales/fr.ts` and `en.ts` (~1400+ keys each)
+- Help system: `help-content.ts` exports `getHelpContent(pageKey, role)` → 38 HelpArticle entries
+- Worksheet system: 6 Prisma models, 22-function service, PDF generator, 24 endpoints
+- Backend port 3200, frontend port 5173, accessible via Tailscale at `http://100.72.41.9:5173`
+- Backend dev: `npx tsx watch --env-file=.env src/index.ts`
+- DB schema: `prisma db push` (no migration history)
+- All models: uuid PK, createdAt, updatedAt, soft-delete via deletedAt

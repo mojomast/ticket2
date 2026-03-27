@@ -4,8 +4,10 @@ import { api, type User } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../hooks/use-auth';
 import HelpTooltip from '../../components/shared/HelpTooltip';
+import { useTranslation } from '../../lib/i18n/hook';
 
 export default function Profile() {
+  const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
@@ -44,10 +46,10 @@ export default function Profile() {
       queryClient.invalidateQueries({ queryKey: ['users', 'profile'] });
       // Also update the auth cache so the sidebar name refreshes
       queryClient.setQueryData(['auth', 'me'], updatedUser);
-      toast.success('Profil mis à jour avec succès');
+      toast.success(t('profile.savedSuccess'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors de la mise à jour du profil');
+      toast.error(err.message || t('profile.saveError'));
     },
   });
 
@@ -56,7 +58,7 @@ export default function Profile() {
     mutationFn: () =>
       api.users.changePassword({ currentPassword, newPassword, confirmPassword }),
     onSuccess: () => {
-      toast.success('Mot de passe modifié avec succès');
+      toast.success(t('profile.passwordSuccess'));
       // Clear the password form
       setCurrentPassword('');
       setNewPassword('');
@@ -64,7 +66,7 @@ export default function Profile() {
       setPasswordErrors({});
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Erreur lors du changement de mot de passe');
+      toast.error(err.message || t('profile.passwordError'));
     },
   });
 
@@ -73,13 +75,13 @@ export default function Profile() {
     const errors: Record<string, string> = {};
 
     if (!currentPassword) {
-      errors.currentPassword = 'Le mot de passe actuel est requis';
+      errors.currentPassword = t('profile.errorCurrentRequired');
     }
     if (newPassword.length < 8) {
-      errors.newPassword = 'Le nouveau mot de passe doit avoir au moins 8 caractères';
+      errors.newPassword = t('profile.errorNewMinLength');
     }
     if (confirmPassword !== newPassword) {
-      errors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      errors.confirmPassword = t('profile.errorConfirmMismatch');
     }
 
     setPasswordErrors(errors);
@@ -97,7 +99,7 @@ export default function Profile() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <span className="text-muted-foreground text-sm">Chargement du profil…</span>
+        <span className="text-muted-foreground text-sm">{t('profile.loadingProfile')}</span>
       </div>
     );
   }
@@ -106,7 +108,7 @@ export default function Profile() {
     return (
       <div className="flex items-center justify-center py-12">
         <span className="text-destructive text-sm">
-          Impossible de charger le profil. Veuillez réessayer.
+          {t('profile.loadError')}
         </span>
       </div>
     );
@@ -114,7 +116,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Profil</h1>
+      <h1 className="text-2xl font-bold">{t('profile.title')}</h1>
 
       {/* ─── Profile Information Card ─── */}
       <div className="bg-card border rounded-lg p-6 max-w-xl">
@@ -131,45 +133,45 @@ export default function Profile() {
             <p className="text-sm text-muted-foreground">{profile?.email}</p>
             <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
               {authUser?.role === 'ADMIN'
-                ? 'Administrateur'
+                ? t('profile.roleAdmin')
                 : authUser?.role === 'TECHNICIAN'
-                  ? 'Technicien'
-                  : 'Client'}
+                  ? t('profile.roleTech')
+                  : t('profile.roleCustomer')}
             </span>
           </div>
         </div>
 
-        <h2 className="font-semibold mb-4">Modifier mes informations</h2>
+        <h2 className="font-semibold mb-4">{t('profile.editInfo')}</h2>
 
         <div className="space-y-4">
           {/* First name */}
           <div>
-            <label className="block text-sm font-medium mb-1">Prénom</label>
+            <label className="block text-sm font-medium mb-1">{t('profile.firstName')}</label>
             <input
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Prénom"
+              placeholder={t('profile.firstName')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </div>
 
           {/* Last name */}
           <div>
-            <label className="block text-sm font-medium mb-1">Nom</label>
+            <label className="block text-sm font-medium mb-1">{t('profile.lastName')}</label>
             <input
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Nom"
+              placeholder={t('profile.lastName')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </div>
 
           {/* Email (read-only) */}
           <div>
-            <label className="block text-sm font-medium mb-1">Courriel</label>
-            <HelpTooltip content="Votre courriel est utilisé pour la connexion et ne peut pas être modifié ici. Contactez un administrateur pour le changer." side="right">
+            <label className="block text-sm font-medium mb-1">{t('profile.email')}</label>
+            <HelpTooltip content={t('profile.emailTooltip')} side="right">
               <input
                 type="email"
                 value={profile?.email ?? ''}
@@ -181,8 +183,8 @@ export default function Profile() {
 
           {/* Phone */}
           <div>
-            <label className="block text-sm font-medium mb-1">Téléphone</label>
-            <HelpTooltip content="Numéro de téléphone utilisé pour vous contacter concernant vos bons de travail et rendez-vous" side="right">
+            <label className="block text-sm font-medium mb-1">{t('profile.phone')}</label>
+            <HelpTooltip content={t('profile.phoneTooltip')} side="right">
               <input
                 type="tel"
                 value={phone}
@@ -194,13 +196,13 @@ export default function Profile() {
           </div>
 
           {/* Save button */}
-          <HelpTooltip content="Enregistrer les modifications apportées à votre prénom, nom et téléphone" side="right">
+          <HelpTooltip content={t('profile.saveTooltip')} side="right">
             <button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
             >
-              {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+              {saveMutation.isPending ? t('common.saving') : t('common.save')}
             </button>
           </HelpTooltip>
         </div>
@@ -208,17 +210,17 @@ export default function Profile() {
 
       {/* ─── Change Password Card ─── */}
       <div className="bg-card border rounded-lg p-6 max-w-xl">
-        <h2 className="font-semibold mb-4">Changer le mot de passe</h2>
+        <h2 className="font-semibold mb-4">{t('profile.changePassword')}</h2>
 
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           {/* Current password */}
           <div>
-            <label className="block text-sm font-medium mb-1">Mot de passe actuel</label>
+            <label className="block text-sm font-medium mb-1">{t('profile.currentPassword')}</label>
             <input
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Entrez votre mot de passe actuel"
+              placeholder={t('profile.currentPasswordPlaceholder')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
             {passwordErrors.currentPassword && (
@@ -228,12 +230,12 @@ export default function Profile() {
 
           {/* New password */}
           <div>
-            <label className="block text-sm font-medium mb-1">Nouveau mot de passe</label>
+            <label className="block text-sm font-medium mb-1">{t('profile.newPassword')}</label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Au moins 8 caractères"
+              placeholder={t('profile.newPasswordPlaceholder')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
             {passwordErrors.newPassword && (
@@ -243,12 +245,12 @@ export default function Profile() {
 
           {/* Confirm new password */}
           <div>
-            <label className="block text-sm font-medium mb-1">Confirmer le nouveau mot de passe</label>
+            <label className="block text-sm font-medium mb-1">{t('profile.confirmPassword')}</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirmez le nouveau mot de passe"
+              placeholder={t('profile.confirmPasswordPlaceholder')}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
             {passwordErrors.confirmPassword && (
@@ -262,7 +264,7 @@ export default function Profile() {
             disabled={passwordMutation.isPending}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
           >
-            {passwordMutation.isPending ? 'Changement en cours…' : 'Changer le mot de passe'}
+            {passwordMutation.isPending ? t('profile.changingPassword') : t('profile.changePasswordButton')}
           </button>
         </form>
       </div>

@@ -491,6 +491,186 @@ const helpContent: Record<string, HelpArticle> = {
     ],
   },
 
+  'ADMIN:admin-knowledge-base': {
+    title: 'Base de connaissances',
+    description:
+      "La base de connaissances centralise tous les articles de référence de votre atelier : guides de dépannage, procédures internes, fiches techniques et solutions aux problèmes fréquents. Recherchez, créez et organisez vos articles par catégories et étiquettes pour constituer une documentation exploitable par toute l'équipe.",
+    sections: [
+      {
+        heading: 'Parcourir et rechercher les articles',
+        content:
+          "Utilisez la barre de recherche pour trouver un article par mot-clé, titre ou contenu. Les résultats s'affichent en temps réel pendant la saisie. Vous pouvez également parcourir les articles en les filtrant par catégorie ou par étiquette pour explorer un domaine technique précis. La liste affiche le titre, la catégorie, la date de dernière modification et le statut de visibilité de chaque article.",
+      },
+      {
+        heading: 'Créer un article',
+        content:
+          "Cliquez sur « + Nouvel article » pour ouvrir l'éditeur de création. Renseignez le titre, choisissez une catégorie, rédigez le contenu en Markdown et ajoutez des étiquettes pertinentes. Un bon article est structuré avec des titres clairs, des étapes numérotées et des exemples concrets. Enregistrez en brouillon pour y revenir plus tard ou publiez directement.",
+      },
+      {
+        heading: 'Catégories et étiquettes',
+        content:
+          "Les catégories organisent vos articles par thème principal (matériel, logiciel, réseau, procédures internes, etc.) tandis que les étiquettes permettent un classement transversal plus fin. Attribuez au moins une catégorie et quelques étiquettes pertinentes à chaque article pour faciliter la recherche et la navigation dans la base de connaissances.",
+      },
+      {
+        heading: 'Visibilité des articles',
+        content:
+          "Chaque article possède un statut de visibilité : « Public » est accessible aux clients depuis leur portail, « Interne » est réservé aux administrateurs et techniciens, et « Brouillon » n'est visible que par son auteur. Utilisez le statut interne pour les procédures confidentielles et le statut public pour les guides destinés aux clients.",
+      },
+    ],
+    tips: [
+      "Créez des articles pour les problèmes récurrents afin de capitaliser sur les solutions déjà trouvées.",
+      "Utilisez des étiquettes cohérentes (ex : « windows », « imprimante », « réseau ») pour faciliter les recherches futures.",
+      "Les articles publics réduisent le nombre de demandes de support en permettant aux clients de résoudre eux-mêmes les problèmes courants.",
+    ],
+  },
+
+  'ADMIN:admin-kb-article-detail': {
+    title: "Détail de l'article — Base de connaissances",
+    description:
+      "Cette page permet de consulter et de modifier un article de la base de connaissances. Éditez le contenu en Markdown, gérez les liens vers les entités associées (billets, bons de travail, clients), définissez le flux de publication et organisez l'article avec des étiquettes.",
+    sections: [
+      {
+        heading: 'Édition du contenu',
+        content:
+          "Le contenu de l'article est rédigé en Markdown, ce qui permet de structurer le texte avec des titres, des listes, des blocs de code et des liens. L'aperçu en temps réel affiche le rendu final pendant que vous tapez. Utilisez les titres (## et ###) pour structurer clairement les sections et faciliter la lecture.",
+      },
+      {
+        heading: 'Liens vers les entités',
+        content:
+          "Associez l'article à des billets, des bons de travail ou des fiches client existants pour créer des références croisées. Ces liens permettent de retrouver rapidement l'article depuis le contexte d'un billet ou d'un BDT, et inversement. Ajoutez ou retirez les liens via le panneau latéral de la page de détail.",
+      },
+      {
+        heading: 'Flux de publication',
+        content:
+          "Un article passe par trois états : « Brouillon » pendant la rédaction, « Interne » une fois finalisé pour l'équipe technique, et « Public » lorsqu'il est prêt à être consulté par les clients. Vous pouvez revenir à un état antérieur à tout moment si l'article nécessite des corrections ou une mise à jour importante.",
+      },
+      {
+        heading: 'Gestion des étiquettes',
+        content:
+          "Ajoutez des étiquettes pour classer l'article de manière transversale. Tapez le nom d'une étiquette existante ou créez-en une nouvelle directement depuis le champ de saisie. Supprimez une étiquette en cliquant sur la croix à côté de son nom. Des étiquettes bien choisies améliorent considérablement la trouvabilité de l'article dans les recherches.",
+      },
+    ],
+    tips: [
+      "Structurez vos articles avec des titres et des sous-titres clairs pour une lecture rapide et efficace.",
+      "Liez l'article aux billets ou BDT concernés pour que l'équipe retrouve facilement la documentation pertinente.",
+      "Relisez l'article en mode aperçu avant de le passer en statut public pour vérifier la mise en forme Markdown.",
+    ],
+  },
+
+  'ADMIN:admin-client-detail': {
+    title: 'Fiche client détaillée',
+    description:
+      "La fiche client regroupe toutes les informations relatives à un client : coordonnées, historique complet des billets de service, bons de travail associés et notes internes. C'est votre référence centrale pour consulter le parcours d'un client et gérer la relation de service.",
+    sections: [
+      {
+        heading: 'Informations du client',
+        content:
+          "La section principale affiche le nom complet, l'adresse email, le numéro de téléphone, l'entreprise et l'adresse postale du client. Ces informations sont essentielles pour la communication et la planification des interventions sur site. Vérifiez régulièrement que les coordonnées sont à jour.",
+      },
+      {
+        heading: 'Historique des billets',
+        content:
+          "La section « Billets » liste tous les billets de service créés pour ce client, triés du plus récent au plus ancien. Chaque ligne indique le numéro, le titre, le statut et la date de création. Cliquez sur un billet pour accéder directement à sa fiche détaillée. Cet historique vous donne une vision globale des demandes passées et en cours du client.",
+      },
+      {
+        heading: 'Bons de travail associés',
+        content:
+          "La section « Bons de travail » affiche les BDT liés aux appareils déposés par ce client. Vous y retrouvez le type d'appareil, le statut de la réparation et la date de réception. Cliquez sur un BDT pour consulter le détail complet de la prise en charge et de la réparation.",
+      },
+      {
+        heading: 'Notes client',
+        content:
+          "Ajoutez des notes internes sur le client en cliquant sur « Ajouter une note ». Les notes permettent de consigner des informations importantes : préférences du client, historique de communication, particularités techniques de son parc informatique, etc. Épinglez les notes les plus importantes en haut de la liste pour qu'elles soient immédiatement visibles par toute l'équipe.",
+      },
+      {
+        heading: 'Modifier les coordonnées',
+        content:
+          "Cliquez sur le bouton d'édition pour modifier les coordonnées du client. Mettez à jour le nom, l'email, le téléphone, l'entreprise ou l'adresse selon les nouvelles informations fournies par le client. Les modifications sont enregistrées immédiatement après validation du formulaire.",
+      },
+    ],
+    tips: [
+      "Consultez l'historique des billets avant de créer une nouvelle demande pour vérifier si un problème similaire a déjà été traité.",
+      "Épinglez les notes critiques (ex : conditions de garantie, accès spéciaux) pour qu'elles soient visibles en priorité.",
+      "Maintenez les coordonnées à jour — un email ou un téléphone incorrect retarde les communications et les interventions.",
+    ],
+  },
+
+  'ADMIN:admin-worksheets': {
+    title: 'Gestion des feuilles de travail',
+    description:
+      "Cette page affiche la liste de toutes les feuilles de travail de l'atelier. Filtrez par statut, recherchez par numéro ou client, identifiez les feuilles à forte valeur et créez de nouvelles feuilles de travail pour documenter les interventions réalisées.",
+    sections: [
+      {
+        heading: 'Filtrage par statut',
+        content:
+          "Utilisez les filtres de statut pour afficher uniquement les feuilles de travail qui vous intéressent : « Brouillon » pour les feuilles en cours de rédaction, « Soumise » pour celles en attente de révision, « Approuvée » pour les feuilles validées, « Révisée » pour celles retournées avec des corrections demandées, « Facturée » pour les feuilles dont la facture a été émise, et « Annulée » pour les feuilles abandonnées.",
+      },
+      {
+        heading: 'Recherche et tri',
+        content:
+          "La barre de recherche accepte les numéros de feuille de travail, les noms de client et les noms de technicien. Combinez la recherche avec les filtres de statut pour cibler rapidement une feuille spécifique. Le tableau est triable par colonnes pour organiser la liste selon vos besoins d'analyse.",
+      },
+      {
+        heading: 'Alertes de haute valeur',
+        content:
+          "Les feuilles de travail dont le montant total dépasse un certain seuil sont signalées par un indicateur visuel distinctif. Ces alertes vous permettent d'identifier rapidement les interventions à forte valeur financière qui méritent une attention particulière lors de la révision et de l'approbation.",
+      },
+      {
+        heading: 'Créer une feuille de travail',
+        content:
+          "Cliquez sur « + Nouvelle feuille de travail » pour créer une feuille associée à un bon de travail ou un billet existant. La feuille de travail permet de documenter en détail les heures de main-d'œuvre, les pièces utilisées, les frais de déplacement et les notes d'intervention pour constituer un dossier de facturation complet.",
+      },
+    ],
+    tips: [
+      "Filtrez par statut « Soumise » quotidiennement pour traiter les feuilles en attente de votre approbation.",
+      "Les feuilles au statut « Révisée » nécessitent des corrections du technicien — suivez-les pour éviter les retards de facturation.",
+      "Utilisez les alertes de haute valeur pour prioriser la vérification des feuilles les plus significatives financièrement.",
+    ],
+  },
+
+  'ADMIN:admin-worksheet-detail': {
+    title: 'Détail de la feuille de travail',
+    description:
+      "La page de détail d'une feuille de travail offre une vue complète de l'intervention : entrées de main-d'œuvre, pièces utilisées, frais de déplacement, notes internes et externes, suivis, totaux financiers et signatures. En tant qu'administrateur, vous pouvez réviser, approuver, facturer ou annuler la feuille.",
+    sections: [
+      {
+        heading: "Entrées de main-d'œuvre, pièces et déplacement",
+        content:
+          "Les trois sections principales détaillent respectivement les heures de travail (technicien, durée, taux horaire), les pièces utilisées (nom, quantité, coût unitaire) et les frais de déplacement (distance, tarif kilométrique). Chaque ligne affiche le sous-total calculé automatiquement. Consultez ces sections pour vérifier la cohérence et l'exactitude des données saisies par le technicien.",
+      },
+      {
+        heading: 'Modification en ligne des entrées',
+        content:
+          "Cliquez sur une entrée pour la modifier directement dans le tableau. Vous pouvez ajuster les durées, les quantités, les tarifs et les descriptions avant d'approuver la feuille. Les modifications sont enregistrées immédiatement. Cette fonctionnalité permet de corriger les erreurs sans retourner la feuille au technicien pour des ajustements mineurs.",
+      },
+      {
+        heading: 'Notes et suivis',
+        content:
+          "Les notes internes sont visibles uniquement par l'équipe, tandis que les notes externes seront incluses dans le document final remis au client. Utilisez les suivis pour planifier des actions liées à cette intervention (rappel client, commande de pièces supplémentaires, visite de contrôle). Chaque suivi peut être marqué comme complété.",
+      },
+      {
+        heading: 'Transitions de statut',
+        content:
+          "Les boutons de transition vous permettent de faire avancer la feuille dans son cycle de vie. Depuis « Soumise », vous pouvez « Approuver » si tout est conforme, « Réviser » pour demander des corrections au technicien, ou « Annuler » la feuille. Une feuille approuvée peut ensuite être passée au statut « Facturée » une fois la facture émise au client.",
+      },
+      {
+        heading: 'Génération PDF et totaux financiers',
+        content:
+          "Le bouton « Générer PDF » crée un document professionnel récapitulant l'ensemble de l'intervention : détail des travaux, pièces, déplacements et totaux. La section des totaux affiche le sous-total de chaque catégorie (main-d'œuvre, pièces, déplacement), les taxes applicables et le montant total TTC. Vérifiez ces montants avant de générer le PDF final.",
+      },
+      {
+        heading: 'Signatures',
+        content:
+          "La section signatures permet de visualiser les signatures du technicien et du client apposées sur la feuille de travail. Les signatures attestent de l'accord des deux parties sur les travaux effectués et les montants facturés. Vérifiez la présence des signatures requises avant de passer la feuille au statut « Facturée ».",
+      },
+    ],
+    tips: [
+      "Vérifiez les totaux financiers et les taux horaires avant d'approuver une feuille de travail.",
+      "Utilisez la modification en ligne pour corriger les petites erreurs sans retourner la feuille au technicien.",
+      "Générez le PDF uniquement lorsque la feuille est approuvée et que toutes les informations sont définitives.",
+    ],
+  },
+
   // ============================================================
   //  TECHNICIAN PAGES
   // ============================================================
@@ -752,6 +932,77 @@ const helpContent: Record<string, HelpArticle> = {
     ],
   },
 
+  'TECHNICIAN:tech-worksheets': {
+    title: 'Mes feuilles de travail',
+    description:
+      "Cette page affiche vos feuilles de travail personnelles. Consultez l'état de vos feuilles soumises, créez de nouvelles feuilles à partir de vos bons de travail ou billets assignés, et filtrez par statut pour organiser votre travail de documentation.",
+    sections: [
+      {
+        heading: 'Mes feuilles de travail',
+        content:
+          "Le tableau liste toutes les feuilles de travail que vous avez créées, triées par date de création décroissante. Chaque ligne affiche le numéro de référence, le bon de travail ou billet associé, le client, le statut actuel et le montant total. Cliquez sur une feuille pour ouvrir sa page de détail et y ajouter des entrées ou la soumettre pour approbation.",
+      },
+      {
+        heading: 'Filtres par statut',
+        content:
+          "Filtrez vos feuilles par statut pour vous concentrer sur celles qui nécessitent votre attention. Les feuilles au statut « Brouillon » sont en cours de rédaction et doivent être complétées. Les feuilles « Révisée » ont été retournées par l'administrateur avec des corrections demandées — traitez-les en priorité. Les feuilles « Soumise » et « Approuvée » sont en attente de traitement par l'administration.",
+      },
+      {
+        heading: 'Créer une feuille de travail',
+        content:
+          "Cliquez sur « + Nouvelle feuille de travail » pour créer une feuille associée à un bon de travail ou un billet existant. Sélectionnez le BDT ou le billet concerné dans la liste déroulante. La feuille est créée au statut « Brouillon » et vous pouvez immédiatement y ajouter des entrées de main-d'œuvre, de pièces et de déplacement.",
+      },
+    ],
+    tips: [
+      "Créez votre feuille de travail dès le début de l'intervention pour ne pas oublier de détails.",
+      "Traitez rapidement les feuilles au statut « Révisée » pour ne pas retarder le processus de facturation.",
+      "Soumettez vos feuilles complètes en fin de journée pour un traitement administratif rapide.",
+    ],
+  },
+
+  'TECHNICIAN:tech-worksheet-detail': {
+    title: 'Détail de ma feuille de travail',
+    description:
+      "Cette page vous permet de documenter en détail votre intervention : saisissez les heures de main-d'œuvre (via le chronomètre ou manuellement), ajoutez les pièces utilisées et les frais de déplacement, rédigez des notes et soumettez la feuille pour approbation une fois complétée.",
+    sections: [
+      {
+        heading: "Entrées de main-d'œuvre",
+        content:
+          "Ajoutez vos heures de travail de deux façons : utilisez le chronomètre intégré pour enregistrer le temps en direct pendant l'intervention, ou saisissez manuellement la durée après coup. Pour chaque entrée, indiquez la description des travaux effectués et le taux horaire applicable. Le sous-total est calculé automatiquement.",
+      },
+      {
+        heading: 'Ajout de pièces',
+        content:
+          "Documentez chaque pièce utilisée pendant l'intervention en cliquant sur « Ajouter une pièce ». Renseignez le nom de la pièce, la référence, la quantité et le coût unitaire. Soyez précis dans les descriptions pour faciliter la vérification par l'administrateur et la compréhension du client sur la facture finale.",
+      },
+      {
+        heading: 'Frais de déplacement',
+        content:
+          "Si l'intervention nécessite un déplacement, ajoutez une entrée de déplacement avec la distance parcourue et le tarif kilométrique applicable. Les frais de déplacement sont intégrés au total de la feuille de travail. Indiquez clairement l'adresse de départ et d'arrivée dans la description.",
+      },
+      {
+        heading: 'Notes et suivis',
+        content:
+          "Rédigez des notes pour documenter le contexte de l'intervention, les observations techniques ou les recommandations pour le client. Les notes internes sont réservées à l'équipe, les notes externes seront visibles par le client. Ajoutez des suivis si des actions complémentaires sont nécessaires après l'intervention.",
+      },
+      {
+        heading: 'Soumission pour approbation',
+        content:
+          "Lorsque toutes les entrées sont saisies et les notes rédigées, cliquez sur « Soumettre » pour envoyer la feuille à l'administrateur pour révision et approbation. Vérifiez attentivement toutes les informations avant la soumission. Une fois soumise, vous ne pourrez plus modifier la feuille sauf si elle vous est retournée au statut « Révisée ».",
+      },
+      {
+        heading: 'Consultation du PDF',
+        content:
+          "Cliquez sur « Voir PDF » pour afficher ou télécharger le document récapitulatif de la feuille de travail. Le PDF reprend l'ensemble des entrées, notes et totaux dans un format professionnel. Vous pouvez consulter le PDF à tout moment, y compris lorsque la feuille est encore au statut brouillon, pour vérifier la présentation finale.",
+      },
+    ],
+    tips: [
+      "Utilisez le chronomètre pendant l'intervention pour un suivi précis du temps de travail.",
+      "Vérifiez chaque entrée (durée, quantité, tarif) avant de soumettre pour éviter les retours en révision.",
+      "Ajoutez des notes détaillées — elles facilitent l'approbation et constituent un historique technique précieux.",
+    ],
+  },
+
   // ============================================================
   //  CUSTOMER PAGES
   // ============================================================
@@ -962,6 +1213,67 @@ const helpContent: Record<string, HelpArticle> = {
       "Approuvez le devis rapidement pour que la réparation puisse commencer sans délai supplémentaire.",
       "Lisez les notes de l'équipe technique pour comprendre en détail les travaux effectués sur votre appareil.",
       "Récupérez votre appareil dès que le statut passe à « Prêt » pour libérer de l'espace en atelier.",
+    ],
+  },
+
+  'CUSTOMER:customer-worksheets': {
+    title: 'Mes feuilles de travail',
+    description:
+      "Cette page vous permet de consulter les feuilles de travail associées à vos bons de travail. Chaque feuille détaille les travaux effectués sur votre appareil, les pièces utilisées et les frais associés. Vous pouvez suivre l'avancement de la documentation et télécharger les récapitulatifs en PDF.",
+    sections: [
+      {
+        heading: 'Consulter vos feuilles de travail',
+        content:
+          "Le tableau affiche les feuilles de travail liées à vos bons de travail en atelier. Chaque ligne indique le numéro de référence, le bon de travail associé, le statut actuel et le montant total. Cliquez sur une feuille pour consulter le détail complet des travaux, des pièces et des frais de déplacement facturés.",
+      },
+      {
+        heading: 'Comprendre les statuts',
+        content:
+          "Les feuilles de travail passent par plusieurs statuts : « Brouillon » signifie que le technicien est en train de documenter l'intervention. « Soumise » signifie que la feuille est en cours de révision par l'équipe. « Approuvée » signifie que les travaux et les montants ont été validés. « Facturée » signifie que la facture correspondante a été émise. Seules les feuilles approuvées ou facturées reflètent les montants définitifs.",
+      },
+      {
+        heading: 'Télécharger le PDF',
+        content:
+          "Lorsqu'une feuille de travail est approuvée ou facturée, vous pouvez télécharger le récapitulatif complet au format PDF. Ce document détaille les heures de main-d'œuvre, les pièces utilisées, les frais de déplacement et les totaux. Conservez ce PDF pour vos archives personnelles ou pour vos besoins comptables.",
+      },
+    ],
+    tips: [
+      "Consultez les feuilles de travail approuvées pour comprendre le détail des travaux effectués sur votre appareil.",
+      "Téléchargez le PDF dès que la feuille est finalisée pour conserver une trace complète de l'intervention.",
+      "Si un montant vous semble incorrect, contactez l'équipe via les messages de votre billet ou bon de travail.",
+    ],
+  },
+
+  'CUSTOMER:customer-worksheet-detail': {
+    title: 'Détail de la feuille de travail',
+    description:
+      "Cette page affiche le détail complet d'une feuille de travail liée à la réparation de votre appareil. Consultez les heures de main-d'œuvre, les pièces remplacées, les frais de déplacement, les totaux calculés et les signatures des intervenants. Téléchargez le récapitulatif en PDF pour vos archives.",
+    sections: [
+      {
+        heading: "Main-d'œuvre, pièces et déplacement",
+        content:
+          "Les trois sections principales détaillent les travaux réalisés. La section main-d'œuvre indique la durée et la description de chaque intervention. La section pièces liste les composants remplacés avec leurs quantités et coûts unitaires. La section déplacement détaille les frais de transport le cas échéant. Chaque section affiche le sous-total correspondant.",
+      },
+      {
+        heading: 'Comprendre les totaux',
+        content:
+          "La section des totaux récapitule le coût de l'intervention : sous-total main-d'œuvre, sous-total pièces, sous-total déplacement, taxes applicables et montant total TTC. Ces montants correspondent au détail affiché dans les sections précédentes. Le montant total TTC est le montant final qui vous sera facturé.",
+      },
+      {
+        heading: 'Signatures',
+        content:
+          "La section signatures affiche les signatures apposées par le technicien ayant réalisé l'intervention et, le cas échéant, votre propre signature confirmant la réception des travaux. Les signatures attestent de l'accord mutuel sur les travaux effectués et les montants facturés.",
+      },
+      {
+        heading: 'Télécharger le PDF',
+        content:
+          "Cliquez sur « Télécharger PDF » pour obtenir un document récapitulatif complet au format PDF. Ce document professionnel reprend l'ensemble des informations de la feuille de travail : détail des interventions, pièces, déplacements, totaux et signatures. Conservez-le pour vos archives ou transmettez-le à votre comptable.",
+      },
+    ],
+    tips: [
+      "Vérifiez que les pièces listées et les heures de travail correspondent aux travaux convenus lors de l'approbation du devis.",
+      "Téléchargez et conservez le PDF comme justificatif pour vos archives comptables ou fiscales.",
+      "En cas de question sur un montant ou une ligne de la feuille, contactez l'équipe via les messages du billet associé.",
     ],
   },
 

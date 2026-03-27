@@ -114,7 +114,7 @@ function InlineDayCalendar({ appointments }: { appointments: any[] }) {
   return (
     <div className="mt-3">
       <p className="text-xs font-medium text-muted-foreground mb-2">
-        Agenda du jour ({appointments.filter((a: any) => a.status !== 'ANNULE').length} rendez-vous)
+        {tr('tech.ticketDetail.dayCalendarTitle', { count: appointments.filter((a: any) => a.status !== 'ANNULE').length })}
       </p>
       <div
         className="relative border rounded-md bg-muted/30 overflow-hidden"
@@ -154,7 +154,7 @@ function InlineDayCalendar({ appointments }: { appointments: any[] }) {
         {/* Empty state */}
         {blocks.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-            Aucun rendez-vous ce jour
+            {tr('tech.ticketDetail.dayCalendarEmpty')}
           </div>
         )}
       </div>
@@ -258,18 +258,18 @@ export default function TechTicketDetail() {
     mutationFn: () => api.tickets.accept(id!),
     onSuccess: () => {
       invalidateTicket();
-      toast.success('Billet accepté');
+      toast.success(t('tech.ticketDetail.acceptSuccess'));
     },
-    onError: () => toast.error("Erreur lors de l'acceptation du billet"),
+    onError: () => toast.error(t('tech.ticketDetail.acceptError')),
   });
 
   const statusMutation = useMutation({
     mutationFn: (status: string) => api.tickets.changeStatus(id!, status),
     onSuccess: () => {
       invalidateTicket();
-      toast.success('Statut mis à jour');
+      toast.success(t('tech.ticketDetail.statusUpdated'));
     },
-    onError: () => toast.error('Erreur lors du changement de statut'),
+    onError: () => toast.error(t('tech.ticketDetail.statusError')),
   });
 
   const quoteMutation = useMutation({
@@ -281,9 +281,9 @@ export default function TechTicketDetail() {
       setQuotedPrice('');
       setQuoteDescription('');
       setQuoteDuration('');
-      toast.success('Devis envoyé');
+      toast.success(t('tech.ticketDetail.quoteSuccess'));
     },
-    onError: () => toast.error("Erreur lors de l'envoi du devis"),
+    onError: () => toast.error(t('tech.ticketDetail.quoteError')),
   });
 
   const addBlockerMutation = useMutation({
@@ -292,18 +292,18 @@ export default function TechTicketDetail() {
       invalidateTicket();
       setShowBlockerForm(false);
       setBlockerReason('');
-      toast.success('Blocage ajouté');
+      toast.success(t('tech.ticketDetail.blockerAdded'));
     },
-    onError: () => toast.error("Erreur lors de l'ajout du blocage"),
+    onError: () => toast.error(t('tech.ticketDetail.blockerAddError')),
   });
 
   const removeBlockerMutation = useMutation({
     mutationFn: () => api.tickets.removeBlocker(id!),
     onSuccess: () => {
       invalidateTicket();
-      toast.success('Blocage retiré');
+      toast.success(t('tech.ticketDetail.blockerRemoved'));
     },
-    onError: () => toast.error('Erreur lors du retrait du blocage'),
+    onError: () => toast.error(t('tech.ticketDetail.blockerRemoveError')),
   });
 
   // ─── Appointment mutations ───
@@ -317,18 +317,18 @@ export default function TechTicketDetail() {
       setApptDate('');
       setApptSelectedSlot(null);
       setApptNotes('');
-      toast.success('Rendez-vous planifié');
+      toast.success(t('tech.ticketDetail.apptCreated'));
     },
-    onError: () => toast.error('Erreur lors de la planification du rendez-vous'),
+    onError: () => toast.error(t('tech.ticketDetail.apptCreateError')),
   });
 
   const cancelApptMutation = useMutation({
     mutationFn: (apptId: string) => api.appointments.cancel(apptId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments', id] });
-      toast.success('Rendez-vous annulé');
+      toast.success(t('tech.ticketDetail.apptCancelled'));
     },
-    onError: () => toast.error("Erreur lors de l'annulation du rendez-vous"),
+    onError: () => toast.error(t('tech.ticketDetail.apptCancelError')),
   });
 
   const apptStatusMutation = useMutation({
@@ -336,9 +336,9 @@ export default function TechTicketDetail() {
       api.appointments.changeStatus(apptId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments', id] });
-      toast.success('Statut du rendez-vous mis à jour');
+      toast.success(t('tech.ticketDetail.apptStatusUpdated'));
     },
-    onError: () => toast.error('Erreur lors du changement de statut du rendez-vous'),
+    onError: () => toast.error(t('tech.ticketDetail.apptStatusError')),
   });
 
   // ─── Proposal mutations ───
@@ -349,9 +349,9 @@ export default function TechTicketDetail() {
       invalidateProposals();
       queryClient.invalidateQueries({ queryKey: ['appointments', id] });
       invalidateTicket();
-      toast.success('Proposition acceptée — rendez-vous créé');
+      toast.success(t('tech.ticketDetail.acceptProposalSuccess'));
     },
-    onError: () => toast.error("Erreur lors de l'acceptation de la proposition"),
+    onError: () => toast.error(t('tech.ticketDetail.acceptProposalError')),
   });
 
   const rejectProposalMutation = useMutation({
@@ -361,9 +361,9 @@ export default function TechTicketDetail() {
       invalidateProposals();
       setRejectingProposalId(null);
       setRejectMessage('');
-      toast.success('Proposition refusée');
+      toast.success(t('tech.ticketDetail.rejectSuccess'));
     },
-    onError: () => toast.error('Erreur lors du refus de la proposition'),
+    onError: () => toast.error(t('tech.ticketDetail.rejectError')),
   });
 
   const counterProposeMutation = useMutation({
@@ -375,9 +375,9 @@ export default function TechTicketDetail() {
       setCounterDate('');
       setCounterSlot(null);
       setCounterMessage('');
-      toast.success('Contre-proposition envoyée');
+      toast.success(t('tech.ticketDetail.counterSuccess'));
     },
-    onError: () => toast.error("Erreur lors de l'envoi de la contre-proposition"),
+    onError: () => toast.error(t('tech.ticketDetail.counterError')),
   });
 
   // ─── Worksheet mutation ───
@@ -391,8 +391,8 @@ export default function TechTicketDetail() {
   });
 
   // ─── Loading / Not found ───
-  if (isLoading) return <div className="text-center py-8">Chargement...</div>;
-  if (!ticket) return <div className="text-center py-8">Billet introuvable</div>;
+  if (isLoading) return <div className="text-center py-8">{t('tech.ticketDetail.loading')}</div>;
+  if (!ticket) return <div className="text-center py-8">{t('tech.ticketDetail.notFound')}</div>;
 
   const tk: Ticket = ticket;
 
@@ -429,15 +429,15 @@ export default function TechTicketDetail() {
     e.preventDefault();
     const price = parseFloat(quotedPrice);
     if (isNaN(price) || price <= 0) {
-      toast.error('Veuillez entrer un prix valide');
+      toast.error(t('tech.ticketDetail.quotePriceError'));
       return;
     }
     if (!quoteDescription.trim()) {
-      toast.error('Veuillez entrer une description');
+      toast.error(t('tech.ticketDetail.quoteDescRequired'));
       return;
     }
     if (!quoteDuration.trim()) {
-      toast.error('Veuillez entrer une durée estimée');
+      toast.error(t('tech.ticketDetail.quoteDurationRequired'));
       return;
     }
     quoteMutation.mutate({
@@ -450,7 +450,7 @@ export default function TechTicketDetail() {
   const handleAddBlocker = (e: React.FormEvent) => {
     e.preventDefault();
     if (!blockerReason.trim()) {
-      toast.error('Veuillez entrer une raison de blocage');
+      toast.error(t('tech.ticketDetail.blockerReasonRequired'));
       return;
     }
     addBlockerMutation.mutate(blockerReason.trim());
@@ -459,7 +459,7 @@ export default function TechTicketDetail() {
   const handleApptSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!apptSelectedSlot) {
-      toast.error('Veuillez sélectionner un créneau horaire');
+      toast.error(t('tech.ticketDetail.selectSlotRequired'));
       return;
     }
     createApptMutation.mutate({
@@ -474,7 +474,7 @@ export default function TechTicketDetail() {
   const handleCounterPropose = (e: React.FormEvent) => {
     e.preventDefault();
     if (!counterSlot) {
-      toast.error('Veuillez sélectionner un créneau horaire');
+      toast.error(t('tech.ticketDetail.selectSlotRequired'));
       return;
     }
     counterProposeMutation.mutate({
@@ -495,7 +495,7 @@ export default function TechTicketDetail() {
       {/* ─── Header ─── */}
       <div className="flex items-center gap-4 flex-wrap">
         <Link to="/technicien/billets" className="text-sm text-muted-foreground hover:text-foreground">
-          &larr; Retour
+          {t('tech.ticketDetail.back')}
         </Link>
         <h1 className="text-2xl font-bold">{tk.ticketNumber}</h1>
         <StatusBadge status={tk.status} />
@@ -503,13 +503,13 @@ export default function TechTicketDetail() {
 
         {/* Accept button — only when no technician assigned and tech has can_accept_tickets permission */}
         {!tk.technicianId && canAcceptTickets && (
-          <HelpTooltip content="Prendre en charge ce billet et devenir le technicien assigné" side="bottom">
+          <HelpTooltip content={t('tech.ticketDetail.acceptTooltip')} side="bottom">
             <Button
               onClick={() => acceptMutation.mutate()}
               disabled={isMutating}
               className="ml-auto"
             >
-              {acceptMutation.isPending ? 'Acceptation...' : 'Accepter'}
+              {acceptMutation.isPending ? t('tech.ticketDetail.accepting') : t('tech.ticketDetail.accept')}
             </Button>
           </HelpTooltip>
         )}
@@ -530,18 +530,18 @@ export default function TechTicketDetail() {
           {tk.quotedPrice != null && (
             <Card>
               <CardContent className="pt-6">
-                <h3 className="font-semibold mb-3">Devis</h3>
+                <h3 className="font-semibold mb-3">{t('tech.ticketDetail.quoteTitle')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">Prix:</span>{' '}
+                  <span className="text-muted-foreground">{t('tech.ticketDetail.quotePrice')}</span>{' '}
                   <span className="font-medium">{formatCurrency(tk.quotedPrice)}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Durée:</span>{' '}
+                  <span className="text-muted-foreground">{t('tech.ticketDetail.quoteDuration')}</span>{' '}
                   <span className="font-medium">{tk.quoteDuration ?? '—'}</span>
                 </div>
                 <div className="sm:col-span-3">
-                  <span className="text-muted-foreground">Description:</span>{' '}
+                  <span className="text-muted-foreground">{t('tech.ticketDetail.quoteDesc')}</span>{' '}
                   <span>{tk.quoteDescription ?? '—'}</span>
                 </div>
               </div>
@@ -552,9 +552,9 @@ export default function TechTicketDetail() {
                 {tk.blockerReason && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-red-800">Blocage</h3>
+                <h3 className="font-semibold text-red-800">{t('tech.ticketDetail.blockerTitle')}</h3>
                 {isAssignedToMe && (
-                  <HelpTooltip content="Retirer le blocage et permettre au billet de progresser" side="left">
+                  <HelpTooltip content={t('tech.ticketDetail.removeBlockerTooltip')} side="left">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -562,7 +562,7 @@ export default function TechTicketDetail() {
                       disabled={isMutating}
                       className="text-xs text-red-700 hover:bg-red-200"
                     >
-                      {removeBlockerMutation.isPending ? 'Retrait...' : 'Retirer le blocage'}
+                      {removeBlockerMutation.isPending ? t('tech.ticketDetail.removingBlocker') : t('tech.ticketDetail.removeBlocker')}
                     </Button>
                   </HelpTooltip>
                 )}
@@ -575,13 +575,13 @@ export default function TechTicketDetail() {
           {proposals.length > 0 && (
             <Card>
               <CardContent className="pt-6 space-y-4">
-              <h3 className="font-semibold">Propositions de rendez-vous</h3>
+              <h3 className="font-semibold">{t('tech.ticketDetail.proposals')}</h3>
 
               {/* Pending proposals first — these require action */}
               {pendingProposals.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded">
-                    {pendingProposals.length} proposition{pendingProposals.length > 1 ? 's' : ''} en attente de réponse
+                    {t('tech.ticketDetail.pendingCount', { count: pendingProposals.length })}
                   </p>
                   {pendingProposals.map((proposal: AppointmentProposal) => (
                     <div key={proposal.id} className="border border-amber-200 bg-amber-50/50 rounded-md p-4 space-y-3">
@@ -596,8 +596,8 @@ export default function TechTicketDetail() {
                           </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Proposé par {proposal.proposedBy?.firstName} {proposal.proposedBy?.lastName}
-                          {proposal.proposedBy?.role === 'CUSTOMER' && ' (client)'}
+                          {t('tech.ticketDetail.proposedBy', { name: `${proposal.proposedBy?.firstName} ${proposal.proposedBy?.lastName}` })}
+                          {proposal.proposedBy?.role === 'CUSTOMER' && t('tech.ticketDetail.proposedByClient')}
                         </span>
                       </div>
 
@@ -607,7 +607,7 @@ export default function TechTicketDetail() {
 
                       {proposal.parent && (
                         <p className="text-xs text-muted-foreground">
-                          En réponse à une proposition du {new Date(proposal.parent.proposedStart).toLocaleDateString('fr-CA')}{' '}
+                          {t('tech.ticketDetail.proposalReplyTo', { date: new Date(proposal.parent.proposedStart).toLocaleDateString('fr-CA') })}{' '}
                           {formatSlotTime(proposal.parent.proposedStart)} – {formatSlotTime(proposal.parent.proposedEnd)}
                         </p>
                       )}
@@ -637,17 +637,17 @@ export default function TechTicketDetail() {
                       {/* Action buttons */}
                       {rejectingProposalId !== proposal.id && counterProposingId !== proposal.id && (
                         <div className="flex gap-2 pt-1">
-                          <HelpTooltip content="Accepter cette proposition et créer le rendez-vous" side="bottom">
+                          <HelpTooltip content={t('tech.ticketDetail.acceptProposalTooltip')} side="bottom">
                             <Button
                               size="sm"
                               onClick={() => acceptProposalMutation.mutate({ proposalId: proposal.id })}
                               disabled={isMutating}
                               className="text-xs bg-green-600 hover:bg-green-700"
                             >
-                              {acceptProposalMutation.isPending ? 'Acceptation...' : 'Accepter'}
+                              {acceptProposalMutation.isPending ? t('tech.ticketDetail.accepting') : t('tech.ticketDetail.accept')}
                             </Button>
                           </HelpTooltip>
-                          <HelpTooltip content="Refuser cette proposition avec un message optionnel" side="bottom">
+                          <HelpTooltip content={t('tech.ticketDetail.rejectTooltip')} side="bottom">
                             <Button
                               size="sm"
                               variant="destructive"
@@ -655,10 +655,10 @@ export default function TechTicketDetail() {
                               disabled={isMutating}
                               className="text-xs"
                             >
-                              Refuser
+                              {t('tech.ticketDetail.reject')}
                             </Button>
                           </HelpTooltip>
-                          <HelpTooltip content="Proposer un autre créneau horaire au client" side="bottom">
+                          <HelpTooltip content={t('tech.ticketDetail.counterProposeTooltip')} side="bottom">
                             <Button
                               size="sm"
                               onClick={() => {
@@ -670,7 +670,7 @@ export default function TechTicketDetail() {
                               disabled={isMutating}
                               className="text-xs bg-indigo-600 hover:bg-indigo-700"
                             >
-                              Contre-proposer
+                              {t('tech.ticketDetail.counterPropose')}
                             </Button>
                           </HelpTooltip>
                         </div>
@@ -679,16 +679,16 @@ export default function TechTicketDetail() {
                       {/* Reject form inline */}
                       {rejectingProposalId === proposal.id && (
                         <div className="border-t pt-3 space-y-2">
-                          <Label className="text-xs text-muted-foreground">Message de refus (optionnel)</Label>
+                          <Label className="text-xs text-muted-foreground">{t('tech.ticketDetail.rejectLabel')}</Label>
                           <Textarea
                             value={rejectMessage}
                             onChange={(e) => setRejectMessage(e.target.value)}
-                            placeholder="Raison du refus..."
+                            placeholder={t('tech.ticketDetail.rejectPlaceholder')}
                             rows={2}
                             className="resize-none"
                           />
                           <div className="flex gap-2">
-                            <HelpTooltip content="Confirmer le refus de cette proposition" side="bottom">
+                            <HelpTooltip content={t('tech.ticketDetail.rejectConfirmTooltip')} side="bottom">
                               <Button
                                 size="sm"
                                 variant="destructive"
@@ -701,7 +701,7 @@ export default function TechTicketDetail() {
                                 disabled={isMutating}
                                 className="text-xs"
                               >
-                                {rejectProposalMutation.isPending ? 'Refus...' : 'Confirmer le refus'}
+                                {rejectProposalMutation.isPending ? t('tech.ticketDetail.rejecting') : t('tech.ticketDetail.rejectConfirm')}
                               </Button>
                             </HelpTooltip>
                             <Button
@@ -714,7 +714,7 @@ export default function TechTicketDetail() {
                               disabled={isMutating}
                               className="text-xs"
                             >
-                              Annuler
+                              {t('common.cancel')}
                             </Button>
                           </div>
                         </div>
@@ -723,11 +723,11 @@ export default function TechTicketDetail() {
                       {/* Counter-propose form inline */}
                       {counterProposingId === proposal.id && (
                         <form onSubmit={handleCounterPropose} className="border-t pt-3 space-y-3">
-                          <p className="text-xs font-medium">Contre-proposition</p>
+                          <p className="text-xs font-medium">{t('tech.ticketDetail.counterProposeTitle')}</p>
 
                           {/* Date picker */}
                           <div>
-                            <Label className="text-xs text-muted-foreground mb-1">Date</Label>
+                            <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.counterDate')}</Label>
                             <input
                               type="date"
                               value={counterDate}
@@ -749,7 +749,7 @@ export default function TechTicketDetail() {
                           {/* Counter-proposal slots */}
                           {counterDate && (
                             <div>
-                              <Label className="text-xs text-muted-foreground mb-2">Créneaux disponibles</Label>
+                              <Label className="text-xs text-muted-foreground mb-2">{t('tech.ticketDetail.counterSlots')}</Label>
                               {counterAvailabilitySlots.length > 0 ? (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                                   {counterAvailabilitySlots.map((slot: any, idx: number) => (
@@ -777,18 +777,18 @@ export default function TechTicketDetail() {
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-xs text-muted-foreground">Aucun créneau disponible pour cette date.</p>
+                                <p className="text-xs text-muted-foreground">{t('tech.ticketDetail.counterSlotsEmpty')}</p>
                               )}
                             </div>
                           )}
 
                           {/* Message */}
                           <div>
-                            <Label className="text-xs text-muted-foreground mb-1">Message (optionnel)</Label>
+                            <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.counterMessage')}</Label>
                             <Textarea
                               value={counterMessage}
                               onChange={(e) => setCounterMessage(e.target.value)}
-                              placeholder="Message pour le client..."
+                              placeholder={t('tech.ticketDetail.counterMessagePlaceholder')}
                               rows={2}
                               className="resize-none"
                             />
@@ -796,14 +796,14 @@ export default function TechTicketDetail() {
 
                           {/* Submit / Cancel */}
                           <div className="flex gap-2">
-                            <HelpTooltip content="Envoyer votre contre-proposition au client" side="bottom">
+                            <HelpTooltip content={t('tech.ticketDetail.counterSendTooltip')} side="bottom">
                               <Button
                                 type="submit"
                                 size="sm"
                                 disabled={isMutating || !counterSlot}
                                 className="text-xs bg-indigo-600 hover:bg-indigo-700"
                               >
-                                {counterProposeMutation.isPending ? 'Envoi...' : 'Envoyer la contre-proposition'}
+                                {counterProposeMutation.isPending ? t('tech.ticketDetail.counterSending') : t('tech.ticketDetail.counterSendButton')}
                               </Button>
                             </HelpTooltip>
                             <Button
@@ -819,7 +819,7 @@ export default function TechTicketDetail() {
                               disabled={isMutating}
                               className="text-xs"
                             >
-                              Annuler
+                              {t('common.cancel')}
                             </Button>
                           </div>
                         </form>
@@ -833,7 +833,7 @@ export default function TechTicketDetail() {
               {otherProposals.length > 0 && (
                 <div className="space-y-2">
                   {pendingProposals.length > 0 && (
-                    <p className="text-xs font-medium text-muted-foreground mt-2">Historique</p>
+                    <p className="text-xs font-medium text-muted-foreground mt-2">{t('tech.ticketDetail.proposalHistory')}</p>
                   )}
                   {otherProposals.map((proposal: AppointmentProposal) => (
                     <div key={proposal.id} className="border rounded-md p-3 space-y-1 opacity-75">
@@ -848,7 +848,7 @@ export default function TechTicketDetail() {
                           </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          Par {proposal.proposedBy?.firstName} {proposal.proposedBy?.lastName}
+                          {t('tech.ticketDetail.proposalBy', { name: `${proposal.proposedBy?.firstName} ${proposal.proposedBy?.lastName}` })}
                         </span>
                       </div>
                       {proposal.message && (
@@ -856,7 +856,7 @@ export default function TechTicketDetail() {
                       )}
                       {proposal.responseMessage && (
                         <p className="text-xs text-muted-foreground">
-                          <span className="font-medium">Réponse:</span> {proposal.responseMessage}
+                          <span className="font-medium">{t('tech.ticketDetail.proposalResponse')}</span> {proposal.responseMessage}
                         </p>
                       )}
                     </div>
@@ -871,14 +871,14 @@ export default function TechTicketDetail() {
             <Card>
               <CardContent className="pt-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Rendez-vous</h3>
+                <h3 className="font-semibold">{t('tech.ticketDetail.appointments')}</h3>
                 {!showApptForm && (
-                  <HelpTooltip content="Planifier un nouveau rendez-vous pour ce billet" side="left">
+                  <HelpTooltip content={t('tech.ticketDetail.scheduleTooltip')} side="left">
                     <Button
                       size="sm"
                       onClick={() => setShowApptForm(true)}
                     >
-                      Planifier un rendez-vous
+                      {t('tech.ticketDetail.scheduleButton')}
                     </Button>
                   </HelpTooltip>
                 )}
@@ -907,7 +907,7 @@ export default function TechTicketDetail() {
                       {appt.status !== 'ANNULE' && appt.status !== 'TERMINE' && (
                         <div className="flex gap-2 pt-1">
                           {(appt.status === 'PLANIFIE' || appt.status === 'CONFIRME') && (
-                            <HelpTooltip content="Démarrer l'intervention pour ce rendez-vous" side="top">
+                            <HelpTooltip content={t('tech.ticketDetail.startTooltip')} side="top">
                               <Button
                                 size="sm"
                                 variant="secondary"
@@ -915,12 +915,12 @@ export default function TechTicketDetail() {
                                 disabled={isMutating}
                                 className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
                               >
-                                Démarrer
+                                {t('tech.ticketDetail.startButton')}
                               </Button>
                             </HelpTooltip>
                           )}
                           {appt.status === 'EN_COURS' && (
-                            <HelpTooltip content="Marquer l'intervention comme terminée" side="top">
+                            <HelpTooltip content={t('tech.ticketDetail.completeTooltip')} side="top">
                               <Button
                                 size="sm"
                                 variant="secondary"
@@ -928,11 +928,11 @@ export default function TechTicketDetail() {
                                 disabled={isMutating}
                                 className="text-xs bg-green-100 text-green-800 hover:bg-green-200"
                               >
-                                Terminer
+                                {t('tech.ticketDetail.completeButton')}
                               </Button>
                             </HelpTooltip>
                           )}
-                          <HelpTooltip content="Annuler ce rendez-vous" side="top">
+                          <HelpTooltip content={t('tech.ticketDetail.cancelApptTooltip')} side="top">
                             <Button
                               size="sm"
                               variant="secondary"
@@ -940,7 +940,7 @@ export default function TechTicketDetail() {
                               disabled={isMutating}
                               className="text-xs bg-red-100 text-red-700 hover:bg-red-200"
                             >
-                              {cancelApptMutation.isPending ? 'Annulation...' : 'Annuler'}
+                              {cancelApptMutation.isPending ? t('tech.ticketDetail.cancelling') : t('tech.ticketDetail.cancelAppt')}
                             </Button>
                           </HelpTooltip>
                         </div>
@@ -949,17 +949,17 @@ export default function TechTicketDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Aucun rendez-vous planifié.</p>
+                <p className="text-sm text-muted-foreground">{t('tech.ticketDetail.noAppointments')}</p>
               )}
 
               {/* New appointment form */}
               {showApptForm && (
                 <form onSubmit={handleApptSubmit} className="border-t pt-4 space-y-4">
-                  <h4 className="text-sm font-medium">Nouveau rendez-vous</h4>
+                  <h4 className="text-sm font-medium">{t('tech.ticketDetail.newAppointment')}</h4>
 
                   {/* Date picker */}
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-1">Date</Label>
+                    <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.dateLabel')}</Label>
                     <input
                       type="date"
                       value={apptDate}
@@ -981,7 +981,7 @@ export default function TechTicketDetail() {
                   {/* Availability slots grid */}
                   {apptDate && (
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-2">Créneaux disponibles</Label>
+                      <Label className="text-xs text-muted-foreground mb-2">{t('tech.ticketDetail.slotsLabel')}</Label>
                       {availabilitySlots.length > 0 ? (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                           {availabilitySlots.map((slot: any, idx: number) => (
@@ -1009,18 +1009,18 @@ export default function TechTicketDetail() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-muted-foreground">Aucun créneau disponible pour cette date.</p>
+                        <p className="text-xs text-muted-foreground">{t('tech.ticketDetail.slotsEmpty')}</p>
                       )}
                     </div>
                   )}
 
                   {/* Notes */}
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-1">Notes (optionnel)</Label>
+                    <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.notesLabel')}</Label>
                     <Textarea
                       value={apptNotes}
                       onChange={(e) => setApptNotes(e.target.value)}
-                      placeholder="Notes pour le rendez-vous..."
+                      placeholder={t('tech.ticketDetail.notesPlaceholder')}
                       rows={2}
                       className="resize-none"
                     />
@@ -1028,13 +1028,13 @@ export default function TechTicketDetail() {
 
                   {/* Submit / Cancel */}
                   <div className="flex gap-2">
-                    <HelpTooltip content="Confirmer et planifier ce rendez-vous" side="top">
+                    <HelpTooltip content={t('tech.ticketDetail.confirmApptTooltip')} side="top">
                       <Button
                         type="submit"
                         disabled={isMutating || !apptSelectedSlot}
                         className="flex-1"
                       >
-                        {createApptMutation.isPending ? 'Planification...' : 'Planifier'}
+                        {createApptMutation.isPending ? t('tech.ticketDetail.scheduling') : t('tech.ticketDetail.scheduleConfirm')}
                       </Button>
                     </HelpTooltip>
                     <Button
@@ -1048,7 +1048,7 @@ export default function TechTicketDetail() {
                       }}
                       disabled={isMutating}
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </form>
@@ -1063,7 +1063,7 @@ export default function TechTicketDetail() {
           {/* Messages */}
           <Card>
             <CardContent className="pt-6">
-              <h3 className="font-semibold mb-4">Messages</h3>
+              <h3 className="font-semibold mb-4">{t('tech.ticketDetail.messages')}</h3>
               <MessageThread ticketId={id!} />
             </CardContent>
           </Card>
@@ -1074,22 +1074,22 @@ export default function TechTicketDetail() {
           {/* Ticket details */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Détails</CardTitle>
+              <CardTitle className="text-sm">{t('tech.ticketDetail.details')}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-2">
               <div>
-                <span className="text-muted-foreground">Catégorie:</span>{' '}
+                <span className="text-muted-foreground">{t('tech.ticketDetail.categoryLabel')}</span>{' '}
                 {t(`label.serviceCategory.${tk.serviceCategory}`) || tk.serviceCategory}
               </div>
               <div>
-                <span className="text-muted-foreground">Mode:</span>{' '}
+                <span className="text-muted-foreground">{t('tech.ticketDetail.modeLabel')}</span>{' '}
                 {t(`label.serviceMode.${tk.serviceMode}`) || tk.serviceMode}
               </div>
               <div>
-                <span className="text-muted-foreground">Créé:</span> {formatDateTime(tk.createdAt)}
+                <span className="text-muted-foreground">{t('tech.ticketDetail.createdLabel')}</span> {formatDateTime(tk.createdAt)}
               </div>
               <div>
-                <span className="text-muted-foreground">Modifié:</span> {formatDateTime(tk.updatedAt)}
+                <span className="text-muted-foreground">{t('tech.ticketDetail.updatedLabel')}</span> {formatDateTime(tk.updatedAt)}
               </div>
             </CardContent>
           </Card>
@@ -1097,7 +1097,7 @@ export default function TechTicketDetail() {
           {/* Client info */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Client</CardTitle>
+              <CardTitle className="text-sm">{t('tech.ticketDetail.clientTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
               <p className="text-sm">{tk.customer?.firstName} {tk.customer?.lastName}</p>
@@ -1115,10 +1115,10 @@ export default function TechTicketDetail() {
           {isAssignedToMe && allowedStatuses.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Changer le statut</CardTitle>
+                <CardTitle className="text-sm">{t('tech.ticketDetail.changeStatus')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <HelpTooltip content="Sélectionner le prochain statut selon le flux de travail autorisé" side="left">
+                <HelpTooltip content={t('tech.ticketDetail.changeStatusTooltip')} side="left">
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
@@ -1131,7 +1131,7 @@ export default function TechTicketDetail() {
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
                   >
                     <option value="" disabled>
-                      {statusMutation.isPending ? 'Mise à jour...' : 'Sélectionner...'}
+                      {statusMutation.isPending ? t('tech.ticketDetail.updatingStatus') : t('tech.ticketDetail.selectStatus')}
                     </option>
                     {allowedStatuses.map((status) => (
                       <option key={status} value={status}>
@@ -1162,16 +1162,16 @@ export default function TechTicketDetail() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">Devis</CardTitle>
+                  <CardTitle className="text-sm">{t('tech.ticketDetail.quoteTitle')}</CardTitle>
                   {!showQuoteForm && (
-                    <HelpTooltip content="Créer ou modifier un devis pour le client" side="left">
+                    <HelpTooltip content={t('tech.ticketDetail.quoteCreateTooltip')} side="left">
                       <Button
                         variant="link"
                         size="sm"
                         onClick={() => setShowQuoteForm(true)}
                         className="text-xs p-0 h-auto"
                       >
-                        {tk.quotedPrice != null ? 'Modifier' : 'Envoyer un devis'}
+                        {tk.quotedPrice != null ? t('tech.ticketDetail.quoteModify') : t('tech.ticketDetail.quoteSendButton')}
                       </Button>
                     </HelpTooltip>
                   )}
@@ -1181,7 +1181,7 @@ export default function TechTicketDetail() {
                 <CardContent>
                   <form onSubmit={handleQuoteSubmit} className="space-y-3">
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-1">Prix ($)</Label>
+                      <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.quotePriceLabel')}</Label>
                       <Input
                         type="number"
                         step="0.01"
@@ -1193,34 +1193,34 @@ export default function TechTicketDetail() {
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-1">Description</Label>
+                      <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.quoteDescLabel')}</Label>
                       <Textarea
                         value={quoteDescription}
                         onChange={(e) => setQuoteDescription(e.target.value)}
-                        placeholder="Description des travaux..."
+                        placeholder={t('tech.ticketDetail.quoteDescPlaceholder')}
                         rows={3}
                         className="resize-none"
                         required
                       />
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-1">Durée estimée</Label>
+                      <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.quoteDurationLabel')}</Label>
                       <Input
                         type="text"
                         value={quoteDuration}
                         onChange={(e) => setQuoteDuration(e.target.value)}
-                        placeholder="2 heures"
+                        placeholder={t('tech.ticketDetail.quoteDurationPlaceholder')}
                         required
                       />
                     </div>
                     <div className="flex gap-2">
-                      <HelpTooltip content="Envoyer le devis au client pour approbation" side="top">
+                      <HelpTooltip content={t('tech.ticketDetail.quoteSendTooltip')} side="top">
                         <Button
                           type="submit"
                           disabled={isMutating}
                           className="flex-1"
                         >
-                          {quoteMutation.isPending ? 'Envoi...' : 'Envoyer'}
+                          {quoteMutation.isPending ? t('tech.ticketDetail.quoteSending') : t('tech.ticketDetail.quoteSend')}
                         </Button>
                       </HelpTooltip>
                       <Button
@@ -1229,7 +1229,7 @@ export default function TechTicketDetail() {
                         onClick={() => setShowQuoteForm(false)}
                         disabled={isMutating}
                       >
-                        Annuler
+                        {t('common.cancel')}
                       </Button>
                     </div>
                   </form>
@@ -1243,21 +1243,21 @@ export default function TechTicketDetail() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">Blocage</CardTitle>
+                  <CardTitle className="text-sm">{t('tech.ticketDetail.blockerCardTitle')}</CardTitle>
                   {!tk.blockerReason && !showBlockerForm && (
-                    <HelpTooltip content="Signaler un obstacle empêchant la résolution du billet" side="left">
+                    <HelpTooltip content={t('tech.ticketDetail.reportBlockerTooltip')} side="left">
                       <Button
                         variant="link"
                         size="sm"
                         onClick={() => setShowBlockerForm(true)}
                         className="text-xs text-red-600 p-0 h-auto"
                       >
-                        Signaler un blocage
+                        {t('tech.ticketDetail.reportBlocker')}
                       </Button>
                     </HelpTooltip>
                   )}
                   {tk.blockerReason && !showBlockerForm && (
-                    <HelpTooltip content="Retirer le blocage actif sur ce billet" side="left">
+                    <HelpTooltip content={t('tech.ticketDetail.removeBlockerLinkTooltip')} side="left">
                       <Button
                         variant="link"
                         size="sm"
@@ -1265,7 +1265,7 @@ export default function TechTicketDetail() {
                         disabled={isMutating}
                         className="text-xs text-red-600 p-0 h-auto"
                       >
-                        {removeBlockerMutation.isPending ? 'Retrait...' : 'Retirer'}
+                        {removeBlockerMutation.isPending ? t('tech.ticketDetail.removingBlocker') : t('tech.ticketDetail.removeBlockerLink')}
                       </Button>
                     </HelpTooltip>
                   )}
@@ -1274,31 +1274,31 @@ export default function TechTicketDetail() {
               <CardContent>
           {tk.blockerReason && (
                   <p className="text-xs text-muted-foreground">
-                    Blocage actif — voir ci-dessus pour les détails.
+                    {t('tech.ticketDetail.blockerActive')}
                   </p>
                 )}
                 {showBlockerForm && (
                   <form onSubmit={handleAddBlocker} className="space-y-3">
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-1">Raison du blocage</Label>
+                      <Label className="text-xs text-muted-foreground mb-1">{t('tech.ticketDetail.blockerReasonLabel')}</Label>
                       <Textarea
                         value={blockerReason}
                         onChange={(e) => setBlockerReason(e.target.value)}
-                        placeholder="Décrivez la raison du blocage..."
+                        placeholder={t('tech.ticketDetail.blockerReasonPlaceholder')}
                         rows={3}
                         className="resize-none"
                         required
                       />
                     </div>
                     <div className="flex gap-2">
-                      <HelpTooltip content="Ajouter ce blocage au billet — le statut passera à BLOCAGE" side="top">
+                      <HelpTooltip content={t('tech.ticketDetail.addBlockerTooltip')} side="top">
                         <Button
                           type="submit"
                           variant="destructive"
                           disabled={isMutating}
                           className="flex-1"
                         >
-                          {addBlockerMutation.isPending ? 'Ajout...' : 'Ajouter'}
+                          {addBlockerMutation.isPending ? t('tech.ticketDetail.addingBlocker') : t('tech.ticketDetail.addBlocker')}
                         </Button>
                       </HelpTooltip>
                       <Button
@@ -1307,7 +1307,7 @@ export default function TechTicketDetail() {
                         onClick={() => setShowBlockerForm(false)}
                         disabled={isMutating}
                       >
-                        Annuler
+                        {t('common.cancel')}
                       </Button>
                     </div>
                   </form>

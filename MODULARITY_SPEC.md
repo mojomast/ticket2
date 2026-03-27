@@ -1,3 +1,9 @@
+> **⚠️ PLANNED / NOT YET IMPLEMENTED** — This document describes the *future* modular
+> architecture for Valitek. None of the module registry, event bus, ConfigOption table,
+> or deployment system described below exists in the current codebase (`ticket2`).
+> The current app is a monolithic Hono + React application. Treat this spec as a
+> design blueprint for a future `ticket3` refactor.
+
 # Valitek Modular Framework Spec
 ## `ticket3` / `valitek-core`
 
