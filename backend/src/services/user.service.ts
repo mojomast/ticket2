@@ -12,6 +12,64 @@ const USER_SELECT = {
   createdAt: true, updatedAt: true,
 };
 
+const ACTIVE_APPOINTMENT_STATUSES = ['DEMANDE', 'PLANIFIE', 'CONFIRME', 'EN_COURS'] as const;
+
+async function cascadeSoftDeletedUser(
+  tx: {
+    appointmentProposal: { updateMany: typeof prisma.appointmentProposal.updateMany };
+    ticket: { updateMany: typeof prisma.ticket.updateMany };
+    workOrder: { updateMany: typeof prisma.workOrder.updateMany };
+    appointment: { updateMany: typeof prisma.appointment.updateMany };
+    worksheet: { updateMany: typeof prisma.worksheet.updateMany };
+  },
+  user: { id: string; role: string },
+  deletedAt: Date,
+) {
+  await tx.appointmentProposal.updateMany({
+    where: {
+      proposedById: user.id,
+      status: 'PROPOSEE',
+      deletedAt: null,
+    },
+    data: {
+      status: 'ANNULEE',
+      respondedAt: deletedAt,
+      responseMessage: 'Proposition annulée automatiquement parce que le compte utilisateur a été désactivé.',
+    },
+  });
+
+  if (user.role !== 'TECHNICIAN') {
+    return;
+  }
+
+  await Promise.all([
+    tx.ticket.updateMany({
+      where: { technicianId: user.id, deletedAt: null },
+      data: { technicianId: null },
+    }),
+    tx.workOrder.updateMany({
+      where: { technicianId: user.id, deletedAt: null },
+      data: { technicianId: null },
+    }),
+    tx.appointment.updateMany({
+      where: {
+        technicianId: user.id,
+        deletedAt: null,
+        status: { in: [...ACTIVE_APPOINTMENT_STATUSES] },
+      },
+      data: { technicianId: null },
+    }),
+    tx.worksheet.updateMany({
+      where: {
+        technicianId: user.id,
+        deletedAt: null,
+        status: 'BROUILLON',
+      },
+      data: { deletedAt },
+    }),
+  ]);
+}
+
 export async function getUsers(query: any) {
   const { page, limit, skip } = getPagination({ page: query.page || 1, limit: query.limit || 20 });
 
@@ -109,11 +167,18 @@ export async function updateUser(id: string, data: UpdateUserInput) {
 
 export async function deleteUser(id: string) {
   const user = await getUserById(id);
+  const deletedAt = new Date();
 
-  const deleted = await prisma.user.update({
-    where: { id },
-    data: { deletedAt: new Date(), isActive: false },
-    select: USER_SELECT,
+  const deleted = await prisma.$transaction(async (tx) => {
+    const deletedUser = await tx.user.update({
+      where: { id },
+      data: { deletedAt, isActive: false },
+      select: USER_SELECT,
+    });
+
+    await cascadeSoftDeletedUser(tx, user, deletedAt);
+
+    return deletedUser;
   });
 
   // Fire-and-forget audit log

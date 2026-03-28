@@ -17,7 +17,9 @@ export interface NotificationRetentionPolicy {
   unreadDays: number;
 }
 
-export function getNotificationRetentionPolicy(): NotificationRetentionPolicy {
+const NOTIFICATION_RETENTION_CONFIG_KEY = 'notification_retention_policy';
+
+function getDefaultNotificationRetentionPolicy(): NotificationRetentionPolicy {
   return {
     enabled: config.NOTIFICATION_RETENTION_ENABLED,
     readDays: config.NOTIFICATION_RETENTION_READ_DAYS,
@@ -25,12 +27,44 @@ export function getNotificationRetentionPolicy(): NotificationRetentionPolicy {
   };
 }
 
+function toPositiveInteger(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : fallback;
+}
+
+export async function getNotificationRetentionPolicy(): Promise<NotificationRetentionPolicy> {
+  const defaults = getDefaultNotificationRetentionPolicy();
+
+  try {
+    const storedConfig = await prisma.systemConfig.findUnique({
+      where: { key: NOTIFICATION_RETENTION_CONFIG_KEY },
+    });
+
+    if (!storedConfig?.value || typeof storedConfig.value !== 'object') {
+      return defaults;
+    }
+
+    const value = storedConfig.value as Record<string, unknown>;
+
+    return {
+      enabled: typeof value.enabled === 'boolean' ? value.enabled : defaults.enabled,
+      readDays: toPositiveInteger(value.readDays, defaults.readDays),
+      unreadDays: toPositiveInteger(value.unreadDays, defaults.unreadDays),
+    };
+  } catch {
+    return defaults;
+  }
+}
+
 function subtractDays(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 }
 
-export async function cleanupExpiredNotifications(policy = getNotificationRetentionPolicy()) {
-  if (!policy.enabled) {
+export async function cleanupExpiredNotifications(policy?: NotificationRetentionPolicy) {
+  const activePolicy = policy ?? await getNotificationRetentionPolicy();
+
+  if (!activePolicy.enabled) {
     return {
       enabled: false,
       readDeleted: 0,
@@ -40,8 +74,8 @@ export async function cleanupExpiredNotifications(policy = getNotificationRetent
     };
   }
 
-  const readThreshold = subtractDays(policy.readDays);
-  const unreadThreshold = subtractDays(policy.unreadDays);
+  const readThreshold = subtractDays(activePolicy.readDays);
+  const unreadThreshold = subtractDays(activePolicy.unreadDays);
 
   const [readResult, unreadResult] = await Promise.all([
     prisma.notification.deleteMany({

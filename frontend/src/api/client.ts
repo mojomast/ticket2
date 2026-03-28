@@ -197,6 +197,12 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface NotificationRetentionPolicy {
+  enabled: boolean;
+  readDays: number;
+  unreadDays: number;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -883,6 +889,11 @@ export const api = {
       request<Worksheet>(`/api/worksheets/${worksheetId}/signature`, {
         method: 'POST',
         body: JSON.stringify({ type, signatureData }),
+      }),
+    saveCustomerSignature: (worksheetId: string, signatureData: string) =>
+      request<Worksheet>(`/api/worksheets/${worksheetId}/customer-signature`, {
+        method: 'POST',
+        body: JSON.stringify({ signatureData }),
       }),
   },
 };

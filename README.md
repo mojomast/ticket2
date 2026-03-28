@@ -57,7 +57,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Travel entries with distance, rate per km, addresses
 - 4 note types: Interne, Visible Client, Diagnostic Finding, Procédure
 - Follow-up reminders (5 types) with hourly scheduler and notification delivery
-- Tech signature capture in the current staff workflow (customer signature flow reserved for future dedicated portal/audited flow)
+- Technician signature capture from staff workflow plus customer signature capture from the portal with audit logging
 - PDF generation via pdf-lib with labor/parts/travel tables and signatures
 - Automatic financial total recalculation on every mutation
 - Notes-to-KB integration (create knowledge base article from diagnostic findings)
@@ -98,6 +98,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - UI polish pass: inline form validation feedback, empty states for sparse views, responsive worksheet/backups tables, aria-label coverage for icon-only controls, reusable confirmation dialogs for destructive actions
 - Review hardening pass: ticket attachment/message authorization checks, appointment access validation, stricter scheduling chronology rules, safer demo reset logout, and worksheet enum/signature alignment
 - Platform hardening pass: encrypted work-order device passwords, Decimal-backed money fields, real pagination on capped list pages, refreshed help copy, and notification retention cleanup
+- Workflow completion pass: customer-portal worksheet signatures with audit trail, admin-managed notification retention settings, and transactional soft-delete cascading for users
 - Audit logging for ticket, work order, and user changes
 - Full French/English internationalization (~1400 translation keys) wired into all 38 pages
 - Demo mode with persona selector (dropdown for customers) and data reset (admin-only)
@@ -458,9 +459,9 @@ See `.env.example` for the full template. Key variables:
 | `FRONTEND_URL` | Yes | Frontend origin for CORS/CSRF (e.g. `http://localhost:5173`) |
 | `PORT` | No | Backend port (default: 3000, dev typically uses 3200) |
 | `DEMO_MODE` | No | Enable demo login/reset (default: false) |
-| `NOTIFICATION_RETENTION_ENABLED` | No | Enable scheduled notification cleanup (default: true) |
-| `NOTIFICATION_RETENTION_READ_DAYS` | No | Delete read notifications older than N days (default: 30) |
-| `NOTIFICATION_RETENTION_UNREAD_DAYS` | No | Delete unread notifications older than N days (default: 180) |
+| `NOTIFICATION_RETENTION_ENABLED` | No | Default fallback for scheduled notification cleanup (default: true; admin UI can override live) |
+| `NOTIFICATION_RETENTION_READ_DAYS` | No | Default read-notification retention in days (default: 30; admin UI can override live) |
+| `NOTIFICATION_RETENTION_UNREAD_DAYS` | No | Default unread-notification retention in days (default: 180; admin UI can override live) |
 | `LOG_LEVEL` | No | pino log level (default: info) |
 | `NODE_ENV` | No | development / production |
 | `M365_TENANT_ID` | No | Microsoft 365 tenant for email |
@@ -663,7 +664,8 @@ All authenticated endpoints require a `valitek-auth` httpOnly cookie (set on log
 | POST | `/api/worksheets/:id/follow-ups` | Admin, Tech | Create follow-up |
 | PATCH | `/api/worksheets/:id/follow-ups/:followUpId` | Admin, Tech | Update follow-up |
 | DELETE | `/api/worksheets/:id/follow-ups/:followUpId` | Admin, Tech | Delete follow-up |
-| POST | `/api/worksheets/:id/signature` | Admin, Tech | Save signature |
+| POST | `/api/worksheets/:id/signature` | Admin, Tech | Save technician signature |
+| POST | `/api/worksheets/:id/customer-signature` | Customer | Save customer signature from portal |
 
 #### Knowledge Base
 | Method | Path | Roles | Description |
@@ -871,7 +873,7 @@ Uses `pdf-lib` to generate professional PDF documents including:
 - Header with company info and worksheet metadata
 - Labor, parts, and travel tables with line totals
 - Notes (client-visible only)
-- Technician signature (current implemented workflow) rendered on the PDF; customer-signature flow is intentionally deferred until a dedicated audited portal flow exists
+- Technician and customer signatures are rendered on the PDF when present; customer signatures are captured from the portal and audited on submission
 - Grand total summary
 
 ### Admin Worksheet Config
@@ -990,7 +992,7 @@ All routes use French-language paths. Components are lazy-loaded.
 - **Constants** (`src/lib/constants.ts`): All status labels, colors, and priority mappings in one file
 - **UI guardrails**: High-traffic forms now show inline validation errors; destructive actions use a shared `ConfirmDialog`; icon-only controls include `aria-label`s; wide worksheet/backups tables keep mobile overflow wrappers
 - **StatusBadge** (`src/components/shared/StatusBadge.tsx`): Supports `type="ticket"`, `type="appointment"`, `type="workorder"`
-- **SignaturePad** (`src/components/shared/SignaturePad.tsx`): Canvas-based technician signature capture component in the current implemented workflow
+- **SignaturePad** (`src/components/shared/SignaturePad.tsx`): Canvas-based signature capture component used by technician and customer worksheet-signature flows
 - **TanStack Query keys**: `['tickets']`, `['workorders']`, `['worksheets']`, `['kb-articles']`, `['customer-notes']`, `['notifications']`, etc.
 
 ---

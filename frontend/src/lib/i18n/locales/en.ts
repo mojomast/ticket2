@@ -300,6 +300,15 @@ export const en: Record<string, string> = {
   'settings.thresholdAmount': 'Threshold amount ($)',
   'settings.saveThreshold': 'Save threshold',
   'settings.thresholdSaved': 'Threshold saved successfully',
+  'settings.notificationRetention': 'Notification retention',
+  'settings.notificationRetentionDesc': 'Control how long read and unread notifications are kept before the scheduled cleanup job removes them.',
+  'settings.notificationRetentionEnabled': 'Enable scheduled notification cleanup',
+  'settings.notificationReadRetentionDays': 'Delete read notifications after (days)',
+  'settings.notificationUnreadRetentionDays': 'Delete unread notifications after (days)',
+  'settings.notificationRetentionLive': 'Changes apply to the next scheduled cleanup run without restarting the app.',
+  'settings.saveNotificationRetention': 'Save retention policy',
+  'settings.retentionSaved': 'Retention policy saved',
+  'settings.retentionValidationDays': 'Enter a whole number greater than 0',
 
   // ─── Worksheet Configuration ───
   'settings.worksheetConfig': 'Worksheet configuration',
@@ -1587,6 +1596,7 @@ export const en: Record<string, string> = {
   'worksheet.saveSignature': 'Save Signature',
   'worksheet.signatureSaved': 'Signature saved successfully',
   'worksheet.customerSignatureDisabledStaff': 'Customer signatures can no longer be captured from the staff interface. Use a customer-controlled signing flow when it is available.',
+  'worksheet.customerSignaturePortalHelp': 'Review the worksheet details, then sign here to confirm the customer copy from the portal.',
   'worksheet.drawSignature': 'Draw your signature below',
   'worksheet.approvedAt': 'Approved on',
   'worksheet.billedAt': 'Billed on',

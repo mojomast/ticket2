@@ -10,7 +10,7 @@ import { requireAuth, requireRole } from './middleware/auth.middleware.js';
 import { logger } from './lib/logger.js';
 import { config } from './lib/config.js';
 import { processFollowUpReminders } from './services/followup-reminder.service.js';
-import { cleanupExpiredNotifications, getNotificationRetentionPolicy } from './services/notification.service.js';
+import { cleanupExpiredNotifications } from './services/notification.service.js';
 
 import authRoutes from './routes/auth.routes.js';
 import ticketRoutes from './routes/ticket.routes.js';
@@ -110,7 +110,6 @@ app.route('/api/admin/backups', backupRoutes);
 
 // ─── Start Server ───
 const port = parseInt(process.env.PORT || '3000', 10);
-const notificationRetentionPolicy = getNotificationRetentionPolicy();
 
 serve({ fetch: app.fetch, port }, (info) => {
   logger.info(`Server running on http://localhost:${info.port}`);
@@ -136,7 +135,7 @@ setInterval(runFollowUpReminders, 3_600_000); // every hour
 
 async function runNotificationRetentionCleanup() {
   try {
-    const result = await cleanupExpiredNotifications(notificationRetentionPolicy);
+    const result = await cleanupExpiredNotifications();
 
     if (!result.enabled) {
       logger.info('Notification retention cleanup disabled by configuration');

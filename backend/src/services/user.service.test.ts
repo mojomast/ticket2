@@ -10,6 +10,7 @@ const { mockHashPassword, mockVerifyPassword, mockPrisma } = vi.hoisted(() => {
     mockHashPassword: vi.fn(),
     mockVerifyPassword: vi.fn(),
     mockPrisma: {
+      $transaction: vi.fn(),
       user: {
         findUnique: vi.fn(),
         findFirst: vi.fn(),
@@ -17,6 +18,24 @@ const { mockHashPassword, mockVerifyPassword, mockPrisma } = vi.hoisted(() => {
         create: vi.fn(),
         update: vi.fn(),
         count: vi.fn(),
+      },
+      ticket: {
+        updateMany: vi.fn(),
+      },
+      workOrder: {
+        updateMany: vi.fn(),
+      },
+      appointment: {
+        updateMany: vi.fn(),
+      },
+      appointmentProposal: {
+        updateMany: vi.fn(),
+      },
+      worksheet: {
+        updateMany: vi.fn(),
+      },
+      auditLog: {
+        create: vi.fn(),
       },
     },
   };
@@ -40,6 +59,13 @@ import { DEFAULT_TECH_PERMISSIONS } from '../types/index.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma));
+  mockPrisma.ticket.updateMany.mockResolvedValue({ count: 0 });
+  mockPrisma.workOrder.updateMany.mockResolvedValue({ count: 0 });
+  mockPrisma.appointment.updateMany.mockResolvedValue({ count: 0 });
+  mockPrisma.appointmentProposal.updateMany.mockResolvedValue({ count: 0 });
+  mockPrisma.worksheet.updateMany.mockResolvedValue({ count: 0 });
+  mockPrisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 });
 
 // ─── createUser Tests ───
@@ -141,6 +167,9 @@ describe('deleteUser', () => {
     mockPrisma.user.findFirst.mockResolvedValue({
       id: 'user-1',
       email: 'test@test.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: 'CUSTOMER',
       isActive: true,
       deletedAt: null,
     });
@@ -163,6 +192,68 @@ describe('deleteUser', () => {
     );
     expect(result.isActive).toBe(false);
     expect((result as any).deletedAt).toBeTruthy();
+    expect(mockPrisma.appointmentProposal.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          proposedById: 'user-1',
+          status: 'PROPOSEE',
+          deletedAt: null,
+        }),
+        data: expect.objectContaining({
+          status: 'ANNULEE',
+          respondedAt: expect.any(Date),
+        }),
+      })
+    );
+    expect(mockPrisma.ticket.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.workOrder.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.appointment.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.worksheet.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('unassigns technician-owned active work and soft-deletes draft worksheets in the same transaction', async () => {
+    mockPrisma.user.findFirst.mockResolvedValue({
+      id: 'tech-1',
+      email: 'tech@test.com',
+      firstName: 'Tech',
+      lastName: 'User',
+      role: 'TECHNICIAN',
+      isActive: true,
+      deletedAt: null,
+    });
+    mockPrisma.user.update.mockResolvedValue({
+      id: 'tech-1',
+      isActive: false,
+      deletedAt: new Date(),
+    });
+
+    await deleteUser('tech-1');
+
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.ticket.updateMany).toHaveBeenCalledWith({
+      where: { technicianId: 'tech-1', deletedAt: null },
+      data: { technicianId: null },
+    });
+    expect(mockPrisma.workOrder.updateMany).toHaveBeenCalledWith({
+      where: { technicianId: 'tech-1', deletedAt: null },
+      data: { technicianId: null },
+    });
+    expect(mockPrisma.appointment.updateMany).toHaveBeenCalledWith({
+      where: {
+        technicianId: 'tech-1',
+        deletedAt: null,
+        status: { in: ['DEMANDE', 'PLANIFIE', 'CONFIRME', 'EN_COURS'] },
+      },
+      data: { technicianId: null },
+    });
+    expect(mockPrisma.worksheet.updateMany).toHaveBeenCalledWith({
+      where: {
+        technicianId: 'tech-1',
+        deletedAt: null,
+        status: 'BROUILLON',
+      },
+      data: { deletedAt: expect.any(Date) },
+    });
   });
 });
 

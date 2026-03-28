@@ -1,11 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { formatDate, formatDateTime } from '../../lib/utils';
 import {
   WS_STATUS_COLORS,
 } from '../../lib/constants';
 import { useTranslation } from '../../lib/i18n/hook';
+import SignaturePad from '../../components/shared/SignaturePad';
+import { useToast } from '../../hooks/use-toast';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
@@ -17,12 +19,24 @@ function money(value: number | null | undefined): string {
 export default function PortalWorksheetDetail() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const toast = useToast();
+  const queryClient = useQueryClient();
 
   // ─── Query ───
   const { data: ws, isLoading, error } = useQuery({
     queryKey: ['worksheet', id],
     queryFn: () => api.worksheets.get(id!),
     enabled: !!id,
+  });
+
+  const saveCustomerSignatureMutation = useMutation({
+    mutationFn: (signatureData: string) => api.worksheets.saveCustomerSignature(id!, signatureData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
+      queryClient.invalidateQueries({ queryKey: ['worksheets'] });
+      toast.success(t('worksheet.signatureSaved'));
+    },
+    onError: (err: Error) => toast.error(err.message || t('common.error')),
   });
 
   const handleDownloadPdf = () => {
@@ -50,6 +64,7 @@ export default function PortalWorksheetDetail() {
   }
 
   const statusColors = WS_STATUS_COLORS[ws.status] || { bg: 'bg-gray-100', text: 'text-gray-700' };
+  const canCustomerSign = !ws.custSignature && ws.status !== 'BROUILLON' && ws.status !== 'ANNULEE' && ws.status !== 'FACTUREE';
 
   // Only show notes visible to customers
   const visibleNotes = ws.notes.filter((n) => n.noteType === 'VISIBLE_CLIENT');
@@ -442,6 +457,16 @@ export default function PortalWorksheetDetail() {
                     {t('worksheet.signedAt')}: {formatDateTime(ws.custSignedAt)}
                   </p>
                 )}
+              </div>
+            ) : canCustomerSign ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {t('worksheet.customerSignaturePortalHelp')}
+                </p>
+                <SignaturePad
+                  onSave={(dataUrl) => saveCustomerSignatureMutation.mutate(dataUrl)}
+                  disabled={saveCustomerSignatureMutation.isPending}
+                />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">{t('worksheet.noSignature')}</p>

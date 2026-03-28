@@ -15,6 +15,7 @@ import type {
   CreateWorksheetNoteInput,
   CreateFollowUpInput,
   UpdateFollowUpInput,
+  SaveCustomerSignatureInput,
   SaveSignatureInput,
 } from '../validations/worksheet.js';
 import * as notificationService from './notification.service.js';
@@ -187,6 +188,16 @@ async function findWorksheetOrThrow(id: string) {
   return ws;
 }
 
+function isCustomerAuthorizedForWorksheet(
+  ws: {
+    workOrder?: { customerId?: string | null } | null;
+    ticket?: { customerId?: string | null } | null;
+  },
+  userId: string,
+) {
+  return ws.workOrder?.customerId === userId || ws.ticket?.customerId === userId;
+}
+
 // ─── Internal: Verify worksheet is in editable status (BROUILLON or REVISEE) ───
 
 async function requireEditableStatus(worksheetId: string) {
@@ -287,9 +298,7 @@ export async function getWorksheetById(id: string, userId: string, role: UserRol
 
   // Access control: CUSTOMER can only view worksheets for their own work orders or tickets
   if (role === 'CUSTOMER') {
-    const isOwner =
-      (ws.workOrder && ws.workOrder.customerId === userId) ||
-      (ws.ticket && ws.ticket.customerId === userId);
+    const isOwner = isCustomerAuthorizedForWorksheet(ws, userId);
     if (!isOwner) throw AppError.forbidden('Accès refusé');
 
     // Fix 2: Filter out internal notes for customers
@@ -1194,6 +1203,77 @@ export async function saveSignature(worksheetId: string, data: SaveSignatureInpu
     action: 'SIGNATURE_SAVED',
     userId,
     newValue: { type: data.type, signedAt: updatePayload.techSignedAt },
+  }).catch(() => {});
+
+  return updated;
+}
+
+export async function saveCustomerSignature(
+  worksheetId: string,
+  data: SaveCustomerSignatureInput,
+  userId: string,
+  ipAddress?: string,
+  userAgent?: string,
+) {
+  const ws = await prisma.worksheet.findFirst({
+    where: { id: worksheetId, deletedAt: null },
+    select: {
+      id: true,
+      status: true,
+      custSignature: true,
+      workOrder: {
+        select: {
+          id: true,
+          orderNumber: true,
+          customerId: true,
+        },
+      },
+      ticket: {
+        select: {
+          id: true,
+          ticketNumber: true,
+          customerId: true,
+        },
+      },
+    },
+  });
+  if (!ws) throw AppError.notFound('Feuille de travail introuvable');
+
+  if (!isCustomerAuthorizedForWorksheet(ws, userId)) {
+    throw AppError.forbidden('Accès refusé');
+  }
+
+  if (ws.status === 'BROUILLON' || ws.status === 'ANNULEE' || ws.status === 'FACTUREE') {
+    throw AppError.badRequest('Cette feuille de travail n’est pas disponible pour signature client');
+  }
+
+  const signedAt = new Date();
+
+  const updated = await prisma.worksheet.update({
+    where: { id: worksheetId },
+    data: {
+      custSignature: data.signatureData,
+      custSignedAt: signedAt,
+    },
+    include: WORKSHEET_DETAIL_INCLUDE,
+  });
+
+  createAuditLog({
+    entityType: 'WORKSHEET',
+    entityId: worksheetId,
+    action: 'CUSTOMER_SIGNATURE_SUBMITTED',
+    userId,
+    oldValue: ws.custSignature ? { hadSignature: true } : undefined,
+    newValue: {
+      signedAt,
+      worksheetId,
+      workOrderId: ws.workOrder?.id ?? null,
+      workOrderNumber: ws.workOrder?.orderNumber ?? null,
+      ticketId: ws.ticket?.id ?? null,
+      ticketNumber: ws.ticket?.ticketNumber ?? null,
+      ipAddress: ipAddress ?? null,
+      userAgent: userAgent ?? null,
+    },
   }).catch(() => {});
 
   return updated;

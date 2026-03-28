@@ -7,6 +7,9 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 const { mockPrisma, mockConfig } = vi.hoisted(() => ({
   mockPrisma: {
+    systemConfig: {
+      findUnique: vi.fn(),
+    },
     notification: {
       deleteMany: vi.fn(),
       findMany: vi.fn(),
@@ -43,6 +46,7 @@ describe('notification retention cleanup', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-03-28T12:00:00.000Z'));
+    mockPrisma.systemConfig.findUnique.mockResolvedValue(null);
     mockPrisma.notification.deleteMany.mockResolvedValue({ count: 0 });
     mockConfig.NOTIFICATION_RETENTION_ENABLED = true;
     mockConfig.NOTIFICATION_RETENTION_READ_DAYS = 30;
@@ -53,14 +57,48 @@ describe('notification retention cleanup', () => {
     vi.useRealTimers();
   });
 
-  it('returns configured retention policy', () => {
+  it('returns env retention policy when no system config is stored', async () => {
     mockConfig.NOTIFICATION_RETENTION_READ_DAYS = 14;
     mockConfig.NOTIFICATION_RETENTION_UNREAD_DAYS = 90;
 
-    expect(getNotificationRetentionPolicy()).toEqual({
+    await expect(getNotificationRetentionPolicy()).resolves.toEqual({
       enabled: true,
       readDays: 14,
       unreadDays: 90,
+    });
+  });
+
+  it('prefers system config retention policy when available', async () => {
+    mockPrisma.systemConfig.findUnique.mockResolvedValue({
+      key: 'notification_retention_policy',
+      value: {
+        enabled: false,
+        readDays: 7,
+        unreadDays: 45,
+      },
+    });
+
+    await expect(getNotificationRetentionPolicy()).resolves.toEqual({
+      enabled: false,
+      readDays: 7,
+      unreadDays: 45,
+    });
+  });
+
+  it('falls back to env values for invalid stored retention fields', async () => {
+    mockPrisma.systemConfig.findUnique.mockResolvedValue({
+      key: 'notification_retention_policy',
+      value: {
+        enabled: true,
+        readDays: 0,
+        unreadDays: 'bad',
+      },
+    });
+
+    await expect(getNotificationRetentionPolicy()).resolves.toEqual({
+      enabled: true,
+      readDays: 30,
+      unreadDays: 180,
     });
   });
 

@@ -178,13 +178,21 @@ export type UpdateFollowUpInput = z.infer<typeof updateFollowUpSchema>;
 
 // ─── Save Signature ───
 
+const signatureDataSchema = z.string().min(1, 'Les données de signature sont requises').max(500000, 'La signature ne peut pas dépasser 500 Ko')
+  .refine(
+    (val) => val.startsWith('data:image/'),
+    'Les données de signature doivent être un URI data base64 valide (data:image/...)',
+  );
+
 export const saveSignatureSchema = z.object({
   type: z.literal('tech'),
-  signatureData: z.string().min(1, 'Les données de signature sont requises').max(500000, 'La signature ne peut pas dépasser 500 Ko')
-    .refine(
-      (val) => val.startsWith('data:image/'),
-      'Les données de signature doivent être un URI data base64 valide (data:image/...)',
-    ),
+  signatureData: signatureDataSchema,
 });
 
 export type SaveSignatureInput = z.infer<typeof saveSignatureSchema>;
+
+export const saveCustomerSignatureSchema = z.object({
+  signatureData: signatureDataSchema,
+});
+
+export type SaveCustomerSignatureInput = z.infer<typeof saveCustomerSignatureSchema>;

@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { validateBody } from '../middleware/validate.middleware.js';
+import { getNotificationRetentionPolicy } from '../services/notification.service.js';
 import { brandingSchema, configValueSchema } from '../validations/config.js';
 import type { BrandingInput, ConfigValueInput } from '../validations/config.js';
 
@@ -14,6 +16,12 @@ const MASKED_FIELDS: Record<string, string[]> = {
   email_config: ['clientSecret'],
   sms_config: ['password'],
 };
+
+const notificationRetentionPolicySchema = z.object({
+  enabled: z.boolean(),
+  readDays: z.number().int().positive(),
+  unreadDays: z.number().int().positive(),
+});
 
 function maskSecrets(key: string, value: unknown): unknown {
   if (!SENSITIVE_KEYS.has(key) || !value || typeof value !== 'object') return value;
@@ -47,6 +55,15 @@ app.get('/branding', async (c) => {
 
 app.get('/:key', async (c) => {
   const key = c.req.param('key');
+
+  if (key === 'notification_retention_policy') {
+    const policy = await getNotificationRetentionPolicy();
+    return c.json({
+      data: { key, value: policy },
+      error: null,
+    });
+  }
+
   const config = await prisma.systemConfig.findUnique({ where: { key } });
   if (!config) throw AppError.notFound('Configuration introuvable');
   return c.json({
@@ -68,6 +85,13 @@ app.put('/branding', validateBody(brandingSchema), async (c) => {
 app.put('/:key', validateBody(configValueSchema), async (c) => {
   const key = c.req.param('key');
   const body = c.get('body') as ConfigValueInput;
+
+  if (key === 'notification_retention_policy') {
+    const result = notificationRetentionPolicySchema.safeParse(body.value);
+    if (!result.success) {
+      throw AppError.badRequest('Politique de retention des notifications invalide');
+    }
+  }
 
   // For sensitive configs, merge masked fields with existing values
   // so the frontend can send back masked values without overwriting secrets

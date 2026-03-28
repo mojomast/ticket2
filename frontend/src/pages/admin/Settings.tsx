@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../api/client';
+import { api, type NotificationRetentionPolicy } from '../../api/client';
 import { useToast } from '../../hooks/use-toast';
 import { useAuthStore } from '../../stores/auth-store';
 import HelpTooltip from '../../components/shared/HelpTooltip';
@@ -42,6 +42,11 @@ export default function AdminSettings() {
   // ── Worksheet threshold state ───────────────────────────────────
   const [thresholdAmount, setThresholdAmount] = useState(500);
 
+  // ── Notification retention state ────────────────────────────────
+  const [retentionEnabled, setRetentionEnabled] = useState(true);
+  const [retentionReadDays, setRetentionReadDays] = useState(30);
+  const [retentionUnreadDays, setRetentionUnreadDays] = useState(180);
+
   // ── Worksheet config state ─────────────────────────────────────
   const [wsDefaultHourlyRate, setWsDefaultHourlyRate] = useState(85);
   const [wsDefaultRatePerKm, setWsDefaultRatePerKm] = useState(0.68);
@@ -58,6 +63,7 @@ export default function AdminSettings() {
   const [brandingErrors, setBrandingErrors] = useState<Record<string, string>>({});
   const [emailErrors, setEmailErrors] = useState<Record<string, string>>({});
   const [smsErrors, setSmsErrors] = useState<Record<string, string>>({});
+  const [retentionErrors, setRetentionErrors] = useState<Record<string, string>>({});
   // ── Queries ─────────────────────────────────────────────────────
   const { data: branding, isLoading, isError } = useQuery({
     queryKey: ['config', 'branding'],
@@ -77,6 +83,11 @@ export default function AdminSettings() {
   const { data: thresholdConfig } = useQuery({
     queryKey: ['config', 'worksheet_alert_threshold'],
     queryFn: () => api.admin.config.get('worksheet_alert_threshold').catch(() => null),
+  });
+
+  const { data: notificationRetentionConfig } = useQuery({
+    queryKey: ['config', 'notification_retention_policy'],
+    queryFn: () => api.admin.config.get('notification_retention_policy').catch(() => null),
   });
 
   const { data: worksheetConfigData } = useQuery({
@@ -126,6 +137,17 @@ export default function AdminSettings() {
     }
   }, [thresholdConfig]);
 
+  // ── Populate notification retention policy ──────────────────────
+  useEffect(() => {
+    if (!notificationRetentionConfig?.value || typeof notificationRetentionConfig.value !== 'object') return;
+
+    const value = notificationRetentionConfig.value as Partial<NotificationRetentionPolicy>;
+
+    if (typeof value.enabled === 'boolean') setRetentionEnabled(value.enabled);
+    if (typeof value.readDays === 'number') setRetentionReadDays(value.readDays);
+    if (typeof value.unreadDays === 'number') setRetentionUnreadDays(value.unreadDays);
+  }, [notificationRetentionConfig]);
+
   // ── Populate worksheet config ──────────────────────────────────
   useEffect(() => {
     if (!worksheetConfigData?.value || typeof worksheetConfigData.value !== 'object') return;
@@ -168,6 +190,21 @@ export default function AdminSettings() {
     if (!voipmsPassword.trim()) errs.password = t('validation.smsPasswordRequired');
     if (!voipmsDid.trim()) errs.did = t('validation.smsDidRequired');
     setSmsErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function validateRetentionPolicy(): boolean {
+    const errs: Record<string, string> = {};
+
+    if (!Number.isInteger(retentionReadDays) || retentionReadDays <= 0) {
+      errs.readDays = t('settings.retentionValidationDays');
+    }
+
+    if (!Number.isInteger(retentionUnreadDays) || retentionUnreadDays <= 0) {
+      errs.unreadDays = t('settings.retentionValidationDays');
+    }
+
+    setRetentionErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
@@ -229,6 +266,22 @@ export default function AdminSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config', 'worksheet_alert_threshold'] });
       toast.success(t('settings.thresholdSaved'));
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || t('settings.saveError'));
+    },
+  });
+
+  const saveRetentionMutation = useMutation({
+    mutationFn: () =>
+      api.admin.config.set('notification_retention_policy', {
+        enabled: retentionEnabled,
+        readDays: retentionReadDays,
+        unreadDays: retentionUnreadDays,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['config', 'notification_retention_policy'] });
+      toast.success(t('settings.retentionSaved'));
     },
     onError: (err: Error) => {
       toast.error(err.message || t('settings.saveError'));
@@ -633,6 +686,82 @@ export default function AdminSettings() {
             disabled={saveThresholdMutation.isPending}
           >
             {saveThresholdMutation.isPending ? t('common.saving') : t('settings.saveThreshold')}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Notification Retention ── */}
+      <Card className="max-w-xl">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">{t('settings.notificationRetention')}</CardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t('settings.notificationRetentionDesc')}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="notification-retention-enabled"
+              checked={retentionEnabled}
+              onCheckedChange={(checked) => setRetentionEnabled(checked === true)}
+            />
+            <label htmlFor="notification-retention-enabled" className="text-sm cursor-pointer">
+              {t('settings.notificationRetentionEnabled')}
+            </label>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="notification-retention-read-days">{t('settings.notificationReadRetentionDays')}</Label>
+            <Input
+              id="notification-retention-read-days"
+              type="number"
+              min={1}
+              step={1}
+              value={retentionReadDays}
+              onChange={(e) => {
+                setRetentionReadDays(Number(e.target.value));
+                setRetentionErrors((prev) => {
+                  const { readDays: _, ...rest } = prev;
+                  return rest;
+                });
+              }}
+              className={`max-w-[200px] ${retentionErrors.readDays ? 'border-destructive' : ''}`}
+            />
+            {retentionErrors.readDays && <p className="text-sm text-destructive mt-1">{retentionErrors.readDays}</p>}
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="notification-retention-unread-days">{t('settings.notificationUnreadRetentionDays')}</Label>
+            <Input
+              id="notification-retention-unread-days"
+              type="number"
+              min={1}
+              step={1}
+              value={retentionUnreadDays}
+              onChange={(e) => {
+                setRetentionUnreadDays(Number(e.target.value));
+                setRetentionErrors((prev) => {
+                  const { unreadDays: _, ...rest } = prev;
+                  return rest;
+                });
+              }}
+              className={`max-w-[200px] ${retentionErrors.unreadDays ? 'border-destructive' : ''}`}
+            />
+            {retentionErrors.unreadDays && <p className="text-sm text-destructive mt-1">{retentionErrors.unreadDays}</p>}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {t('settings.notificationRetentionLive')}
+          </p>
+
+          <Button
+            onClick={() => { if (validateRetentionPolicy()) saveRetentionMutation.mutate(); }}
+            disabled={saveRetentionMutation.isPending}
+          >
+            {saveRetentionMutation.isPending ? t('common.saving') : t('settings.saveNotificationRetention')}
           </Button>
         </CardContent>
       </Card>

@@ -6,7 +6,7 @@ import {
   worksheetListQuerySchema, createLaborEntrySchema, updateLaborEntrySchema,
   createPartSchema, updatePartSchema, createTravelEntrySchema,
   updateTravelEntrySchema, createWorksheetNoteSchema, createFollowUpSchema,
-  updateFollowUpSchema, saveSignatureSchema,
+  updateFollowUpSchema, saveCustomerSignatureSchema, saveSignatureSchema,
 } from '../validations/worksheet.js';
 import * as worksheetService from '../services/worksheet.service.js';
 import { generateWorksheetPdf } from '../services/worksheet-pdf.service.js';
@@ -225,6 +225,19 @@ app.post('/:id/signature', requireRole('ADMIN', 'TECHNICIAN'), validateBody(save
   const session = c.get('session');
   const data = c.get('body') as any;
   const worksheet = await worksheetService.saveSignature(c.req.param('id'), data, session.user.id, session.user.role);
+  return c.json({ data: worksheet, error: null });
+});
+
+app.post('/:id/customer-signature', requireRole('CUSTOMER'), validateBody(saveCustomerSignatureSchema), async (c) => {
+  const session = c.get('session');
+  const data = c.get('body') as any;
+  const worksheet = await worksheetService.saveCustomerSignature(
+    c.req.param('id'),
+    data,
+    session.user.id,
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || c.req.header('x-real-ip') || undefined,
+    c.req.header('user-agent') || undefined,
+  );
   return c.json({ data: worksheet, error: null });
 });
 

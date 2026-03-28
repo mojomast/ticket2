@@ -300,6 +300,15 @@ export const fr: Record<string, string> = {
   'settings.thresholdAmount': 'Montant seuil ($)',
   'settings.saveThreshold': 'Enregistrer le seuil',
   'settings.thresholdSaved': 'Seuil enregistré avec succès',
+  'settings.notificationRetention': 'Rétention des notifications',
+  'settings.notificationRetentionDesc': 'Contrôlez combien de temps les notifications lues et non lues sont conservées avant leur suppression par la tâche planifiée.',
+  'settings.notificationRetentionEnabled': 'Activer le nettoyage planifié des notifications',
+  'settings.notificationReadRetentionDays': 'Supprimer les notifications lues après (jours)',
+  'settings.notificationUnreadRetentionDays': 'Supprimer les notifications non lues après (jours)',
+  'settings.notificationRetentionLive': 'Les changements s’appliquent au prochain nettoyage planifié sans redémarrage de l’application.',
+  'settings.saveNotificationRetention': 'Enregistrer la politique de rétention',
+  'settings.retentionSaved': 'Politique de rétention enregistrée',
+  'settings.retentionValidationDays': 'Entrez un nombre entier supérieur à 0',
 
   // ─── Worksheet Configuration ───
   'settings.worksheetConfig': 'Configuration des feuilles de travail',
@@ -1587,6 +1596,7 @@ export const fr: Record<string, string> = {
   'worksheet.saveSignature': 'Enregistrer la signature',
   'worksheet.signatureSaved': 'Signature enregistrée avec succès',
   'worksheet.customerSignatureDisabledStaff': 'La signature client ne peut plus être capturée depuis l\'interface employé. Utilisez un parcours contrôlé par le client lorsqu\'il sera disponible.',
+  'worksheet.customerSignaturePortalHelp': 'Passez en revue la feuille de travail, puis signez ici depuis le portail pour confirmer votre copie client.',
   'worksheet.drawSignature': 'Dessinez votre signature ci-dessous',
   'worksheet.approvedAt': 'Approuvée le',
   'worksheet.billedAt': 'Facturée le',
