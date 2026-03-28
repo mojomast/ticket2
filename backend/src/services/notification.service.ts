@@ -2,12 +2,76 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import type { NotificationType } from '@prisma/client';
 import { getPagination, buildPaginatedResponse } from '../types/index.js';
+import { config } from '../lib/config.js';
 
 // ─── Query types ───
 
 interface NotificationQuery {
   page?: number | string;
   limit?: number | string;
+}
+
+export interface NotificationRetentionPolicy {
+  enabled: boolean;
+  readDays: number;
+  unreadDays: number;
+}
+
+export function getNotificationRetentionPolicy(): NotificationRetentionPolicy {
+  return {
+    enabled: config.NOTIFICATION_RETENTION_ENABLED,
+    readDays: config.NOTIFICATION_RETENTION_READ_DAYS,
+    unreadDays: config.NOTIFICATION_RETENTION_UNREAD_DAYS,
+  };
+}
+
+function subtractDays(days: number) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+export async function cleanupExpiredNotifications(policy = getNotificationRetentionPolicy()) {
+  if (!policy.enabled) {
+    return {
+      enabled: false,
+      readDeleted: 0,
+      unreadDeleted: 0,
+      totalDeleted: 0,
+      thresholds: null,
+    };
+  }
+
+  const readThreshold = subtractDays(policy.readDays);
+  const unreadThreshold = subtractDays(policy.unreadDays);
+
+  const [readResult, unreadResult] = await Promise.all([
+    prisma.notification.deleteMany({
+      where: {
+        readAt: {
+          not: null,
+          lt: readThreshold,
+        },
+      },
+    }),
+    prisma.notification.deleteMany({
+      where: {
+        readAt: null,
+        createdAt: {
+          lt: unreadThreshold,
+        },
+      },
+    }),
+  ]);
+
+  return {
+    enabled: true,
+    readDeleted: readResult.count,
+    unreadDeleted: unreadResult.count,
+    totalDeleted: readResult.count + unreadResult.count,
+    thresholds: {
+      readBefore: readThreshold,
+      unreadBefore: unreadThreshold,
+    },
+  };
 }
 
 export async function getNotifications(userId: string, query: NotificationQuery) {

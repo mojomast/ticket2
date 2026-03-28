@@ -10,6 +10,12 @@ import { createAuditLog } from './audit.service.js';
 import { sendEmail } from './email.service.js';
 import { sendSms } from './sms.service.js';
 import { logger } from '../lib/logger.js';
+import {
+  decryptWorkOrderRecord,
+  decryptWorkOrderRecords,
+  encryptWorkOrderPassword,
+} from '../lib/workorder-password.js';
+import { formatMoneyValue, toMoneyDecimal } from '../lib/decimal.js';
 
 // ─── Prisma Includes ───
 
@@ -90,17 +96,17 @@ export async function createWorkOrder(data: CreateWorkOrderInput, userId: string
       deviceModel: data.deviceModel,
       deviceSerial: data.deviceSerial || null,
       deviceColor: data.deviceColor || null,
-      devicePassword: data.devicePassword || null,
+      devicePassword: encryptWorkOrderPassword(data.devicePassword || null),
       deviceOs: data.deviceOs || null,
       conditionNotes: data.conditionNotes || null,
       accessories: data.accessories || [],
       conditionChecklist: data.conditionChecklist || Prisma.JsonNull,
       reportedIssue: data.reportedIssue,
       serviceCategory: data.serviceCategory || 'REPARATION',
-      estimatedCost: data.estimatedCost || null,
-      maxAuthorizedSpend: data.maxAuthorizedSpend || null,
-      depositAmount: data.depositAmount || null,
-      diagnosticFee: data.diagnosticFee || null,
+      estimatedCost: data.estimatedCost == null ? null : toMoneyDecimal(data.estimatedCost),
+      maxAuthorizedSpend: data.maxAuthorizedSpend == null ? null : toMoneyDecimal(data.maxAuthorizedSpend),
+      depositAmount: data.depositAmount == null ? null : toMoneyDecimal(data.depositAmount),
+      diagnosticFee: data.diagnosticFee == null ? null : toMoneyDecimal(data.diagnosticFee),
       dataBackupConsent: data.dataBackupConsent || 'NON_APPLICABLE',
       termsAccepted: data.termsAccepted || false,
       termsAcceptedAt: data.termsAccepted ? new Date() : null,
@@ -122,7 +128,7 @@ export async function createWorkOrder(data: CreateWorkOrderInput, userId: string
     newValue: { orderNumber, customerName: data.customerName, reportedIssue: data.reportedIssue },
   }).catch(() => {});
 
-  return workOrder;
+  return decryptWorkOrderRecord(workOrder);
 }
 
 export async function getWorkOrders(query: WorkOrderListQuery, userId: string, role: UserRole) {
@@ -184,7 +190,7 @@ export async function getWorkOrders(query: WorkOrderListQuery, userId: string, r
     prisma.workOrder.count({ where }),
   ]);
 
-  return buildPaginatedResponse(workOrders, total, page, limit);
+  return buildPaginatedResponse(decryptWorkOrderRecords(workOrders), total, page, limit);
 }
 
 export async function getWorkOrderById(id: string, userId: string, role: UserRole) {
@@ -200,7 +206,7 @@ export async function getWorkOrderById(id: string, userId: string, role: UserRol
     throw AppError.forbidden();
   }
 
-  return wo;
+  return decryptWorkOrderRecord(wo);
 }
 
 export async function updateWorkOrder(id: string, data: UpdateWorkOrderInput, userId: string, role: UserRole) {
@@ -218,7 +224,6 @@ export async function updateWorkOrder(id: string, data: UpdateWorkOrderInput, us
     'deviceType', 'deviceBrand', 'deviceModel', 'deviceSerial', 'deviceColor',
     'devicePassword', 'deviceOs', 'conditionNotes', 'accessories', 'conditionChecklist',
     'reportedIssue', 'serviceCategory', 'diagnosticNotes', 'repairNotes', 'partsUsed',
-    'estimatedCost', 'finalCost', 'maxAuthorizedSpend', 'depositAmount', 'diagnosticFee',
     'dataBackupConsent', 'termsAccepted', 'priority', 'warrantyDays',
   ];
 
@@ -227,6 +232,16 @@ export async function updateWorkOrder(id: string, data: UpdateWorkOrderInput, us
       updateData[field] = (data as any)[field];
     }
   }
+
+  if (data.devicePassword !== undefined) {
+    updateData.devicePassword = encryptWorkOrderPassword(data.devicePassword);
+  }
+
+  if (data.estimatedCost !== undefined) updateData.estimatedCost = data.estimatedCost == null ? null : toMoneyDecimal(data.estimatedCost);
+  if (data.finalCost !== undefined) updateData.finalCost = data.finalCost == null ? null : toMoneyDecimal(data.finalCost);
+  if (data.maxAuthorizedSpend !== undefined) updateData.maxAuthorizedSpend = data.maxAuthorizedSpend == null ? null : toMoneyDecimal(data.maxAuthorizedSpend);
+  if (data.depositAmount !== undefined) updateData.depositAmount = data.depositAmount == null ? null : toMoneyDecimal(data.depositAmount);
+  if (data.diagnosticFee !== undefined) updateData.diagnosticFee = data.diagnosticFee == null ? null : toMoneyDecimal(data.diagnosticFee);
 
   if (data.termsAccepted && !wo.termsAcceptedAt) {
     updateData.termsAcceptedAt = new Date();
@@ -246,7 +261,7 @@ export async function updateWorkOrder(id: string, data: UpdateWorkOrderInput, us
     include: WORKORDER_DETAIL_INCLUDE,
   });
 
-  return updated;
+  return decryptWorkOrderRecord(updated);
 }
 
 // ─── Status Management ───
@@ -347,7 +362,7 @@ export async function changeStatus(id: string, newStatus: WorkOrderStatus, reaso
       }).catch(() => {});
   }
 
-  return updated;
+  return decryptWorkOrderRecord(updated);
 }
 
 // ─── Quote (after diagnostic) ───
@@ -366,7 +381,7 @@ export async function sendQuote(id: string, data: WorkOrderQuoteInput, userId: s
   const updated = await prisma.workOrder.update({
     where: { id },
     data: {
-      estimatedCost: data.estimatedCost,
+      estimatedCost: toMoneyDecimal(data.estimatedCost),
       diagnosticNotes: data.diagnosticNotes,
       estimatedPickupDate: data.estimatedPickupDate ? new Date(data.estimatedPickupDate) : wo.estimatedPickupDate,
       status: 'ATTENTE_APPROBATION',
@@ -379,7 +394,7 @@ export async function sendQuote(id: string, data: WorkOrderQuoteInput, userId: s
     data: {
       workOrderId: id,
       authorId: userId,
-      content: `Devis envoye: ${data.estimatedCost}$ — ${data.diagnosticNotes}`,
+      content: `Devis envoye: ${formatMoneyValue(data.estimatedCost)}$ — ${data.diagnosticNotes}`,
       isInternal: false,
     },
   });
@@ -395,13 +410,13 @@ export async function sendQuote(id: string, data: WorkOrderQuoteInput, userId: s
           sendEmail({
             to: customer.email,
             subject: `Devis pour le bon de travail ${updated.orderNumber}`,
-            body: `Bonjour ${customer.firstName},\n\nUn devis a été soumis pour votre bon de travail ${updated.orderNumber}:\n\nMontant estimé: ${data.estimatedCost}$\nDiagnostic: ${data.diagnosticNotes}\n\nVeuillez vous connecter pour approuver ou refuser ce devis.`,
+            body: `Bonjour ${customer.firstName},\n\nUn devis a été soumis pour votre bon de travail ${updated.orderNumber}:\n\nMontant estimé: ${formatMoneyValue(data.estimatedCost)}$\nDiagnostic: ${data.diagnosticNotes}\n\nVeuillez vous connecter pour approuver ou refuser ce devis.`,
           }).catch(err => logger.error({ err }, 'Failed to send WO quote email to customer'));
         }
         if (customer?.phone) {
           sendSms({
             to: customer.phone,
-            message: `Valitek — Un devis de ${data.estimatedCost}$ a été soumis pour votre bon de travail ${updated.orderNumber}. Connectez-vous pour l'approuver.`,
+            message: `Valitek — Un devis de ${formatMoneyValue(data.estimatedCost)}$ a été soumis pour votre bon de travail ${updated.orderNumber}. Connectez-vous pour l'approuver.`,
           }).catch(err => logger.error({ err }, 'Failed to send WO quote SMS to customer'));
         }
       }).catch(() => {});
@@ -413,10 +428,10 @@ export async function sendQuote(id: string, data: WorkOrderQuoteInput, userId: s
     entityId: id,
     action: 'QUOTE_SENT',
     userId,
-    newValue: { estimatedCost: data.estimatedCost, diagnosticNotes: data.diagnosticNotes },
+    newValue: { estimatedCost: Number(formatMoneyValue(data.estimatedCost)), diagnosticNotes: data.diagnosticNotes },
   }).catch(() => {});
 
-  return updated;
+  return decryptWorkOrderRecord(updated);
 }
 
 // ─── Approve / Decline Quote ───
@@ -452,7 +467,7 @@ export async function approveQuote(id: string, userId: string, role: UserRole) {
     return wo2;
   });
 
-  return updated;
+  return decryptWorkOrderRecord(updated);
 }
 
 export async function declineQuote(id: string, userId: string, role: UserRole) {
@@ -485,7 +500,7 @@ export async function declineQuote(id: string, userId: string, role: UserRole) {
     return wo2;
   });
 
-  return updated;
+  return decryptWorkOrderRecord(updated);
 }
 
 // ─── Notes ───
@@ -584,5 +599,5 @@ export async function deleteWorkOrder(id: string, userId: string, role: UserRole
     where: { id },
     data: { deletedAt: new Date() },
     include: WORKORDER_DETAIL_INCLUDE,
-  });
+  }).then(decryptWorkOrderRecord);
 }

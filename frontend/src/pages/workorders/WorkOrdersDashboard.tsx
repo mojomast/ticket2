@@ -11,8 +11,10 @@ import {
 } from '../../lib/constants';
 import { cn } from '../../lib/utils';
 import { useTranslation } from '../../lib/i18n/hook';
+import { Button } from '../../components/ui/button';
 
 type ViewMode = 'kanban' | 'list';
+const PAGE_LIMIT = 25;
 
 function formatRelativeTime(dateStr: string, t: (key: string, params?: Record<string, string | number>) => string) {
   const d = new Date(dateStr);
@@ -76,6 +78,7 @@ export default function WorkOrdersDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const basePath = user?.role === 'ADMIN' ? '/admin' : '/technicien';
@@ -88,21 +91,37 @@ export default function WorkOrdersDashboard() {
     return () => clearTimeout(debounceRef.current);
   }, [searchInput]);
 
-  // Fetch all active work orders for Kanban
-  const { data: workOrders = [], isLoading, isError } = useQuery({
-    queryKey: ['workorders', statusFilter, debouncedSearch],
-    queryFn: () => api.workorders.list({
-      limit: 100,
-      ...(statusFilter ? { status: statusFilter } : {}),
-      ...(debouncedSearch ? { search: debouncedSearch } : {}),
-    }),
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, debouncedSearch]);
+
+  const workOrderQueryParams = {
+    page,
+    limit: PAGE_LIMIT,
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  };
+
+  // Fetch paginated work orders
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['workorders', workOrderQueryParams],
+    queryFn: () => api.workorders.listPaginated(workOrderQueryParams),
   });
+
+  const workOrders = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
   // Fetch stats
   const { data: stats, isError: statsError } = useQuery({
     queryKey: ['workorders-stats'],
     queryFn: () => api.workorders.stats(),
   });
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(Math.max(1, totalPages));
+    }
+  }, [page, totalPages]);
 
   // Group work orders by status for Kanban
   const columns = useMemo(() => {
@@ -221,6 +240,32 @@ export default function WorkOrdersDashboard() {
       ) : (
         <ListView workOrders={workOrders} basePath={basePath} />
       )}
+
+      {!isLoading && totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            {t('common.pageOf', { page: String(page), total: String(totalPages) })}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              {t('common.previous_arrow')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages}
+            >
+              {t('common.next_arrow')}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -338,7 +383,7 @@ function KanbanCard({ wo, basePath }: { wo: WorkOrder; basePath: string }) {
         </div>
       )}
 
-      {wo.estimatedCost && (
+      {wo.estimatedCost != null && (
         <div className="text-xs text-muted-foreground">
           {t('wo.dashboard.quoteLabel', { amount: wo.estimatedCost.toFixed(2) })}
         </div>

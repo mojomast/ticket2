@@ -46,6 +46,7 @@ export const availabilityQuerySchema = z.object({
 export const appointmentListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
   ticketId: z.string().uuid().optional(),
   technicianId: z.string().uuid().optional(),
   status: z.string().optional(),

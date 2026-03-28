@@ -80,7 +80,9 @@ import {
   changeStatus,
   createServiceRequest,
   getTickets,
+  sendQuote,
 } from './ticket.service.js';
+import { Prisma } from '@prisma/client';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -313,6 +315,33 @@ describe('createServiceRequest', () => {
           passwordHash: '$argon2id$hashed-random-password',
         }),
       })
+    );
+  });
+});
+
+describe('sendQuote', () => {
+  it('persists quotedPrice as a Prisma Decimal', async () => {
+    mockPrisma.ticket.findFirst.mockResolvedValue({
+      id: 'ticket-1',
+      ticketNumber: 'TKT-260301',
+      customerId: 'customer-1',
+      deletedAt: null,
+    });
+    mockPrisma.ticket.update.mockResolvedValue({
+      id: 'ticket-1',
+      quotedPrice: 149.99,
+      status: 'EN_ATTENTE_APPROBATION',
+    });
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+
+    await sendQuote('ticket-1', 149.99, 'Remplacement SSD', '2 jours', 'admin-1');
+
+    expect(mockPrisma.ticket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          quotedPrice: expect.any(Prisma.Decimal),
+        }),
+      }),
     );
   });
 });

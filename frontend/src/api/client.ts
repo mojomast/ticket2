@@ -585,6 +585,8 @@ export const api = {
   appointments: {
     list: (params?: Record<string, unknown>) =>
       request<Appointment[]>(`/api/appointments${params ? `?${qs(params)}` : ''}`),
+    listPaginated: (params?: Record<string, unknown>) =>
+      requestPaginated<Appointment>(`/api/appointments${params ? `?${qs(params)}` : ''}`),
     get: (id: string) => request<Appointment>(`/api/appointments/${id}`),
     create: (data: Record<string, unknown>) =>
       request<Appointment>('/api/appointments', { method: 'POST', body: JSON.stringify(data) }),
@@ -735,6 +737,8 @@ export const api = {
   workorders: {
     list: (params?: Record<string, unknown>) =>
       request<WorkOrder[]>(`/api/workorders${params ? `?${qs(params)}` : ''}`),
+    listPaginated: (params?: Record<string, unknown>) =>
+      requestPaginated<WorkOrder>(`/api/workorders${params ? `?${qs(params)}` : ''}`),
     get: (id: string) => request<WorkOrder>(`/api/workorders/${id}`),
     create: (data: Record<string, unknown>) =>
       request<WorkOrder>('/api/workorders', { method: 'POST', body: JSON.stringify(data) }),

@@ -109,7 +109,7 @@ export default function PortalWorkOrderDetail() {
       </Card>
 
       {/* Quote approval section */}
-      {pendingApproval && wo.estimatedCost && (
+      {pendingApproval && wo.estimatedCost != null && (
         <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 space-y-4">
           <h2 className="font-semibold text-yellow-900">{t('portal.woDetail.quoteTitle')}</h2>
           <div className="text-sm space-y-2">
@@ -191,7 +191,7 @@ export default function PortalWorkOrderDetail() {
       </Card>
 
       {/* Financial info */}
-      {(wo.estimatedCost || wo.finalCost || wo.depositAmount) && (
+      {(wo.estimatedCost != null || wo.finalCost != null || wo.depositAmount != null) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t('portal.woDetail.costs')}</CardTitle>

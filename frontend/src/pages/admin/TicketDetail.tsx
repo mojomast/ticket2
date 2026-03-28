@@ -872,7 +872,7 @@ export default function AdminTicketDetail() {
           </Card>
 
           {/* Quote info (if exists) */}
-          {tk.quotedPrice && (
+          {tk.quotedPrice != null && (
             <Card>
               <CardHeader>
                 <CardTitle>{t('admin.ticketDetail.quoteTitle')}</CardTitle>

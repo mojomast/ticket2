@@ -1,115 +1,106 @@
 # Handoff — Valitek v2
 
-## Completed: Extensive review hardening pass after UX/docs work
-## Next Task: Optional pagination/product UX pass and help-content accuracy cleanup
-## Context: This pass focused on security, authorization, enum drift, scheduling validation, and test coverage
+## Completed: Platform hardening + data/model cleanup pass after security review
+## Next Task: Optional dedicated customer-signature workflow and deeper data-retention/product polish
+## Context: This pass completed the previously queued work for work-order password encryption, real pagination UX, help-copy accuracy, Decimal money fields, and notification retention cleanup
 
-## What Was Done (This Session — 5 phases)
+## What Was Done (Latest Pass)
 
-### Phase 1: Session 9 Features (commit `18098fc`)
-1. **Admin Worksheet Config UI** — Settings page card for worksheet defaults (tax rates, thresholds, require-signature, auto-submit); tech WorksheetDetail reads config on creation
-2. **Manual Labor Time Entry** — Timer vs manual toggle on tech WorksheetDetail; validates hours/minutes/break
-3. **Follow-ups in Technician Schedule** — New `GET /api/worksheets/schedule/followups` endpoint; orange markers in day/week/month calendar views
-4. **Admin Worksheet Editing** — Full rewrite of admin WorksheetDetail (645→1691 lines); inline editing of all child records, status transitions, note management
-5. **PDF Generation Fix** — sanitizeForPdf strips Unicode chars that crash pdf-lib; fixed `win1252` encoding issues
+### 1. WorkOrder device password encryption
+- `WorkOrder.devicePassword` is now encrypted at rest using AES-256-GCM via `backend/src/lib/workorder-password.ts`
+- Service-layer reads transparently decrypt values before returning them to the app
+- Existing plaintext rows remain readable; new encrypted values are stored with an `enc:v1:` prefix
+- Config now supports optional `WORKORDER_DEVICE_PASSWORD_KEY`, with fallback to `AUTH_SECRET` and a safe dev/test fallback
 
-### Phase 2: Code Review (commit `2de90b6`)
-7 subagents audited entire codebase, found 36 issues, fixed 22:
-- **7 CRITICAL**: follow-ups schedule envelope, follow-up CRUD auth, internal notes leak to customers, backup/demo-reset missing 9 models, transaction wrapping, API client error handling
-- **8 HIGH**: financial rounding, WO transactions, labor time validation, PDF signature overlap, date validation, note status/ownership checks, dashboard loading states
-- **7 MEDIUM**: getDashboardStats optimization (9→2 queries), schema indexes, KB slug fix, service request transaction, PDF column widths, notification typing, breakMinutes validation
-- **Bonus**: KanbanBoard t() shadowing fix, i18n label map wiring across ~20 pages
+### 2. Real pagination UX on capped list pages
+- Portal appointments now use the paginated backend envelope with actual previous/next controls in `frontend/src/pages/portal/Appointments.tsx`
+- Portal work orders now paginate properly in `frontend/src/pages/portal/WorkOrders.tsx`
+- Shared work-order dashboard list/kanban pagination was improved in `frontend/src/pages/workorders/WorkOrdersDashboard.tsx`
+- API client and scheduling query handling were updated so paging and sort order stay consistent
 
-### Phase 3: Docs & Help Update (`3fb9a71`)
-- **README.md** rewritten (926→1153 lines): updated model/enum counts, added worksheet/KB/customer-notes sections, fixed ports, added missing routes/endpoints
-- **backend/.env.example** created with all 16 env vars documented
-- **docker-compose.dev.yml** fixed: DB port 5432→5433 mapping
-- **Aspirational docs** marked: MODULARITY_SPEC.md ("PLANNED"), GETTING_STARTED.md ("FUTURE PLANS"), newspec.md ("HISTORICAL")
-- **devplan.md** all 11 phases marked complete
-- **use-page-help.ts**: 9 missing route mappings added (worksheet, KB, client detail pages)
-- **help-content.ts**: 9 new HelpArticle entries (admin/tech/customer worksheets + KB + client detail)
-- **Profile.tsx**: remaining i18n strings wired with `t()`
-- **TicketDetail pages** (admin, tech, portal): HelpTooltip strings converted to `t()` keys
+### 3. Help-content accuracy refresh
+- `frontend/src/lib/help-content.ts` was corrected to match real ticket, appointment, work-order, and worksheet workflows
+- Stale status names and misleading transition guidance were updated to reflect the current backend enums and role permissions
 
-### Phase 4: UI Polish + Empty-State Follow-Ups (`083b247`, `4faf899`, `d4739c1`)
-- **Inline form validation** added to high-impact forms: login, public service request, profile, settings, work order intake, admin clients, admin/tech ticket detail dialogs, admin/tech worksheet child-entry forms
-- **Responsive table improvements** added for worksheet detail tables and backups list: mobile overflow wrappers, minimum widths, truncation, and hidden low-priority columns on smaller breakpoints
-- **Accessibility pass** added `aria-label` coverage for icon-only controls in worksheet editing, KB unlink actions, client note pinning, work order accessory removal, calendar navigation, and related UI affordances
-- **Reusable confirmations** added with new shared `frontend/src/components/shared/ConfirmDialog.tsx` and shadcn/Radix `frontend/src/components/ui/alert-dialog.tsx`
-- **Destructive actions now gated** for appointment cancel flows (admin, tech, portal), portal proposal cancellation, and demo reset
-- **Button consistency** tightened for destructive actions and loading labels (`common.saving`, `common.deleting`) in portal ticket detail, admin client detail, and admin worksheet detail
-- **Empty states** added across targeted admin and non-admin pages, including tickets, worksheets, clients, knowledge base, portal worksheet detail, and work-order dashboard views
+### 4. Float → Decimal migration for money fields
+- Money/rate fields moved from Prisma `Float` to `Decimal` in `backend/prisma/schema.prisma`
+- Added centralized decimal helpers in `backend/src/lib/decimal.ts`
+- Prisma client now serializes Decimal values back to JSON-safe numbers in `backend/src/lib/prisma.ts`
+- Ticket/work-order/worksheet financial writes and calculations now use Decimal-safe conversions
+- Frontend display logic was adjusted where needed so valid zero-valued quote/cost fields still render correctly
+- Local schema sync was applied with `npx prisma db push --accept-data-loss`
 
-### Phase 5: Review Hardening Pass (current commit)
-- **Ticket attachments/messages secured**: attachment upload/list/download/delete now enforce ticket-level access; ticket message list/create now verify ticket access before returning data or writing rows
-- **Appointment access hardened**: day schedule, appointment reads/updates/status changes, and related schedule queries now enforce role/ownership scope consistently
-- **Chronology validation added**: appointment/proposal validations now reject invalid `end <= start` payloads
-- **Cancellation restricted**: appointment cancellation is limited to cancellable statuses in backend and matching UI buttons are hidden when cancellation is not allowed
-- **Technician/customer scope bypass fixed**: ticket and scheduling list filters no longer allow non-admin query params to override role-based scoping
-- **Worksheet signature flow tightened**: backend now only accepts technician signatures via current staff flow; technician UI no longer exposes customer signature capture from staff screens
-- **Worksheet enum drift fixed**: technician/portal worksheet pages now use backend-aligned worksheet statuses and labor-type constants via shared frontend constants
-- **Demo reset UX fixed**: reset now clears the auth cookie and the frontend logs the user out instead of leaving a dead session
-- **Service-request customer creation fixed**: generated customer credentials now store a real password hash instead of a raw random string in `passwordHash`
-- **Tests added/updated**: backend tests now cover attachment/message access, scheduling auth/validation, demo reset, appointment chronology validation, and stricter ticket route/service behavior
+### 5. Notification retention cleanup
+- Added retention policy config and cleanup logic in `backend/src/services/notification.service.ts`
+- Default cleanup policy:
+  - read notifications older than 30 days are deleted
+  - unread notifications older than 180 days are deleted
+- Cleanup runs shortly after startup and then every 24 hours from `backend/src/index.ts`
+- Configurable via:
+  - `NOTIFICATION_RETENTION_ENABLED`
+  - `NOTIFICATION_RETENTION_READ_DAYS`
+  - `NOTIFICATION_RETENTION_UNREAD_DAYS`
 
-## Known Issues NOT Fixed (documented for future)
-- `Float` for currency fields should be `Decimal` — requires schema migration + code changes across entire app
-- `WorkOrder.devicePassword` stored in plaintext — needs encryption implementation
-- User soft-delete doesn't cascade to child records — needs transaction + policy decision
-- `AuditLog.userId` has no FK relation — by design (audit survives user deletion)
-- Notification table grows unbounded — needs TTL/purge mechanism
-- Ticket number generation race condition — needs DB sequence or advisory lock
-- Some list pages still use capped/paginated fetches without full pagination UX; documented, not changed in this pass
-- Help content copy may still describe stale workflow wording in places; routing is correct, but copy review remains worthwhile
+## Additional Notes From Earlier Recent Passes
+- Attachment/message authorization was hardened
+- Appointment authorization and chronology validation were tightened
+- Demo reset now clears the auth cookie and logs out cleanly
+- Worksheet signature flow is currently technician-only in the implemented app flow
+- Admin/non-admin empty-state sweeps and broader UI polish are already committed
 
-## Suggested Next Steps
-- Add real pagination UX where capped list pages currently fetch only the first page/window
-- Review `frontend/src/lib/help-content.ts` against current status enums/workflows and refresh outdated copy
-- Consider allowing customer worksheet signature capture through an explicit customer-portal flow with audit trail if that feature is still desired
-- Implement encryption for `WorkOrder.devicePassword`
-
-## Files Modified (review hardening pass)
+## Files Modified (latest pass)
 ```
-README.md                                       # Added note about review hardening pass
-backend/src/services/ticket.service.ts          # Shared ticket access helpers, hashed service-request customer passwords, scoped listing hardening
-backend/src/services/message.service.ts         # Ticket access enforcement for message list/create
-backend/src/services/attachment.service.ts      # Ticket access enforcement for upload/list/download/delete
-backend/src/services/scheduling.service.ts      # Appointment auth hardening, scope enforcement, cancellation rules
-backend/src/services/worksheet.service.ts       # Technician-only signature enforcement
-backend/src/routes/attachment.routes.ts         # Attachment auth wiring updates
-backend/src/routes/appointment.routes.ts        # Appointment access/session wiring updates
-backend/src/routes/demo.routes.ts               # Reset now clears auth cookie
-backend/src/routes/ticket.routes.ts             # Ticket message route uses access-checked service path
-backend/src/routes/ticket.routes.test.ts        # Updated route test mocks for stricter create path
-backend/src/validations/appointment.ts          # Start/end chronology validation
-backend/src/validations/worksheet.ts            # Signature input restricted to tech type
-backend/src/services/attachment.service.test.ts # NEW — attachment access tests
-backend/src/services/message.service.test.ts    # Message access tests updated
-backend/src/services/scheduling.service.test.ts # Scheduling auth/validation coverage
-backend/src/services/ticket.service.test.ts     # Scoped listing + hashed customer creation coverage
-backend/src/routes/demo.routes.test.ts          # NEW — demo reset auth-cookie behavior test
-backend/src/validations/appointment.test.ts     # NEW — chronology validation tests
-frontend/src/api/client.ts                      # Worksheet signature API narrowed to tech
-frontend/src/components/shared/DemoBanner.tsx   # Demo reset now logs out cleanly after reset
-frontend/src/lib/constants.ts                   # Shared worksheet status/labor/note/follow-up constants
-frontend/src/lib/i18n/locales/fr.ts             # Signature messaging tweaks
-frontend/src/lib/i18n/locales/en.ts             # Signature messaging tweaks
-frontend/src/pages/admin/Calendar.tsx           # Cancel button visibility aligned to backend rules
-frontend/src/pages/admin/TicketDetail.tsx       # Cancel button visibility aligned to backend rules
-frontend/src/pages/portal/TicketDetail.tsx      # Cancel/proposal UI aligned to backend rules
-frontend/src/pages/portal/Worksheets.tsx        # Shared worksheet status constants
-frontend/src/pages/technician/Schedule.tsx      # Schedule UI aligned to appointment access rules
-frontend/src/pages/technician/TicketDetail.tsx  # Cancel button visibility aligned to backend rules
-frontend/src/pages/technician/WorksheetDetail.tsx # Customer signature UI removed; labor constants aligned
-frontend/src/pages/technician/Worksheets.tsx    # Shared worksheet status constants
-handoff.md                                      # This file
+README.md                                        # Added platform-hardening notes (encryption, Decimal, pagination, signatures)
+backend/.env.example                             # Added workorder-password key + notification retention env docs
+backend/prisma/schema.prisma                     # Money fields migrated from Float to Decimal
+backend/prisma/seed.ts                           # Seed data adjusted for encrypted device password handling
+backend/src/index.ts                             # Added notification cleanup scheduler
+backend/src/lib/config.ts                        # Added encryption/retention config and test-safe fallback parsing
+backend/src/lib/prisma.ts                        # Decimal serialization support
+backend/src/lib/decimal.ts                       # NEW — Decimal conversion/format helpers
+backend/src/lib/decimal.test.ts                  # NEW — Decimal helper tests
+backend/src/lib/workorder-password.ts            # NEW — AES-GCM work-order password encryption/decryption
+backend/src/lib/workorder-password.test.ts       # NEW — encryption helper tests
+backend/src/services/notification.service.ts     # Notification retention cleanup logic
+backend/src/services/notification.service.test.ts # Retention cleanup tests
+backend/src/services/ticket.service.ts           # Decimal-safe ticket money handling
+backend/src/services/ticket.service.test.ts      # Updated for Decimal-safe behavior
+backend/src/services/workorder.service.ts        # Device password encryption + Decimal-safe work-order money handling
+backend/src/services/workorder.service.test.ts   # NEW/updated work-order service tests
+backend/src/services/worksheet.service.ts        # Decimal-safe worksheet totals/rates handling
+backend/src/services/scheduling.service.ts       # Appointment list sort/pagination support
+backend/src/validations/appointment.ts           # Appointment query validation updates for pagination/sort usage
+frontend/src/api/client.ts                       # Paginated appointment/work-order helpers and updated typing
+frontend/src/lib/help-content.ts                 # Workflow/status help copy refreshed
+frontend/src/pages/portal/Appointments.tsx       # Real pagination UI
+frontend/src/pages/portal/WorkOrders.tsx         # Real pagination UI
+frontend/src/pages/workorders/WorkOrdersDashboard.tsx # Real pagination UI
+frontend/src/pages/admin/TicketDetail.tsx        # Decimal-safe quote display logic
+frontend/src/pages/portal/TicketDetail.tsx       # Decimal-safe quote display logic
+frontend/src/pages/portal/WorkOrderDetail.tsx    # Decimal-safe cost display logic
+frontend/src/pages/workorders/WorkOrderDetail.tsx # Decimal-safe cost display logic
+handoff.md                                       # This file
 ```
 
 ## Verification
 - Backend: `npm run lint` ✅
-- Backend: `npm run test:ci` ✅ (101/101 tests passing)
+- Backend: `npm run test:ci` ✅ (115/115 tests passing)
 - Frontend: `npm run lint` ✅
 - Frontend: `npm run build` ✅
+- Schema sync: `npx prisma db push --accept-data-loss` ✅ (local environment)
+
+## Known Issues Still Open
+- Customer worksheet signature capture is intentionally not implemented in the current secure flow; only technician signature is active
+- User soft-delete still does not cascade to child records — needs transaction + policy decision
+- `AuditLog.userId` has no FK relation — by design (audit survives user deletion)
+- Ticket number generation still uses a retry-based strategy instead of a DB sequence/advisory lock
+- Notification retention is now bounded, but no admin UI exists yet to inspect/override policy from the app
+
+## Suggested Next Steps
+- Build a dedicated customer-portal signature flow with audit trail if customer signature is still a requirement
+- Consider adding admin-visible pagination controls and page-size controls on more large list pages for consistency
+- Add an admin settings surface for notification-retention policy if operations need runtime control
+- Revisit user soft-delete cascading and archival policy
 
 ## Running Services
 - **Backend**: screen `valitek-backend`, port 3200
@@ -119,7 +110,6 @@ handoff.md                                      # This file
 ## Key Architecture Notes
 - Backend: Hono v4, TypeScript, Prisma 6, Zod, jose JWT, pdf-lib, hash-wasm (argon2id), pino
 - Frontend: React 18, Vite 5, TanStack Query v5, React Router v6, Zustand, Tailwind + shadcn/ui
-- French is primary language; all UI text uses `t('key')` from `useTranslation()` hook
-- i18n catalogs: `frontend/src/lib/i18n/locales/fr.ts` and `en.ts` stay in sync
 - Backend dev: `npx tsx watch --env-file=.env src/index.ts`
-- DB schema: `prisma db push` (no migration history)
+- DB schema workflow: `prisma db push` (no migration history)
+- Money fields are now stored as Decimal in PostgreSQL and serialized back to JSON numbers by the Prisma layer

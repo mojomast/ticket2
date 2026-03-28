@@ -22,6 +22,7 @@ import * as kbService from './knowledgebase.service.js';
 import { createAuditLog } from './audit.service.js';
 import { sendEmail } from './email.service.js';
 import { logger } from '../lib/logger.js';
+import { decimalToNumber, formatMoneyValue, multiplyToMoneyDecimal, sumMoneyDecimals, toMoneyDecimal, toRateDecimal, toRequiredMoneyDecimal, toRequiredRateDecimal } from '../lib/decimal.js';
 
 // ─── Prisma Includes ───
 
@@ -137,10 +138,10 @@ async function recalculateTotals(worksheetId: string, client: any = prisma): Pro
     }),
   ]);
 
-  const totalLabor = parseFloat((laborAgg._sum.lineTotal ?? 0).toFixed(2));
-  const totalParts = parseFloat((partsAgg._sum.lineTotal ?? 0).toFixed(2));
-  const totalTravel = parseFloat((travelAgg._sum.lineTotal ?? 0).toFixed(2));
-  const grandTotal = parseFloat((totalLabor + totalParts + totalTravel).toFixed(2));
+  const totalLabor = toMoneyDecimal(laborAgg._sum.lineTotal ?? 0)!;
+  const totalParts = toMoneyDecimal(partsAgg._sum.lineTotal ?? 0)!;
+  const totalTravel = toMoneyDecimal(travelAgg._sum.lineTotal ?? 0)!;
+  const grandTotal = sumMoneyDecimals([totalLabor, totalParts, totalTravel]);
 
   await client.worksheet.update({
     where: { id: worksheetId },
@@ -150,9 +151,9 @@ async function recalculateTotals(worksheetId: string, client: any = prisma): Pro
 
 // ─── Internal: Calculate Labor billableHours & lineTotal ───
 
-function calculateLaborLine(startTime: Date, endTime: Date | null, breakMinutes: number, hourlyRate: number) {
+function calculateLaborLine(startTime: Date, endTime: Date | null, breakMinutes: number, hourlyRate: number | import('@prisma/client').Prisma.Decimal) {
   if (!endTime) {
-    return { billableHours: null, lineTotal: null };
+    return { billableHours: null, lineTotal: null, lineTotalNumber: null };
   }
 
   // Fix 5: Validate endTime > startTime
@@ -171,8 +172,8 @@ function calculateLaborLine(startTime: Date, endTime: Date | null, breakMinutes:
   const totalHours = totalMs / (1000 * 60 * 60);
   const breakHours = breakMinutes / 60;
   const billableHours = Math.max(0, parseFloat((totalHours - breakHours).toFixed(4)));
-  const lineTotal = parseFloat((billableHours * hourlyRate).toFixed(2));
-  return { billableHours, lineTotal };
+  const lineTotal = multiplyToMoneyDecimal(billableHours, hourlyRate);
+  return { billableHours, lineTotal, lineTotalNumber: decimalToNumber(lineTotal) };
 }
 
 // ─── Internal: Verify worksheet exists & is not deleted ───
@@ -513,7 +514,7 @@ export async function changeStatus(
           sendEmail({
             to: admin.email,
             subject: `Feuille de travail soumise — ${refLabel}`,
-            body: `Bonjour ${admin.firstName},\n\nUne feuille de travail pour ${refLabel} a été soumise et attend votre révision.\n\nMontant total: ${updated.grandTotal}$`,
+            body: `Bonjour ${admin.firstName},\n\nUne feuille de travail pour ${refLabel} a été soumise et attend votre révision.\n\nMontant total: ${formatMoneyValue(updated.grandTotal)}$`,
           }).catch(err => logger.error({ err }, 'Failed to send worksheet submission email'));
         }
       }
@@ -521,7 +522,7 @@ export async function changeStatus(
 
     // High-value threshold check
     getHighValueThreshold().then(threshold => {
-      if (updated.grandTotal > threshold) {
+      if (Number(updated.grandTotal) > threshold) {
         // Notify all admins about high-value worksheet
         prisma.user.findMany({
           where: { role: 'ADMIN', isActive: true, deletedAt: null },
@@ -531,7 +532,7 @@ export async function changeStatus(
             userId: a.id,
             type: 'WORKSHEET_HIGH_VALUE' as const,
             title: 'Feuille de travail à valeur élevée',
-            message: `La feuille de travail pour ${refLabel} dépasse le seuil (${updated.grandTotal}$ > ${threshold}$)`,
+            message: `La feuille de travail pour ${refLabel} dépasse le seuil (${formatMoneyValue(updated.grandTotal)}$ > ${formatMoneyValue(threshold)}$)`,
           }));
           if (notifications.length > 0) {
             prisma.notification.createMany({ data: notifications }).catch(() => {});
@@ -566,7 +567,7 @@ export async function addLaborEntry(worksheetId: string, data: CreateLaborEntryI
   const startTime = new Date(data.startTime);
   const endTime = data.endTime ? new Date(data.endTime) : null;
   const breakMinutes = data.breakMinutes ?? 0;
-  const { billableHours, lineTotal } = calculateLaborLine(startTime, endTime, breakMinutes, data.hourlyRate);
+  const { billableHours, lineTotal, lineTotalNumber } = calculateLaborLine(startTime, endTime, breakMinutes, data.hourlyRate);
 
   const entry = await prisma.$transaction(async (tx) => {
     const created = await tx.laborEntry.create({
@@ -577,7 +578,7 @@ export async function addLaborEntry(worksheetId: string, data: CreateLaborEntryI
         startTime,
         endTime,
         breakMinutes,
-        hourlyRate: data.hourlyRate,
+        hourlyRate: toRequiredMoneyDecimal(data.hourlyRate),
         billableHours,
         lineTotal,
       },
@@ -593,7 +594,7 @@ export async function addLaborEntry(worksheetId: string, data: CreateLaborEntryI
     entityId: worksheetId,
     action: 'LABOR_ADDED',
     userId,
-    newValue: { entryId: entry.id, laborType: data.laborType, billableHours, lineTotal },
+    newValue: { entryId: entry.id, laborType: data.laborType, billableHours, lineTotal: lineTotalNumber },
   }).catch(() => {});
 
   return entry;
@@ -622,7 +623,7 @@ export async function updateLaborEntry(worksheetId: string, entryId: string, dat
   if (data.startTime !== undefined) updatePayload.startTime = startTime;
   if (data.endTime !== undefined) updatePayload.endTime = endTime;
   if (data.breakMinutes !== undefined) updatePayload.breakMinutes = breakMinutes;
-  if (data.hourlyRate !== undefined) updatePayload.hourlyRate = hourlyRate;
+  if (data.hourlyRate !== undefined) updatePayload.hourlyRate = toRequiredMoneyDecimal(hourlyRate);
 
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.laborEntry.update({
@@ -685,7 +686,7 @@ export async function stopTimer(worksheetId: string, entryId: string, userId: st
   }
 
   const endTime = new Date();
-  const { billableHours, lineTotal } = calculateLaborLine(existing.startTime, endTime, existing.breakMinutes, existing.hourlyRate);
+  const { billableHours, lineTotal, lineTotalNumber } = calculateLaborLine(existing.startTime, endTime, existing.breakMinutes, existing.hourlyRate);
 
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.laborEntry.update({
@@ -703,7 +704,7 @@ export async function stopTimer(worksheetId: string, entryId: string, userId: st
     entityId: worksheetId,
     action: 'TIMER_STOPPED',
     userId,
-    newValue: { entryId, endTime, billableHours, lineTotal },
+    newValue: { entryId, endTime, billableHours, lineTotal: lineTotalNumber },
   }).catch(() => {});
 
   return updated;
@@ -718,7 +719,7 @@ export async function addPart(worksheetId: string, data: CreatePartInput, userId
   requireOwnership(ws, userId, role);
 
   const quantity = data.quantity ?? 1;
-  const lineTotal = parseFloat((quantity * data.unitPrice).toFixed(2));
+  const lineTotal = multiplyToMoneyDecimal(quantity, data.unitPrice);
 
   const part = await prisma.$transaction(async (tx) => {
     const created = await tx.partUsed.create({
@@ -727,9 +728,9 @@ export async function addPart(worksheetId: string, data: CreatePartInput, userId
         partName: data.partName,
         partNumber: data.partNumber ?? null,
         supplier: data.supplier ?? null,
-        supplierCost: data.supplierCost,
+        supplierCost: toRequiredMoneyDecimal(data.supplierCost),
         quantity,
-        unitPrice: data.unitPrice,
+        unitPrice: toRequiredMoneyDecimal(data.unitPrice),
         lineTotal,
         warrantyMonths: data.warrantyMonths ?? null,
         warrantyNotes: data.warrantyNotes ?? null,
@@ -746,7 +747,7 @@ export async function addPart(worksheetId: string, data: CreatePartInput, userId
     entityId: worksheetId,
     action: 'PART_ADDED',
     userId,
-    newValue: { partId: part.id, partName: data.partName, lineTotal },
+    newValue: { partId: part.id, partName: data.partName, lineTotal: decimalToNumber(lineTotal) },
   }).catch(() => {});
 
   return part;
@@ -763,15 +764,15 @@ export async function updatePart(worksheetId: string, partId: string, data: Upda
 
   const quantity = data.quantity ?? existing.quantity;
   const unitPrice = data.unitPrice ?? existing.unitPrice;
-  const lineTotal = parseFloat((quantity * unitPrice).toFixed(2));
+  const lineTotal = multiplyToMoneyDecimal(quantity, unitPrice);
 
   const updatePayload: any = { lineTotal };
   if (data.partName !== undefined) updatePayload.partName = data.partName;
   if (data.partNumber !== undefined) updatePayload.partNumber = data.partNumber;
   if (data.supplier !== undefined) updatePayload.supplier = data.supplier;
-  if (data.supplierCost !== undefined) updatePayload.supplierCost = data.supplierCost;
+  if (data.supplierCost !== undefined) updatePayload.supplierCost = toRequiredMoneyDecimal(data.supplierCost);
   if (data.quantity !== undefined) updatePayload.quantity = quantity;
-  if (data.unitPrice !== undefined) updatePayload.unitPrice = unitPrice;
+  if (data.unitPrice !== undefined) updatePayload.unitPrice = toRequiredMoneyDecimal(unitPrice);
   if (data.warrantyMonths !== undefined) updatePayload.warrantyMonths = data.warrantyMonths;
   if (data.warrantyNotes !== undefined) updatePayload.warrantyNotes = data.warrantyNotes;
 
@@ -830,7 +831,7 @@ export async function addTravelEntry(worksheetId: string, data: CreateTravelEntr
   const ws = await requireEditableStatus(worksheetId);
   requireOwnership(ws, userId, role);
 
-  const lineTotal = parseFloat((data.distanceKm * data.ratePerKm).toFixed(2));
+  const lineTotal = multiplyToMoneyDecimal(data.distanceKm, data.ratePerKm);
 
   const entry = await prisma.$transaction(async (tx) => {
     const created = await tx.travelEntry.create({
@@ -840,7 +841,7 @@ export async function addTravelEntry(worksheetId: string, data: CreateTravelEntr
         arrivalAddress: data.arrivalAddress ?? null,
         distanceKm: data.distanceKm,
         travelTimeMinutes: data.travelTimeMinutes ?? null,
-        ratePerKm: data.ratePerKm,
+        ratePerKm: toRequiredRateDecimal(data.ratePerKm),
         lineTotal,
         travelDate: data.travelDate ? new Date(data.travelDate) : new Date(),
         notes: data.notes ?? null,
@@ -857,7 +858,7 @@ export async function addTravelEntry(worksheetId: string, data: CreateTravelEntr
     entityId: worksheetId,
     action: 'TRAVEL_ADDED',
     userId,
-    newValue: { entryId: entry.id, distanceKm: data.distanceKm, lineTotal },
+    newValue: { entryId: entry.id, distanceKm: data.distanceKm, lineTotal: decimalToNumber(lineTotal) },
   }).catch(() => {});
 
   return entry;
@@ -874,14 +875,14 @@ export async function updateTravelEntry(worksheetId: string, entryId: string, da
 
   const distanceKm = data.distanceKm ?? existing.distanceKm;
   const ratePerKm = data.ratePerKm ?? existing.ratePerKm;
-  const lineTotal = parseFloat((distanceKm * ratePerKm).toFixed(2));
+  const lineTotal = multiplyToMoneyDecimal(distanceKm, ratePerKm);
 
   const updatePayload: any = { lineTotal };
   if (data.departureAddress !== undefined) updatePayload.departureAddress = data.departureAddress;
   if (data.arrivalAddress !== undefined) updatePayload.arrivalAddress = data.arrivalAddress;
   if (data.distanceKm !== undefined) updatePayload.distanceKm = distanceKm;
   if (data.travelTimeMinutes !== undefined) updatePayload.travelTimeMinutes = data.travelTimeMinutes;
-  if (data.ratePerKm !== undefined) updatePayload.ratePerKm = ratePerKm;
+  if (data.ratePerKm !== undefined) updatePayload.ratePerKm = toRequiredRateDecimal(ratePerKm);
   if (data.travelDate !== undefined) updatePayload.travelDate = data.travelDate ? new Date(data.travelDate) : existing.travelDate;
   if (data.notes !== undefined) updatePayload.notes = data.notes;
 

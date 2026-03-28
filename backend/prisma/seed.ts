@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { encryptWorkOrderPassword } from '../src/lib/workorder-password.js';
 
 const prisma = new PrismaClient();
 
@@ -1582,7 +1583,7 @@ export async function seedDemoData() {
       deviceSerial: 'DL5540-A1234',
       deviceColor: 'Noir',
       deviceOs: 'Windows 11 Pro',
-      devicePassword: '1234',
+      devicePassword: encryptWorkOrderPassword('1234'),
       conditionNotes: 'Legere egratignure sur le couvercle. Coin inferieur droit legerement cabossé.',
       accessories: ['Chargeur', 'Souris'],
       conditionChecklist: {

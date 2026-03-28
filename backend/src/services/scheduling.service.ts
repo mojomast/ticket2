@@ -234,7 +234,7 @@ export async function getAppointments(query: any, userId: string, role: UserRole
     prisma.appointment.findMany({
       where,
       include: APPOINTMENT_INCLUDE,
-      orderBy: { scheduledStart: 'asc' },
+      orderBy: { scheduledStart: query.sortOrder === 'desc' ? 'desc' : 'asc' },
       skip,
       take: limit,
     }),

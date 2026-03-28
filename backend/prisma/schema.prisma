@@ -252,7 +252,7 @@ model Ticket {
   priority         Priority        @default(NORMALE)
   serviceMode      ServiceMode     @default(EN_CUBICULE)
   serviceCategory  ServiceCategory @default(REPARATION)
-  quotedPrice      Float?
+  quotedPrice      Decimal?        @db.Decimal(10, 2)
   quoteDescription String?
   quoteDuration    String?
   blockerReason    String?
@@ -408,7 +408,7 @@ model WorkOrder {
   deviceModel         String             // e.g., Latitude 5520
   deviceSerial        String?            // Serial number / service tag
   deviceColor         String?
-  devicePassword      String?            // Stored for technician access
+  devicePassword      String?            // Encrypted at rest; decrypted in application reads
   deviceOs            String?            // e.g., Windows 11, macOS Ventura
 
   // ─── Condition & accessories ───
@@ -424,11 +424,11 @@ model WorkOrder {
   partsUsed           Json?              // Array of { name, cost, type: "OEM"|"AFTERMARKET"|"REFURBISHED" }
 
   // ─── Quote & financial ───
-  estimatedCost       Float?             // Initial estimate given at intake
-  finalCost           Float?             // Actual cost after repair
-  maxAuthorizedSpend  Float?             // Customer-approved ceiling
-  depositAmount       Float?             // Deposit collected at intake
-  diagnosticFee       Float?             // Non-refundable diagnostic fee
+  estimatedCost       Decimal?           @db.Decimal(10, 2) // Initial estimate given at intake
+  finalCost           Decimal?           @db.Decimal(10, 2) // Actual cost after repair
+  maxAuthorizedSpend  Decimal?           @db.Decimal(10, 2) // Customer-approved ceiling
+  depositAmount       Decimal?           @db.Decimal(10, 2) // Deposit collected at intake
+  diagnosticFee       Decimal?           @db.Decimal(10, 2) // Non-refundable diagnostic fee
 
   // ─── Consent & legal ───
   dataBackupConsent   DataBackupConsent  @default(NON_APPLICABLE)
@@ -608,10 +608,10 @@ model Worksheet {
   custSignedAt    DateTime?
 
   // Denormalized totals (recalculated on every mutation)
-  totalLabor      Float           @default(0)
-  totalParts      Float           @default(0)
-  totalTravel     Float           @default(0)
-  grandTotal      Float           @default(0)
+  totalLabor      Decimal         @default(0) @db.Decimal(10, 2)
+  totalParts      Decimal         @default(0) @db.Decimal(10, 2)
+  totalTravel     Decimal         @default(0) @db.Decimal(10, 2)
+  grandTotal      Decimal         @default(0) @db.Decimal(10, 2)
 
   // Summary (optional tech summary of all work done)
   summary         String?         @db.Text
@@ -651,11 +651,11 @@ model LaborEntry {
   breakMinutes    Int         @default(0)
 
   // Rate
-  hourlyRate      Float
+  hourlyRate      Decimal     @db.Decimal(10, 2)
 
   // Computed
   billableHours   Float?
-  lineTotal       Float?
+  lineTotal       Decimal?    @db.Decimal(10, 2)
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -675,10 +675,10 @@ model PartUsed {
   supplier        String?
 
   // Cost & billing
-  supplierCost    Float       @default(0)    // What the shop paid
+  supplierCost    Decimal     @default(0) @db.Decimal(10, 2) // What the shop paid
   quantity        Int         @default(1)
-  unitPrice       Float                      // Customer-facing price
-  lineTotal       Float                      // quantity * unitPrice
+  unitPrice       Decimal                    @db.Decimal(10, 2) // Customer-facing price
+  lineTotal       Decimal                    @db.Decimal(10, 2) // quantity * unitPrice
 
   // Warranty
   warrantyMonths  Int?
@@ -701,8 +701,8 @@ model TravelEntry {
   distanceKm        Float
   travelTimeMinutes Int?
 
-  ratePerKm         Float
-  lineTotal         Float       // distanceKm * ratePerKm
+  ratePerKm         Decimal     @db.Decimal(10, 4)
+  lineTotal         Decimal     @db.Decimal(10, 2) // distanceKm * ratePerKm
 
   travelDate        DateTime    @default(now())
   notes             String?

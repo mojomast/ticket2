@@ -8,7 +8,9 @@ import { rateLimiter } from './middleware/rate-limit.middleware.js';
 import { csrfProtection } from './middleware/csrf.middleware.js';
 import { requireAuth, requireRole } from './middleware/auth.middleware.js';
 import { logger } from './lib/logger.js';
+import { config } from './lib/config.js';
 import { processFollowUpReminders } from './services/followup-reminder.service.js';
+import { cleanupExpiredNotifications, getNotificationRetentionPolicy } from './services/notification.service.js';
 
 import authRoutes from './routes/auth.routes.js';
 import ticketRoutes from './routes/ticket.routes.js';
@@ -34,7 +36,7 @@ const app = new Hono();
 // ─── Global Middleware ───
 app.use('*', secureHeaders());
 app.use('*', cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: config.FRONTEND_URL,
   credentials: true,
 }));
 app.use('*', requestLogger);
@@ -108,6 +110,7 @@ app.route('/api/admin/backups', backupRoutes);
 
 // ─── Start Server ───
 const port = parseInt(process.env.PORT || '3000', 10);
+const notificationRetentionPolicy = getNotificationRetentionPolicy();
 
 serve({ fetch: app.fetch, port }, (info) => {
   logger.info(`Server running on http://localhost:${info.port}`);
@@ -127,5 +130,26 @@ async function runFollowUpReminders() {
 
 setTimeout(runFollowUpReminders, 10_000);
 setInterval(runFollowUpReminders, 3_600_000); // every hour
+
+// ─── Notification Retention Scheduler ───
+// Run once on startup after a 30-second delay, then once every 24 hours.
+
+async function runNotificationRetentionCleanup() {
+  try {
+    const result = await cleanupExpiredNotifications(notificationRetentionPolicy);
+
+    if (!result.enabled) {
+      logger.info('Notification retention cleanup disabled by configuration');
+      return;
+    }
+
+    logger.info({ result }, 'Notification retention cleanup completed');
+  } catch (err) {
+    logger.error({ err }, 'Notification retention cleanup failed');
+  }
+}
+
+setTimeout(runNotificationRetentionCleanup, 30_000);
+setInterval(runNotificationRetentionCleanup, 86_400_000); // every 24 hours
 
 export default app;

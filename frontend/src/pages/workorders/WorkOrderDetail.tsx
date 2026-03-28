@@ -371,7 +371,7 @@ export default function WorkOrderDetail() {
           )}
 
           {/* Quote Info (if exists) */}
-          {wo.estimatedCost && (
+          {wo.estimatedCost != null && (
             <div className="bg-card border rounded-lg p-6">
               <h3 className="font-semibold mb-3">{t('wo.detail.quoteTitle')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">

@@ -9,6 +9,7 @@ import { sendEmail } from './email.service.js';
 import { sendSms } from './sms.service.js';
 import { logger } from '../lib/logger.js';
 import { hashPassword } from '../lib/auth.js';
+import { formatMoneyValue, toMoneyDecimal } from '../lib/decimal.js';
 import crypto from 'crypto';
 
 // ─── Shared Prisma includes ───
@@ -397,7 +398,7 @@ export async function sendQuote(id: string, price: number, description: string, 
   const updated = await prisma.ticket.update({
     where: { id },
     data: {
-      quotedPrice: price,
+      quotedPrice: toMoneyDecimal(price),
       quoteDescription: description,
       quoteDuration: duration,
       status: 'EN_ATTENTE_APPROBATION',
@@ -411,7 +412,7 @@ export async function sendQuote(id: string, price: number, description: string, 
     entityId: id,
     action: 'QUOTE_SENT',
     userId,
-    newValue: { price, description, duration },
+    newValue: { price: Number(formatMoneyValue(price)), description, duration },
   }).catch(() => {});
 
   // Fire-and-forget: notify customer that a quote was sent
@@ -425,13 +426,13 @@ export async function sendQuote(id: string, price: number, description: string, 
           sendEmail({
             to: customer.email,
             subject: `Devis pour le billet ${ticket.ticketNumber}`,
-            body: `Bonjour ${customer.firstName},\n\nUn devis a été soumis pour votre billet ${ticket.ticketNumber}:\n\nMontant: ${price}$\nDescription: ${description}\nDurée estimée: ${duration}\n\nVeuillez vous connecter pour approuver ou refuser ce devis.`,
+            body: `Bonjour ${customer.firstName},\n\nUn devis a été soumis pour votre billet ${ticket.ticketNumber}:\n\nMontant: ${formatMoneyValue(price)}$\nDescription: ${description}\nDurée estimée: ${duration}\n\nVeuillez vous connecter pour approuver ou refuser ce devis.`,
           }).catch(err => logger.error({ err }, 'Failed to send quote email to customer'));
         }
         if (customer?.phone) {
           sendSms({
             to: customer.phone,
-            message: `Valitek — Un devis de ${price}$ a été soumis pour votre billet ${ticket.ticketNumber}. Connectez-vous pour l'approuver.`,
+            message: `Valitek — Un devis de ${formatMoneyValue(price)}$ a été soumis pour votre billet ${ticket.ticketNumber}. Connectez-vous pour l'approuver.`,
           }).catch(err => logger.error({ err }, 'Failed to send quote SMS to customer'));
         }
       }).catch(() => {});

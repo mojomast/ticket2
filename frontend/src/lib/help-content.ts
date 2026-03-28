@@ -38,7 +38,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Rendez-vous à venir',
         content:
-          "La section « Rendez-vous à venir » liste les prochains rendez-vous planifiés avec le client, la date, l'heure et le technicien assigné. Les rendez-vous sont triés par date croissante. Un code couleur indique le statut : bleu pour planifié, vert pour confirmé, jaune pour en attente de confirmation.",
+          "La section « Rendez-vous à venir » liste les prochains rendez-vous avec le client, la date, l'heure et le technicien assigné. Les rendez-vous sont triés par date croissante. Un code couleur indique le statut : ambre pour demande, bleu pour planifié, vert pour confirmé, violet pour en cours, gris pour terminé et rouge pour annulé.",
       },
       {
         heading: 'Navigation rapide',
@@ -62,7 +62,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Recherche et filtres',
         content:
-          "Utilisez la barre de recherche en haut pour trouver un billet par numéro, titre ou nom de client. Les filtres déroulants vous permettent de restreindre la liste par statut (Nouveau, Devis envoyé, Approuvé, etc.), priorité (Basse, Moyenne, Haute, Urgente), catégorie de service, technicien assigné et mode (Sur site, En atelier, À distance). Combinez plusieurs filtres pour affiner les résultats. Le bouton « Réinitialiser » efface tous les filtres actifs.",
+          "Utilisez la barre de recherche en haut pour trouver un billet par numéro, titre ou nom de client. Les filtres déroulants vous permettent de restreindre la liste par statut (Nouvelle, En attente d'approbation, Approuvée, etc.), priorité (Basse, Moyenne, Haute, Urgente), catégorie de service, technicien assigné et mode (Sur site, En atelier, À distance). Combinez plusieurs filtres pour affiner les résultats. Le bouton « Réinitialiser » efface tous les filtres actifs.",
       },
       {
         heading: 'Tableau des billets',
@@ -77,7 +77,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Statuts des billets',
         content:
-          "Les billets suivent un cycle de vie structuré : NOUVEAU → DEVIS_ENVOYÉ → APPROUVÉ → PLANIFIÉ → EN_COURS → TERMINÉ. Des statuts spéciaux existent également : EN_ATTENTE_DEVIS (devis en préparation), REFUSÉ (devis refusé par le client) et ANNULÉ. Chaque statut est affiché avec un badge de couleur distincte pour un repérage rapide dans le tableau.",
+          "Les billets utilisent les statuts réels suivants : « Nouvelle », « En attente d'approbation », « En attente de réponse client », « Approuvée », « Planifiée », « En cours », « Blocage », « Terminée », « Fermée » et « Annulée ». Selon le contexte, un billet peut passer rapidement de « Nouvelle » à « En cours » ou « Planifiée », tandis que les devis envoyés placent le billet en « En attente d'approbation ».",
       },
       {
         heading: 'Pagination et tri',
@@ -101,7 +101,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Statut et transitions',
         content:
-          "Le statut actuel est affiché en haut de la page avec un badge de couleur. Les boutons de transition disponibles apparaissent juste en dessous et dépendent du statut actuel. Par exemple, depuis « Nouveau », vous pouvez passer à « Devis envoyé » ou « Approuvé ». Cliquez sur un bouton de transition pour changer le statut. Une confirmation peut être demandée pour certaines transitions irréversibles comme « Annulé ».",
+          "Le statut actuel est affiché en haut de la page avec un badge de couleur. Les boutons de transition disponibles dépendent du statut courant et des règles métier. Par exemple, l'envoi d'un devis place le billet en « En attente d'approbation », un billet approuvé peut ensuite être « Planifié », puis passer « En cours », « Terminée » et finalement « Fermée ». Certaines transitions spéciales existent aussi, notamment « Blocage » et « Annulée ».",
       },
       {
         heading: 'Assignation du technicien',
@@ -111,7 +111,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Gestion des devis',
         content:
-          "Dans la section « Devis », cliquez sur « Créer un devis » pour saisir le montant estimé et les détails des travaux proposés. Une fois créé, cliquez sur « Envoyer le devis » pour notifier le client par email. Le client pourra alors approuver ou refuser le devis depuis son portail. Le statut du billet passera automatiquement à « Devis envoyé », puis à « Approuvé » si le client accepte.",
+          "Dans la section « Devis », cliquez sur « Créer un devis » pour saisir le montant estimé et les détails des travaux proposés. Une fois créé, cliquez sur « Envoyer le devis » pour notifier le client par email. Le client pourra alors approuver ou refuser le devis depuis son portail. Le statut du billet passera automatiquement à « En attente d'approbation », puis à « Approuvée » si le client accepte.",
       },
       {
         heading: 'Gestion des bloqueurs',
@@ -155,7 +155,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Organisation des colonnes',
         content:
-          "Les colonnes sont disposées de gauche à droite dans l'ordre logique du cycle de vie : Nouveau, Devis envoyé, Approuvé, Planifié, En cours, Terminé. Les colonnes de statuts spéciaux (Refusé, Annulé) sont affichées séparément. Chaque colonne affiche le nombre de billets qu'elle contient dans un badge numérique sur l'en-tête.",
+          "Les colonnes sont disposées de gauche à droite selon les statuts actifs du flux réel : Nouvelle, En attente d'approbation, En attente de réponse client, Approuvée, Planifiée, En cours, Blocage et Terminée. Les statuts finaux comme « Fermée » et « Annulée » servent surtout au suivi historique. Chaque colonne affiche le nombre de billets qu'elle contient dans un badge numérique sur l'en-tête.",
       },
       {
         heading: 'Cartes de billets',
@@ -165,7 +165,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: "Identifier les goulots d'étranglement",
         content:
-          "La vue Kanban est un outil visuel puissant pour identifier les goulots d'étranglement dans votre processus. Une colonne avec beaucoup de cartes indique un retard à cette étape du cycle de vie. Par exemple, de nombreuses cartes dans « Devis envoyé » signifient que des clients n'ont pas encore répondu. Utilisez cette information pour prioriser vos actions.",
+          "La vue Kanban est un outil visuel puissant pour identifier les goulots d'étranglement dans votre processus. Une colonne avec beaucoup de cartes indique un retard à cette étape du cycle de vie. Par exemple, de nombreuses cartes dans « En attente d'approbation » ou « En attente de réponse client » signifient que des clients n'ont pas encore répondu. Utilisez cette information pour prioriser vos actions.",
       },
       {
         heading: 'Filtrage des cartes',
@@ -184,17 +184,17 @@ const helpContent: Record<string, HelpArticle> = {
   'ADMIN:admin-calendar': {
     title: 'Calendrier des rendez-vous',
     description:
-      "Le calendrier mensuel affiche tous les rendez-vous planifiés pour l'ensemble des techniciens. Naviguez entre les mois, identifiez les journées chargées et consultez les détails de chaque rendez-vous directement depuis la vue calendrier.",
+      "Le calendrier des rendez-vous vous permet de visualiser les interventions de tous les techniciens en vues mois, semaine ou jour. Naviguez dans le temps, repérez les créneaux libres ou chargés, et gérez les rendez-vous directement depuis le calendrier.",
     sections: [
       {
-        heading: 'Navigation mensuelle',
+        heading: 'Navigation et vues',
         content:
-          "Utilisez les flèches « ← » et « → » en haut du calendrier pour naviguer entre les mois. Le bouton « Aujourd'hui » ramène instantanément à la vue du mois courant avec la date du jour mise en évidence. Le mois et l'année affichés sont mis à jour automatiquement dans l'en-tête du calendrier.",
+          "Utilisez les boutons de navigation pour avancer ou reculer dans le temps, puis basculez entre les vues « Mois », « Semaine » et « Jour » selon le niveau de détail souhaité. Le bouton « Aujourd'hui » ramène instantanément à la date courante. La vue semaine et la vue jour sont particulièrement utiles pour visualiser la charge réelle par heure.",
       },
       {
         heading: 'Affichage des rendez-vous',
         content:
-          "Chaque rendez-vous apparaît sur la date correspondante avec un code couleur selon son statut : bleu pour planifié, vert pour confirmé, jaune pour en attente de confirmation, gris pour terminé, rouge pour annulé. Le nom du client et l'heure sont affichés directement sur la cellule du jour pour une lecture rapide.",
+          "Chaque rendez-vous apparaît avec un code couleur selon son statut réel : ambre pour demande, bleu pour planifié, vert pour confirmé, violet pour en cours, gris pour terminé et rouge pour annulé. Selon la vue choisie, vous verrez soit un résumé par jour, soit des blocs horaires détaillés avec l'heure, le billet associé et le technicien.",
       },
       {
         heading: 'Consulter les détails',
@@ -286,7 +286,7 @@ const helpContent: Record<string, HelpArticle> = {
   'ADMIN:admin-settings': {
     title: "Paramètres de l'application",
     description:
-      "La page des paramètres vous permet de configurer les options générales de l'application Valitek. Vous pouvez y modifier la langue de l'interface, gérer les paramètres de notification et personnaliser d'autres aspects du fonctionnement de l'application.",
+      "La page des paramètres centralise les réglages globaux de Valitek. Vous pouvez y changer la langue de l'interface, mettre à jour l'image de marque de l'entreprise, configurer l'envoi d'emails et de SMS, ainsi que définir les paramètres de feuilles de travail.",
     sections: [
       {
         heading: "Langue de l'interface",
@@ -294,20 +294,20 @@ const helpContent: Record<string, HelpArticle> = {
           "Le sélecteur de langue permet de basculer entre le français (FR) et l'anglais (EN). La modification s'applique immédiatement à toute l'interface utilisateur. La langue choisie est enregistrée dans votre profil et sera conservée à votre prochaine connexion. Le français est la langue par défaut de l'application.",
       },
       {
-        heading: 'Paramètres généraux',
+        heading: 'Image de marque et coordonnées',
         content:
-          "Les paramètres généraux incluent les options de personnalisation globales de l'application. Modifiez les valeurs selon les besoins de votre atelier et cliquez sur « Enregistrer » pour appliquer les changements. Certains paramètres peuvent nécessiter un rechargement de la page pour prendre pleinement effet.",
+          "La section principale permet de définir le nom de l'entreprise, la couleur principale, le logo, le téléphone, l'email et l'adresse affichés dans l'application. Utilisez-la pour garder les coordonnées visibles et l'identité visuelle de l'atelier à jour.",
       },
       {
-        heading: 'Configuration des notifications',
+        heading: 'Configuration email, SMS et feuilles de travail',
         content:
-          "Configurez quels événements déclenchent des notifications par email : création de nouveaux billets, changements de statut, messages des clients, confirmations de rendez-vous et mises à jour de bons de travail. Vous pouvez activer ou désactiver chaque type de notification individuellement pour contrôler le volume d'alertes reçues.",
+          "Les cartes suivantes servent à enregistrer les identifiants Microsoft 365 pour les emails sortants, les accès VoIP.ms pour les SMS, ainsi qu'à définir le seuil d'alerte de montant et les paramètres par défaut des feuilles de travail (taux horaire, mode de déplacement et sections activées).",
       },
     ],
     tips: [
       "Le français est la langue recommandée pour une utilisation au Québec et en France.",
-      "Les modifications de paramètres sont enregistrées automatiquement après confirmation.",
-      "Vérifiez les paramètres de notification pour ne manquer aucun événement important.",
+      "Enregistrez chaque carte séparément : image de marque, email, SMS et configuration des feuilles ont leurs propres boutons.",
+      "Vérifiez les configurations email et SMS après mise à jour pour vous assurer que les notifications sortantes fonctionneront correctement.",
     ],
   },
 
@@ -357,7 +357,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Vue Kanban',
         content:
-          "La vue Kanban organise les bons de travail en colonnes par statut : Réception, Diagnostic, Attente approbation, Approuvé, Attente pièces, En réparation, Vérification, Prêt et Remis. Les colonnes Refusé, Abandonné et Annulé sont affichées séparément. Chaque carte montre le numéro du BDT, le type d'appareil, le nom du client et le badge d'ancienneté coloré.",
+          "La vue Kanban organise les bons de travail actifs en colonnes par statut : Réception, Diagnostic, Attente approbation, Approuvé, Attente pièces, En réparation, Vérification et Prêt. Les statuts terminaux — « Remis », « Refusé », « Abandonné » et « Annulé » — servent au suivi final et sont gérés séparément. Chaque carte montre le numéro du BDT, le type d'appareil, le nom du client et le badge d'ancienneté coloré.",
       },
       {
         heading: 'Vue liste',
@@ -445,7 +445,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Statut et transitions',
         content:
-          "Le statut actuel est affiché en haut avec un badge coloré. Les boutons de transition proposent les prochains statuts possibles selon l'état actuel du BDT. Le cycle complet est : Réception → Diagnostic → Attente approbation → Approuvé → Attente pièces → En réparation → Vérification → Prêt → Remis. Des transitions directes vers Refusé, Abandonné ou Annulé sont possibles à certaines étapes selon les règles métier.",
+          "Le statut actuel est affiché en haut avec un badge coloré. Les boutons de transition proposent uniquement les prochains statuts autorisés selon l'état actuel du BDT. Le flux principal va de « Réception » à « Prêt », puis « Remis » lors de la récupération; selon le cas, vous pouvez aussi passer par « Attente pièces » ou terminer sur « Refusé », « Abandonné » ou « Annulé ».",
       },
       {
         heading: "Informations sur l'appareil",
@@ -603,7 +603,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Filtrage par statut',
         content:
-          "Utilisez les filtres de statut pour afficher uniquement les feuilles de travail qui vous intéressent : « Brouillon » pour les feuilles en cours de rédaction, « Soumise » pour celles en attente de révision, « Approuvée » pour les feuilles validées, « Révisée » pour celles retournées avec des corrections demandées, « Facturée » pour les feuilles dont la facture a été émise, et « Annulée » pour les feuilles abandonnées.",
+          "Utilisez les filtres de statut pour afficher uniquement les feuilles de travail qui vous intéressent : « Brouillon » pour les feuilles en cours de rédaction, « Soumise » pour celles en attente de traitement administratif, « Révisée » pour celles retournées avec des corrections demandées, « Approuvée » pour les feuilles validées, « Facturée » pour les feuilles liées à une facturation émise, et « Annulée » pour les feuilles abandonnées.",
       },
       {
         heading: 'Recherche et tri',
@@ -651,23 +651,23 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Transitions de statut',
         content:
-          "Les boutons de transition vous permettent de faire avancer la feuille dans son cycle de vie. Depuis « Soumise », vous pouvez « Approuver » si tout est conforme, « Réviser » pour demander des corrections au technicien, ou « Annuler » la feuille. Une feuille approuvée peut ensuite être passée au statut « Facturée » une fois la facture émise au client.",
+          "Les boutons de transition vous permettent de faire avancer la feuille dans son cycle de vie. Depuis « Soumise », vous pouvez « Approuver » si tout est conforme ou « Réviser » pour demander des corrections au technicien. Une feuille « Approuvée » peut ensuite être passée à « Facturée » ou, si nécessaire, « Annulée ».",
       },
       {
         heading: 'Génération PDF et totaux financiers',
         content:
-          "Le bouton « Générer PDF » crée un document professionnel récapitulant l'ensemble de l'intervention : détail des travaux, pièces, déplacements et totaux. La section des totaux affiche le sous-total de chaque catégorie (main-d'œuvre, pièces, déplacement), les taxes applicables et le montant total TTC. Vérifiez ces montants avant de générer le PDF final.",
+          "Le bouton de téléchargement PDF ouvre le récapitulatif professionnel de l'intervention. La section des totaux affiche les montants calculés par catégorie — main-d'œuvre, pièces, déplacement — ainsi que le total global. Vérifiez ces montants avant de partager le PDF final.",
       },
       {
         heading: 'Signatures',
         content:
-          "La section signatures permet de visualiser les signatures du technicien et du client apposées sur la feuille de travail. Les signatures attestent de l'accord des deux parties sur les travaux effectués et les montants facturés. Vérifiez la présence des signatures requises avant de passer la feuille au statut « Facturée ».",
+          "La section signatures permet de visualiser les signatures du technicien et du client lorsqu'elles ont été enregistrées. Elles complètent la traçabilité de l'intervention, mais leur présence dépend du contexte réel de la feuille et du moment où elle a été signée.",
       },
     ],
     tips: [
       "Vérifiez les totaux financiers et les taux horaires avant d'approuver une feuille de travail.",
       "Utilisez la modification en ligne pour corriger les petites erreurs sans retourner la feuille au technicien.",
-      "Générez le PDF uniquement lorsque la feuille est approuvée et que toutes les informations sont définitives.",
+      "Téléchargez le PDF uniquement lorsque la feuille est stabilisée et que toutes les informations sont définitives.",
     ],
   },
 
@@ -746,7 +746,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Statut et transitions',
         content:
-          "Le statut actuel du billet est affiché en haut de la page. Les boutons de transition disponibles dépendent directement de vos permissions : si « Peut accepter les billets » est activée, vous pouvez faire avancer le statut du billet. Si « Peut fermer les billets » est activée, vous pouvez marquer un billet comme terminé. Si ces permissions ne vous sont pas accordées, demandez à l'administrateur de changer le statut.",
+          "Le statut actuel du billet est affiché en haut de la page. Si le billet vous est assigné, vous pouvez effectuer les transitions prévues pour votre rôle (par exemple vers « En cours », « Blocage » ou « Terminée » selon l'étape). La permission « Peut accepter les billets » sert à vous auto-assigner un billet non attribué, tandis que « Peut fermer les billets » autorise la fermeture finale d'un billet déjà « Terminée ».",
       },
       {
         heading: 'Gestion des devis',
@@ -766,7 +766,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Section rendez-vous',
         content:
-          "La section rendez-vous affiche les rendez-vous planifiés pour ce billet avec les détails de date, heure et lieu. Si la permission « Peut annuler les rendez-vous » est activée pour votre compte, vous pouvez annuler un rendez-vous en cas de besoin. Sinon, contactez l'administrateur. Les propositions de dates et la négociation avec le client sont gérées par l'administrateur.",
+          "La section rendez-vous affiche les rendez-vous liés au billet avec leurs détails de date, heure et lieu. Si la permission « Peut annuler les rendez-vous » est activée, vous pouvez annuler un rendez-vous planifié ou confirmé. Vous voyez aussi les propositions de créneaux en attente et, sur un billet qui vous est assigné, vous pouvez les accepter, les refuser ou envoyer une contre-proposition si le créneau ne convient pas.",
       },
       {
         heading: 'Informations du billet et du client',
@@ -785,12 +785,12 @@ const helpContent: Record<string, HelpArticle> = {
   'TECHNICIAN:tech-schedule': {
     title: 'Mon emploi du temps',
     description:
-      "Cette page affiche votre calendrier personnel avec tous vos rendez-vous planifiés. Visualisez votre emploi du temps sur le mois entier, préparez vos interventions à l'avance et consultez les détails de chaque rendez-vous directement depuis le calendrier.",
+      "Cette page affiche votre calendrier personnel avec tous vos rendez-vous. Visualisez votre emploi du temps sur le mois entier, préparez vos interventions à l'avance et consultez les détails de chaque rendez-vous directement depuis le calendrier.",
     sections: [
       {
         heading: 'Vue du calendrier',
         content:
-          "Votre calendrier personnel affiche uniquement vos propres rendez-vous, pas ceux des autres techniciens. Naviguez entre les mois avec les flèches « ← » et « → ». Les rendez-vous sont affichés avec un code couleur selon leur statut : bleu pour planifié, vert pour confirmé, jaune pour en attente de confirmation, gris pour terminé, rouge pour annulé.",
+          "Votre calendrier personnel affiche uniquement vos propres rendez-vous, pas ceux des autres techniciens. Naviguez entre les mois avec les flèches « ← » et « → ». Les rendez-vous sont affichés avec un code couleur selon leur statut : ambre pour demande, bleu pour planifié, vert pour confirmé, violet pour en cours, gris pour terminé et rouge pour annulé.",
       },
       {
         heading: "Détails d'un rendez-vous",
@@ -823,7 +823,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Vue Kanban',
         content:
-          "La vue Kanban organise vos bons de travail en colonnes par statut : Réception, Diagnostic, Attente approbation, Approuvé, Attente pièces, En réparation, Vérification, Prêt et Remis. Chaque carte affiche le numéro du BDT, le type d'appareil, le nom du client et le badge d'ancienneté coloré. Cliquez sur une carte pour ouvrir le détail complet du bon de travail.",
+          "La vue Kanban organise vos bons de travail actifs en colonnes par statut : Réception, Diagnostic, Attente approbation, Approuvé, Attente pièces, En réparation, Vérification et Prêt. Les statuts terminaux comme « Remis », « Refusé », « Abandonné » ou « Annulé » servent surtout à l'historique. Chaque carte affiche le numéro du BDT, le type d'appareil, le nom du client et le badge d'ancienneté coloré. Cliquez sur une carte pour ouvrir le détail complet du bon de travail.",
       },
       {
         heading: 'Vue liste',
@@ -896,7 +896,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Statut et transitions',
         content:
-          "Le statut actuel du BDT est affiché en haut de la page avec un badge coloré. Les boutons de transition proposent les prochains statuts possibles selon l'état actuel. Par exemple, depuis « Diagnostic », vous pouvez passer à « Attente approbation » si un devis est nécessaire, ou directement à « Approuvé » si le client a déjà donné son accord. Suivez le flux normal : Réception → Diagnostic → Attente approbation → Approuvé → En réparation → Vérification → Prêt.",
+          "Le statut actuel du BDT est affiché en haut de la page avec un badge coloré. Les boutons de transition proposent les prochains statuts autorisés selon l'état actuel. Par exemple, depuis « Diagnostic », vous pouvez passer à « Attente approbation » si un devis est nécessaire, ou directement à « Approuvé » ou « En réparation » dans un cas simple. N'oubliez pas « Attente pièces » lorsqu'une commande est requise avant la reprise des travaux.",
       },
       {
         heading: 'Notes de diagnostic',
@@ -945,7 +945,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Filtres par statut',
         content:
-          "Filtrez vos feuilles par statut pour vous concentrer sur celles qui nécessitent votre attention. Les feuilles au statut « Brouillon » sont en cours de rédaction et doivent être complétées. Les feuilles « Révisée » ont été retournées par l'administrateur avec des corrections demandées — traitez-les en priorité. Les feuilles « Soumise » et « Approuvée » sont en attente de traitement par l'administration.",
+          "Filtrez vos feuilles par statut pour vous concentrer sur celles qui nécessitent votre attention. Les feuilles au statut « Brouillon » sont en cours de rédaction. Les feuilles « Révisée » ont été retournées par l'administrateur avec des corrections demandées — traitez-les en priorité. Les feuilles « Soumise » sont en attente de traitement administratif, tandis que « Approuvée », « Facturée » et « Annulée » correspondent à des étapes finales ou quasi finales du dossier.",
       },
       {
         heading: 'Créer une feuille de travail',
@@ -993,7 +993,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Consultation du PDF',
         content:
-          "Cliquez sur « Voir PDF » pour afficher ou télécharger le document récapitulatif de la feuille de travail. Le PDF reprend l'ensemble des entrées, notes et totaux dans un format professionnel. Vous pouvez consulter le PDF à tout moment, y compris lorsque la feuille est encore au statut brouillon, pour vérifier la présentation finale.",
+          "Cliquez sur « Voir PDF » pour ouvrir le document récapitulatif de la feuille de travail. Le PDF reprend l'ensemble des entrées, notes et totaux dans un format professionnel. Vous pouvez le consulter à tout moment pour vérifier le rendu final du dossier.",
       },
     ],
     tips: [
@@ -1015,7 +1015,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Vos billets en cours',
         content:
-          "La section « Mes billets » affiche un résumé de vos demandes de service actives. Chaque billet indique son statut actuel : en attente, devis envoyé, en cours de traitement, terminé, etc. Cliquez sur un billet pour accéder à sa fiche détaillée, consulter les messages de l'équipe technique et communiquer directement avec notre équipe.",
+          "La section « Mes billets » affiche un résumé de vos demandes de service actives. Chaque billet indique son statut actuel : nouvelle demande, en attente d'approbation, planifiée, en cours, terminée, etc. Cliquez sur un billet pour accéder à sa fiche détaillée, consulter les messages de l'équipe technique et communiquer directement avec notre équipe.",
       },
       {
         heading: 'Rendez-vous à venir',
@@ -1059,12 +1059,12 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Comprendre les statuts de vos billets',
         content:
-          "Vos billets passent par plusieurs étapes clairement identifiées : « Nouveau » signifie que votre demande a été reçue et enregistrée. « Devis envoyé » signifie qu'un devis est en attente de votre approbation. « Approuvé » signifie que le travail est autorisé et sera planifié. « Planifié » signifie qu'un rendez-vous ou une intervention est fixé. « En cours » signifie que le technicien travaille activement sur votre demande. « Terminé » signifie que le service est achevé.",
+          "Vos billets passent par plusieurs étapes clairement identifiées : « Nouvelle » signifie que votre demande a été reçue. « En attente d'approbation » signifie qu'un devis attend votre décision. « En attente de réponse client » indique qu'une action ou un retour de votre part est nécessaire avant la suite. « Approuvée », « Planifiée » et « En cours » décrivent ensuite l'avancement opérationnel. Les statuts « Blocage », « Terminée », « Fermée » et « Annulée » servent à refléter les situations particulières ou la fin du dossier.",
       },
       {
         heading: 'Actions requises de votre part',
         content:
-          "Certains billets nécessitent une action de votre part pour continuer. Un billet au statut « Devis envoyé » attend votre approbation ou votre refus du devis proposé. Un billet avec des propositions de rendez-vous attend que vous choisissiez un créneau parmi ceux proposés. Traitez ces actions rapidement pour ne pas retarder le processus de service.",
+          "Certains billets nécessitent une action de votre part pour continuer. Un billet au statut « En attente d'approbation » attend votre approbation ou votre refus du devis proposé. Un billet avec des propositions de rendez-vous attend que vous choisissiez un créneau, que vous le refusiez ou que vous proposiez une autre disponibilité. Traitez ces actions rapidement pour ne pas retarder le processus de service.",
       },
     ],
     tips: [
@@ -1093,7 +1093,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Gestion des propositions de rendez-vous',
         content:
-          "Lorsque des créneaux de rendez-vous vous sont proposés par l'équipe, ils apparaissent dans la section « Propositions » avec la date et l'heure de chaque option. Cliquez sur « Accepter » à côté du créneau qui vous convient le mieux. Si aucun créneau proposé ne correspond à vos disponibilités, cliquez sur « Contre-proposer » pour suggérer de nouvelles dates et heures qui vous arrangent.",
+          "Lorsque des créneaux de rendez-vous vous sont proposés par l'équipe, ils apparaissent dans la section « Propositions » avec la date et l'heure de chaque option. Vous pouvez accepter un créneau proposé, le refuser avec un message, ou créer votre propre proposition de date si aucun choix ne vous convient. Selon la disponibilité réelle affichée, vous pouvez aussi réserver directement un créneau sans passer par une contre-proposition.",
       },
       {
         heading: "Échange de messages avec l'équipe",
@@ -1137,7 +1137,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Modification ou annulation',
         content:
-          "Si vous devez modifier ou annuler un rendez-vous confirmé, contactez notre équipe dès que possible via les messages du billet de service associé. Nous reprogrammerons un nouveau créneau selon vos disponibilités. Plus vous nous prévenez tôt, plus il sera facile de trouver un nouveau créneau convenable.",
+          "Les rendez-vous au statut « Planifié » ou « Confirmé » peuvent être annulés directement depuis la page lorsqu'un bouton d'annulation est affiché. Pour replanifier ensuite ou pour tout cas plus complexe, contactez notre équipe via les messages du billet associé afin de convenir d'un nouveau créneau.",
       },
     ],
     tips: [
@@ -1229,12 +1229,12 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Comprendre les statuts',
         content:
-          "Les feuilles de travail passent par plusieurs statuts : « Brouillon » signifie que le technicien est en train de documenter l'intervention. « Soumise » signifie que la feuille est en cours de révision par l'équipe. « Approuvée » signifie que les travaux et les montants ont été validés. « Facturée » signifie que la facture correspondante a été émise. Seules les feuilles approuvées ou facturées reflètent les montants définitifs.",
+          "Les feuilles de travail passent par plusieurs statuts : « Brouillon » signifie que le technicien documente encore l'intervention. « Soumise » signifie que la feuille attend un traitement administratif. « Révisée » signifie qu'elle a été retournée pour correction. « Approuvée » signifie que les travaux et les montants ont été validés. « Facturée » signifie que la facture correspondante a été émise, tandis que « Annulée » indique qu'elle a été abandonnée. Seules les feuilles approuvées ou facturées reflètent normalement des montants stabilisés.",
       },
       {
         heading: 'Télécharger le PDF',
         content:
-          "Lorsqu'une feuille de travail est approuvée ou facturée, vous pouvez télécharger le récapitulatif complet au format PDF. Ce document détaille les heures de main-d'œuvre, les pièces utilisées, les frais de déplacement et les totaux. Conservez ce PDF pour vos archives personnelles ou pour vos besoins comptables.",
+          "Le bouton PDF ouvre le récapitulatif complet au format PDF lorsqu'il est disponible dans la fiche. Ce document détaille les heures de main-d'œuvre, les pièces utilisées, les frais de déplacement et les totaux. Conservez ce PDF pour vos archives personnelles ou pour vos besoins comptables.",
       },
     ],
     tips: [
@@ -1257,7 +1257,7 @@ const helpContent: Record<string, HelpArticle> = {
       {
         heading: 'Comprendre les totaux',
         content:
-          "La section des totaux récapitule le coût de l'intervention : sous-total main-d'œuvre, sous-total pièces, sous-total déplacement, taxes applicables et montant total TTC. Ces montants correspondent au détail affiché dans les sections précédentes. Le montant total TTC est le montant final qui vous sera facturé.",
+          "La section des totaux récapitule les montants calculés pour l'intervention : total main-d'œuvre, total pièces, total déplacement et total global. Ces montants correspondent au détail affiché dans les sections précédentes et constituent le résumé financier visible dans la feuille.",
       },
       {
         heading: 'Signatures',

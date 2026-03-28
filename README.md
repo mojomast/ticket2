@@ -57,7 +57,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Travel entries with distance, rate per km, addresses
 - 4 note types: Interne, Visible Client, Diagnostic Finding, Procédure
 - Follow-up reminders (5 types) with hourly scheduler and notification delivery
-- Tech and customer signature capture (base64)
+- Tech signature capture in the current staff workflow (customer signature flow reserved for future dedicated portal/audited flow)
 - PDF generation via pdf-lib with labor/parts/travel tables and signatures
 - Automatic financial total recalculation on every mutation
 - Notes-to-KB integration (create knowledge base article from diagnostic findings)
@@ -97,12 +97,14 @@ A complete IT ticket management and in-shop repair work order system built for V
 - Database backup/restore (admin) with transactional restore and confirmation dialog
 - UI polish pass: inline form validation feedback, empty states for sparse views, responsive worksheet/backups tables, aria-label coverage for icon-only controls, reusable confirmation dialogs for destructive actions
 - Review hardening pass: ticket attachment/message authorization checks, appointment access validation, stricter scheduling chronology rules, safer demo reset logout, and worksheet enum/signature alignment
+- Platform hardening pass: encrypted work-order device passwords, Decimal-backed money fields, real pagination on capped list pages, refreshed help copy, and notification retention cleanup
 - Audit logging for ticket, work order, and user changes
 - Full French/English internationalization (~1400 translation keys) wired into all 38 pages
 - Demo mode with persona selector (dropdown for customers) and data reset (admin-only)
 - User profile management with password change
 - Contextual help system with sidebar, keyboard shortcuts, and 170+ French tooltips
 - Follow-up reminder scheduler (runs hourly, sends notifications for due follow-ups)
+- Notification retention cleanup scheduler (runs daily; default retention is 30 days for read notifications and 180 days for unread notifications)
 
 ---
 
@@ -452,9 +454,13 @@ See `.env.example` for the full template. Key variables:
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `AUTH_SECRET` | Yes | JWT signing secret (min 32 chars) |
+| `WORKORDER_DEVICE_PASSWORD_KEY` | No | Optional dedicated encryption key for `WorkOrder.devicePassword` (defaults to `AUTH_SECRET` if omitted) |
 | `FRONTEND_URL` | Yes | Frontend origin for CORS/CSRF (e.g. `http://localhost:5173`) |
 | `PORT` | No | Backend port (default: 3000, dev typically uses 3200) |
 | `DEMO_MODE` | No | Enable demo login/reset (default: false) |
+| `NOTIFICATION_RETENTION_ENABLED` | No | Enable scheduled notification cleanup (default: true) |
+| `NOTIFICATION_RETENTION_READ_DAYS` | No | Delete read notifications older than N days (default: 30) |
+| `NOTIFICATION_RETENTION_UNREAD_DAYS` | No | Delete unread notifications older than N days (default: 180) |
 | `LOG_LEVEL` | No | pino log level (default: info) |
 | `NODE_ENV` | No | development / production |
 | `M365_TENANT_ID` | No | Microsoft 365 tenant for email |
@@ -814,7 +820,7 @@ Any non-terminal state --> ANNULE (terminal, admin only)
 
 - **Intake form:** 6-section form -- customer search/autocomplete, device details, condition checklist with toggle switches, accessories list, problem description with consent options, financial estimates
 - **Denormalized customer info:** `customerName`/`customerPhone` stored directly for quick display (walk-in customers may not have full accounts)
-- **Device tracking:** Type, brand, model, serial, color, password, OS
+- **Device tracking:** Type, brand, model, serial, color, encrypted device password, OS
 - **Condition checklist:** JSON `Record<string, boolean>` for flexible per-device checks
 - **Accessories:** JSON array of strings
 - **Parts used:** JSON array of `{ name, cost, type }`
@@ -853,7 +859,7 @@ BROUILLON --> SOUMISE --> REVISEE --> APPROUVEE --> FACTUREE
 - **Labor:** Hourly rate × billable hours (with break deduction), 6 labor types
 - **Parts:** Supplier cost + customer-facing unit price × quantity, optional warranty
 - **Travel:** Distance (km) × rate per km
-- **Auto-totals:** `totalLabor`, `totalParts`, `totalTravel`, `grandTotal` recalculated on every mutation (rounded to 2 decimals)
+- **Auto-totals:** `totalLabor`, `totalParts`, `totalTravel`, `grandTotal` recalculated on every mutation (rounded to 2 decimals, stored as Decimal in PostgreSQL)
 
 ### Follow-Up Reminders
 
@@ -865,7 +871,7 @@ Uses `pdf-lib` to generate professional PDF documents including:
 - Header with company info and worksheet metadata
 - Labor, parts, and travel tables with line totals
 - Notes (client-visible only)
-- Tech and customer signatures (rendered side-by-side)
+- Technician signature (current implemented workflow) rendered on the PDF; customer-signature flow is intentionally deferred until a dedicated audited portal flow exists
 - Grand total summary
 
 ### Admin Worksheet Config
@@ -984,7 +990,7 @@ All routes use French-language paths. Components are lazy-loaded.
 - **Constants** (`src/lib/constants.ts`): All status labels, colors, and priority mappings in one file
 - **UI guardrails**: High-traffic forms now show inline validation errors; destructive actions use a shared `ConfirmDialog`; icon-only controls include `aria-label`s; wide worksheet/backups tables keep mobile overflow wrappers
 - **StatusBadge** (`src/components/shared/StatusBadge.tsx`): Supports `type="ticket"`, `type="appointment"`, `type="workorder"`
-- **SignaturePad** (`src/components/shared/SignaturePad.tsx`): Canvas-based signature capture component
+- **SignaturePad** (`src/components/shared/SignaturePad.tsx`): Canvas-based technician signature capture component in the current implemented workflow
 - **TanStack Query keys**: `['tickets']`, `['workorders']`, `['worksheets']`, `['kb-articles']`, `['customer-notes']`, `['notifications']`, etc.
 
 ---

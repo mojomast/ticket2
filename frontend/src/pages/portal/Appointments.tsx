@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type Appointment } from '../../api/client';
@@ -10,6 +10,8 @@ import { useTranslation } from '../../lib/i18n/hook';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 
+const PAGE_LIMIT = 20;
+
 /** Appointment statuses that allow cancellation */
 const CANCELLABLE_STATUSES = ['PLANIFIE', 'CONFIRME'];
 
@@ -17,19 +19,35 @@ type FilterMode = 'all' | 'upcoming' | 'past';
 
 export default function PortalAppointments() {
   const [filter, setFilter] = useState<FilterMode>('upcoming');
+  const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const toast = useToast();
   const { t } = useTranslation();
+  const appointmentQueryParams = useMemo(() => {
+    const now = new Date().toISOString();
+
+    return {
+      page,
+      limit: PAGE_LIMIT,
+      sortOrder: filter === 'past' ? 'desc' : 'asc',
+      ...(filter === 'upcoming' ? { from: now } : {}),
+      ...(filter === 'past' ? { to: now } : {}),
+    };
+  }, [filter, page]);
 
   // ─── Data fetching ───
   const {
-    data: appointments = [],
+    data,
     isLoading,
     isError,
-  } = useQuery<Appointment[]>({
-    queryKey: ['appointments'],
-    queryFn: () => api.appointments.list(),
+  } = useQuery({
+    queryKey: ['appointments', appointmentQueryParams],
+    queryFn: () => api.appointments.listPaginated(appointmentQueryParams),
   });
+
+  const appointments: Appointment[] = data?.data ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
+  const totalAppointments = data?.pagination?.total ?? 0;
 
   // ─── Cancel mutation ───
   const cancelMutation = useMutation({
@@ -43,25 +61,22 @@ export default function PortalAppointments() {
     },
   });
 
-  // ─── Filtering ───
-  const now = new Date();
-
-  const filtered = appointments.filter((apt) => {
-    if (filter === 'upcoming') {
-      return new Date(apt.scheduledStart) >= now;
-    }
-    if (filter === 'past') {
-      return new Date(apt.scheduledStart) < now;
-    }
-    return true; // 'all'
-  });
-
-  // Sort: upcoming → ascending (nearest first), past → descending (most recent first)
-  const sorted = [...filtered].sort((a, b) => {
+  const sorted = useMemo(() => [...appointments].sort((a, b) => {
     const dateA = new Date(a.scheduledStart).getTime();
     const dateB = new Date(b.scheduledStart).getTime();
     return filter === 'past' ? dateB - dateA : dateA - dateB;
-  });
+  }), [appointments, filter]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(Math.max(1, totalPages));
+    }
+  }, [page, totalPages]);
+
+  const handleFilterChange = (mode: FilterMode) => {
+    setFilter(mode);
+    setPage(1);
+  };
 
   const isCancellable = (status: string) => CANCELLABLE_STATUSES.includes(status);
 
@@ -71,7 +86,7 @@ export default function PortalAppointments() {
       type="button"
       variant={filter === mode ? 'default' : 'ghost'}
       size="sm"
-      onClick={() => setFilter(mode)}
+      onClick={() => handleFilterChange(mode)}
     >
       {label}
     </Button>
@@ -180,14 +195,42 @@ export default function PortalAppointments() {
 
           {/* Summary count */}
           {sorted.length > 0 && (
-            <p className="text-xs text-muted-foreground text-right">
-              {filter !== 'all'
-                ? t('appointment.countFiltered', {
-                    count: sorted.length,
-                    filter: filter === 'upcoming' ? t('appointment.upcoming').toLowerCase() : t('appointment.past').toLowerCase(),
-                  })
-                : t('appointment.count', { count: sorted.length })}
-            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground sm:text-left">
+                {filter !== 'all'
+                  ? t('appointment.countFiltered', {
+                      count: totalAppointments,
+                      filter: filter === 'upcoming' ? t('appointment.upcoming').toLowerCase() : t('appointment.past').toLowerCase(),
+                    })
+                  : t('appointment.count', { count: totalAppointments })}
+              </p>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <p className="text-sm text-muted-foreground">
+                    {t('common.pageOf', { page: String(page), total: String(totalPages) })}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                    >
+                      {t('common.previous_arrow')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={page >= totalPages}
+                    >
+                      {t('common.next_arrow')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </>
       )}
