@@ -36,6 +36,7 @@ const QUOTABLE_STATUSES = ['NOUVELLE', 'APPROUVEE', 'EN_COURS'];
 
 // Statuses where appointment scheduling is available
 const SCHEDULABLE_STATUSES = ['APPROUVEE', 'PLANIFIEE', 'EN_COURS'];
+const CANCELLABLE_APPOINTMENT_STATUSES = ['PLANIFIE', 'CONFIRME'];
 
 function formatSlotTime(isoString: string): string {
   const d = new Date(isoString);
@@ -983,19 +984,24 @@ export default function AdminTicketDetail() {
                               {apt.status === 'EN_COURS' && (
                                 <option value="TERMINE">{t('admin.ticketDetail.complete')}</option>
                               )}
+                              {CANCELLABLE_APPOINTMENT_STATUSES.includes(apt.status) && (
+                                <option value="ANNULE">{t('admin.ticketDetail.cancelAppt')}</option>
+                              )}
                             </select>
                           </HelpTooltip>
-                          <HelpTooltip content={t('admin.ticketDetail.cancelApptTooltip')} side="top">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setAppointmentToCancel(apt.id)}
-                              disabled={cancelAppointmentMutation.isPending}
-                              className="border-red-300 text-red-700 hover:bg-red-50"
-                            >
-                              {cancelAppointmentMutation.isPending ? t('admin.ticketDetail.cancelling') : t('admin.ticketDetail.cancelAppt')}
-                            </Button>
-                          </HelpTooltip>
+                          {CANCELLABLE_APPOINTMENT_STATUSES.includes(apt.status) && (
+                            <HelpTooltip content={t('admin.ticketDetail.cancelApptTooltip')} side="top">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAppointmentToCancel(apt.id)}
+                                disabled={cancelAppointmentMutation.isPending}
+                                className="border-red-300 text-red-700 hover:bg-red-50"
+                              >
+                                {cancelAppointmentMutation.isPending ? t('admin.ticketDetail.cancelling') : t('admin.ticketDetail.cancelAppt')}
+                              </Button>
+                            </HelpTooltip>
+                          )}
                         </div>
                       )}
                     </div>

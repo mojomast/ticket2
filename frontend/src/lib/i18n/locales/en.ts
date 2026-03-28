@@ -1586,6 +1586,7 @@ export const en: Record<string, string> = {
   'worksheet.clearSignature': 'Clear',
   'worksheet.saveSignature': 'Save Signature',
   'worksheet.signatureSaved': 'Signature saved successfully',
+  'worksheet.customerSignatureDisabledStaff': 'Customer signatures can no longer be captured from the staff interface. Use a customer-controlled signing flow when it is available.',
   'worksheet.drawSignature': 'Draw your signature below',
   'worksheet.approvedAt': 'Approved on',
   'worksheet.billedAt': 'Billed on',

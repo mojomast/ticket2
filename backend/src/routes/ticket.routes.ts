@@ -129,7 +129,7 @@ app.post('/:id/attachments', async (c) => {
   if (!(file instanceof File)) {
     throw AppError.badRequest('Fichier requis');
   }
-  const attachment = await attachmentService.uploadAttachment(file, session.user.id, ticketId);
+  const attachment = await attachmentService.uploadAttachment(file, session.user.id, session.user.role, ticketId);
   return c.json({ data: attachment, error: null }, 201);
 });
 

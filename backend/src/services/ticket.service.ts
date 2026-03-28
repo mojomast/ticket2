@@ -8,6 +8,7 @@ import * as notificationService from './notification.service.js';
 import { sendEmail } from './email.service.js';
 import { sendSms } from './sms.service.js';
 import { logger } from '../lib/logger.js';
+import { hashPassword } from '../lib/auth.js';
 import crypto from 'crypto';
 
 // ─── Shared Prisma includes ───
@@ -30,6 +31,30 @@ const TICKET_DETAIL_INCLUDE = {
   },
   _count: { select: { messages: true, attachments: true } },
 };
+
+type TicketAccessTarget = {
+  id: string;
+  customerId: string | null;
+  technicianId: string | null;
+};
+
+async function getRoleScopedTicketFilters(userId: string, role: UserRole) {
+  if (role === 'CUSTOMER') {
+    return { customerId: userId };
+  }
+
+  if (role === 'TECHNICIAN') {
+    const perms = parseTechPermissions(
+      (await prisma.user.findUnique({ where: { id: userId }, select: { permissions: true } }))?.permissions
+    );
+
+    if (!perms.can_view_all_tickets) {
+      return { technicianId: userId };
+    }
+  }
+
+  return {};
+}
 
 // ─── Ticket Number Generation (with retry loop to handle race conditions) ───
 async function generateTicketNumber(): Promise<string> {
@@ -124,18 +149,6 @@ export async function getTickets(query: TicketListQuery, userId: string, role: U
 
   const where: any = { deletedAt: null };
 
-  // Role-based filtering
-  if (role === 'CUSTOMER') {
-    where.customerId = userId;
-  } else if (role === 'TECHNICIAN') {
-    const perms = parseTechPermissions(
-      (await prisma.user.findUnique({ where: { id: userId }, select: { permissions: true } }))?.permissions
-    );
-    if (!perms.can_view_all_tickets) {
-      where.technicianId = userId;
-    }
-  }
-
   // Additional filters
   if (query.status) where.status = query.status;
   if (query.priority) where.priority = query.priority;
@@ -148,6 +161,8 @@ export async function getTickets(query: TicketListQuery, userId: string, role: U
       { description: { contains: query.search, mode: 'insensitive' } },
     ];
   }
+
+  Object.assign(where, await getRoleScopedTicketFilters(userId, role));
 
   const [tickets, total] = await Promise.all([
     prisma.ticket.findMany({
@@ -163,6 +178,40 @@ export async function getTickets(query: TicketListQuery, userId: string, role: U
   return buildPaginatedResponse(tickets, total, page, limit);
 }
 
+export async function assertTicketAccess(ticket: TicketAccessTarget, userId: string, role: UserRole) {
+  if (role === 'CUSTOMER' && ticket.customerId !== userId) {
+    throw AppError.forbidden();
+  }
+
+  if (role === 'TECHNICIAN') {
+    const perms = parseTechPermissions(
+      (await prisma.user.findUnique({ where: { id: userId }, select: { permissions: true } }))?.permissions
+    );
+
+    if (!perms.can_view_all_tickets && ticket.technicianId !== userId) {
+      throw AppError.forbidden();
+    }
+  }
+}
+
+export async function getTicketAccessContext(id: string, userId: string, role: UserRole) {
+  const ticket = await prisma.ticket.findFirst({
+    where: { id, deletedAt: null },
+    select: {
+      id: true,
+      ticketNumber: true,
+      customerId: true,
+      technicianId: true,
+    },
+  });
+
+  if (!ticket) throw AppError.notFound('Billet introuvable');
+
+  await assertTicketAccess(ticket, userId, role);
+
+  return ticket;
+}
+
 export async function getTicketById(id: string, userId: string, role: UserRole) {
   const ticket = await prisma.ticket.findFirst({
     where: { id, deletedAt: null },
@@ -171,18 +220,7 @@ export async function getTicketById(id: string, userId: string, role: UserRole) 
 
   if (!ticket) throw AppError.notFound('Billet introuvable');
 
-  // Access control
-  if (role === 'CUSTOMER' && ticket.customerId !== userId) {
-    throw AppError.forbidden();
-  }
-  if (role === 'TECHNICIAN') {
-    const perms = parseTechPermissions(
-      (await prisma.user.findUnique({ where: { id: userId }, select: { permissions: true } }))?.permissions
-    );
-    if (!perms.can_view_all_tickets && ticket.technicianId !== userId) {
-      throw AppError.forbidden();
-    }
-  }
+  await assertTicketAccess(ticket, userId, role);
 
   return ticket;
 }
@@ -508,12 +546,13 @@ export async function createServiceRequest(data: ServiceRequestInput) {
     });
 
     if (!cust) {
-      // Generate a random password hash placeholder (customer can reset later)
+      // Generate an unreachable random password so the customer must reset it later.
       const randomPassword = crypto.randomBytes(32).toString('hex');
+      const passwordHash = await hashPassword(randomPassword);
       cust = await tx.user.create({
         data: {
           email: data.customerEmail,
-          passwordHash: randomPassword, // Not a real hash — user must reset password
+          passwordHash,
           firstName: data.customerFirstName,
           lastName: data.customerLastName,
           phone: data.customerPhone || null,

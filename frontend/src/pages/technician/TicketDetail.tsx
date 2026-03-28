@@ -31,6 +31,7 @@ const TECH_STATUS_TRANSITIONS: Record<string, string[]> = {
 };
 
 const SCHEDULABLE_STATUSES = ['APPROUVEE', 'PLANIFIEE', 'EN_COURS'];
+const CANCELLABLE_APPOINTMENT_STATUSES = ['PLANIFIE', 'CONFIRME'];
 
 function formatSlotTime(isoString: string): string {
   const d = new Date(isoString);
@@ -427,6 +428,8 @@ export default function TechTicketDetail() {
 
   const canScheduleAppointment =
     isAssignedToMe && SCHEDULABLE_STATUSES.includes(tk.status);
+  const canCancelAppointment =
+    !!user?.permissions?.can_cancel_appointments;
 
   // ─── Handlers ───
   const handleQuoteSubmit = (e: React.FormEvent) => {
@@ -934,17 +937,19 @@ export default function TechTicketDetail() {
                               </Button>
                             </HelpTooltip>
                           )}
-                          <HelpTooltip content={t('tech.ticketDetail.cancelApptTooltip')} side="top">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => setAppointmentToCancel(appt.id)}
-                              disabled={isMutating}
-                              className="text-xs bg-red-100 text-red-700 hover:bg-red-200"
-                            >
-                              {cancelApptMutation.isPending ? t('tech.ticketDetail.cancelling') : t('tech.ticketDetail.cancelAppt')}
-                            </Button>
-                          </HelpTooltip>
+                          {canCancelAppointment && CANCELLABLE_APPOINTMENT_STATUSES.includes(appt.status) && (
+                            <HelpTooltip content={t('tech.ticketDetail.cancelApptTooltip')} side="top">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setAppointmentToCancel(appt.id)}
+                                disabled={isMutating}
+                                className="text-xs bg-red-100 text-red-700 hover:bg-red-200"
+                              >
+                                {cancelApptMutation.isPending ? t('tech.ticketDetail.cancelling') : t('tech.ticketDetail.cancelAppt')}
+                              </Button>
+                            </HelpTooltip>
+                          )}
                         </div>
                       )}
                     </div>

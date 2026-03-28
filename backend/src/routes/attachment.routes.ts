@@ -10,7 +10,12 @@ const app = new Hono();
 // ─── GET /api/attachments/:id/download — download a specific attachment ───
 
 app.get('/attachments/:id/download', async (c) => {
-  const attachment = await attachmentService.getAttachment(c.req.param('id'));
+  const session = c.get('session');
+  const attachment = await attachmentService.getAttachmentForUser(
+    c.req.param('id'),
+    session.user.id,
+    session.user.role,
+  );
   const filePath = attachmentService.getAttachmentFilePath(attachment.storagePath);
 
   if (!existsSync(filePath)) {
@@ -43,7 +48,12 @@ app.get('/attachments/:id/download', async (c) => {
 // ─── GET /api/attachments/:id/view — inline view (Content-Disposition: inline) ───
 
 app.get('/attachments/:id/view', async (c) => {
-  const attachment = await attachmentService.getAttachment(c.req.param('id'));
+  const session = c.get('session');
+  const attachment = await attachmentService.getAttachmentForUser(
+    c.req.param('id'),
+    session.user.id,
+    session.user.role,
+  );
   const filePath = attachmentService.getAttachmentFilePath(attachment.storagePath);
 
   if (!existsSync(filePath)) {

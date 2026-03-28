@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { UserRole } from '@prisma/client';
+import { getTicketAccessContext } from './ticket.service.js';
 
 // ─── Constants ───
 
@@ -64,6 +65,7 @@ const ATTACHMENT_INCLUDE = {
 export async function uploadAttachment(
   file: File,
   userId: string,
+  role: UserRole,
   ticketId: string,
   messageId?: string,
 ) {
@@ -81,13 +83,7 @@ export async function uploadAttachment(
     );
   }
 
-  // Verify ticket exists
-  const ticket = await prisma.ticket.findFirst({
-    where: { id: ticketId, deletedAt: null },
-  });
-  if (!ticket) {
-    throw AppError.notFound('Billet introuvable');
-  }
+  await getTicketAccessContext(ticketId, userId, role);
 
   // Verify message exists if provided
   if (messageId) {
@@ -142,6 +138,14 @@ export async function getAttachment(id: string) {
   return attachment;
 }
 
+export async function getAttachmentForUser(id: string, userId: string, role: UserRole) {
+  const attachment = await getAttachment(id);
+
+  await getTicketAccessContext(attachment.ticketId, userId, role);
+
+  return attachment;
+}
+
 /**
  * Get the full file path for an attachment (for download/streaming).
  */
@@ -153,18 +157,7 @@ export function getAttachmentFilePath(storagePath: string): string {
  * List all attachments for a ticket.
  */
 export async function getAttachmentsByTicket(ticketId: string, userId: string, role: UserRole) {
-  // Verify ticket exists and user has access
-  const ticket = await prisma.ticket.findFirst({
-    where: { id: ticketId, deletedAt: null },
-  });
-  if (!ticket) {
-    throw AppError.notFound('Billet introuvable');
-  }
-
-  // Customers can only see their own ticket's attachments
-  if (role === 'CUSTOMER' && ticket.customerId !== userId) {
-    throw AppError.forbidden();
-  }
+  await getTicketAccessContext(ticketId, userId, role);
 
   const attachments = await prisma.attachment.findMany({
     where: { ticketId },
@@ -186,6 +179,8 @@ export async function deleteAttachment(id: string, userId: string, role: UserRol
   if (!attachment) {
     throw AppError.notFound('Pièce jointe introuvable');
   }
+
+  await getTicketAccessContext(attachment.ticketId, userId, role);
 
   // Authorization: only admin or the uploader can delete
   if (role !== 'ADMIN' && attachment.uploadedBy !== userId) {

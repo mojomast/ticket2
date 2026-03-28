@@ -5,12 +5,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Mock Prisma using vi.hoisted ───
-const { mockPrisma } = vi.hoisted(() => {
+const { mockPrisma, mockGetTicketAccessContext } = vi.hoisted(() => {
   return {
     mockPrisma: {
-      ticket: {
-        findFirst: vi.fn(),
-      },
       message: {
         create: vi.fn(),
         findFirst: vi.fn(),
@@ -19,11 +16,33 @@ const { mockPrisma } = vi.hoisted(() => {
         update: vi.fn(),
       },
     },
+    mockGetTicketAccessContext: vi.fn(),
   };
 });
 
 vi.mock('../lib/prisma.js', () => ({
   prisma: mockPrisma,
+}));
+
+vi.mock('./ticket.service.js', () => ({
+  getTicketAccessContext: mockGetTicketAccessContext,
+}));
+
+vi.mock('./notification.service.js', () => ({
+  notifyNewMessage: vi.fn(),
+}));
+
+vi.mock('./email.service.js', () => ({
+  sendEmail: vi.fn(),
+}));
+
+vi.mock('../lib/logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
 }));
 
 import {
@@ -35,12 +54,17 @@ import {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockGetTicketAccessContext.mockResolvedValue({
+    id: 'ticket-1',
+    ticketNumber: 'TKT-260301',
+    customerId: 'customer-1',
+    technicianId: null,
+  });
 });
 
 // ─── createMessage Tests ───
 describe('createMessage', () => {
   it('sets isInternal=false for CUSTOMER role regardless of input', async () => {
-    const ticket = { id: 'ticket-1', customerId: 'customer-1', deletedAt: null };
     const createdMessage = {
       id: 'msg-1',
       ticketId: 'ticket-1',
@@ -50,7 +74,6 @@ describe('createMessage', () => {
       author: { id: 'customer-1', firstName: 'Test', lastName: 'User', role: 'CUSTOMER', email: 'test@test.com' },
     };
 
-    mockPrisma.ticket.findFirst.mockResolvedValue(ticket);
     mockPrisma.message.create.mockResolvedValue(createdMessage);
 
     const result = await createMessage(
@@ -67,7 +90,6 @@ describe('createMessage', () => {
   });
 
   it('allows ADMIN to create internal notes', async () => {
-    const ticket = { id: 'ticket-1', customerId: 'customer-1', deletedAt: null };
     const createdMessage = {
       id: 'msg-2',
       ticketId: 'ticket-1',
@@ -77,7 +99,12 @@ describe('createMessage', () => {
       author: { id: 'admin-1', firstName: 'Admin', lastName: 'User', role: 'ADMIN', email: 'admin@test.com' },
     };
 
-    mockPrisma.ticket.findFirst.mockResolvedValue(ticket);
+    mockGetTicketAccessContext.mockResolvedValue({
+      id: 'ticket-1',
+      ticketNumber: 'TKT-260301',
+      customerId: 'customer-1',
+      technicianId: null,
+    });
     mockPrisma.message.create.mockResolvedValue(createdMessage);
 
     await createMessage(
@@ -158,6 +185,22 @@ describe('getMessages', () => {
     // Verify that the where clause includes isInternal: false
     const findManyCall = mockPrisma.message.findMany.mock.calls[0][0];
     expect(findManyCall.where.isInternal).toBe(false);
+  });
+
+  it('verifies ticket access before returning messages', async () => {
+    mockPrisma.message.findMany.mockResolvedValue([]);
+    mockPrisma.message.count.mockResolvedValue(0);
+
+    await getMessages('ticket-1', {}, 'customer-1', 'CUSTOMER');
+
+    expect(mockGetTicketAccessContext).toHaveBeenCalledWith('ticket-1', 'customer-1', 'CUSTOMER');
+  });
+
+  it('rejects when ticket access is denied', async () => {
+    mockGetTicketAccessContext.mockRejectedValue(new Error('Acces refuse'));
+
+    await expect(getMessages('ticket-1', {}, 'customer-2', 'CUSTOMER')).rejects.toThrow('Acces refuse');
+    expect(mockPrisma.message.findMany).not.toHaveBeenCalled();
   });
 
   it('does not filter internal notes for ADMIN role', async () => {

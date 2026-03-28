@@ -875,7 +875,7 @@ export const api = {
     },
 
     // Signatures
-    saveSignature: (worksheetId: string, type: 'tech' | 'customer', signatureData: string) =>
+    saveSignature: (worksheetId: string, type: 'tech', signatureData: string) =>
       request<Worksheet>(`/api/worksheets/${worksheetId}/signature`, {
         method: 'POST',
         body: JSON.stringify({ type, signatureData }),

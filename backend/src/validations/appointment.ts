@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+const chronologicalRangeMessage = 'La date de fin doit être après la date de début';
+
+function isChronologicalRange(start: string, end: string) {
+  return new Date(end).getTime() > new Date(start).getTime();
+}
+
 export const createAppointmentSchema = z.object({
   ticketId: z.string().uuid('ID billet invalide'),
   technicianId: z.string().uuid('ID technicien invalide').optional(),
@@ -7,6 +13,9 @@ export const createAppointmentSchema = z.object({
   scheduledEnd: z.string().datetime('Date de fin invalide'),
   travelBuffer: z.number().int().min(0).max(120).default(0),
   notes: z.string().max(2000).optional(),
+}).refine((data) => isChronologicalRange(data.scheduledStart, data.scheduledEnd), {
+  message: chronologicalRangeMessage,
+  path: ['scheduledEnd'],
 });
 
 export const updateAppointmentSchema = z.object({
@@ -15,7 +24,13 @@ export const updateAppointmentSchema = z.object({
   travelBuffer: z.number().int().min(0).max(120).optional(),
   notes: z.string().max(2000).optional(),
   technicianId: z.string().uuid().optional(),
-});
+}).refine(
+  (data) => !data.scheduledStart || !data.scheduledEnd || isChronologicalRange(data.scheduledStart, data.scheduledEnd),
+  {
+    message: chronologicalRangeMessage,
+    path: ['scheduledEnd'],
+  }
+);
 
 export const appointmentStatusSchema = z.object({
   status: z.enum(['DEMANDE', 'PLANIFIE', 'CONFIRME', 'EN_COURS', 'TERMINE', 'ANNULE']),
@@ -46,6 +61,9 @@ export const createProposalSchema = z.object({
   proposedEnd: z.string().datetime('Date de fin invalide'),
   message: z.string().max(2000).optional(),
   parentId: z.string().uuid().optional(),
+}).refine((data) => isChronologicalRange(data.proposedStart, data.proposedEnd), {
+  message: chronologicalRangeMessage,
+  path: ['proposedEnd'],
 });
 
 export const respondProposalSchema = z.object({

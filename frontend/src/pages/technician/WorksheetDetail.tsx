@@ -8,19 +8,10 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import {
   WS_STATUS_COLORS,
+  LABOR_TYPE_KEYS,
+  WS_NOTE_TYPE_KEYS,
+  FOLLOWUP_TYPE_KEYS,
 } from '../../lib/constants';
-
-const LABOR_TYPE_KEYS = [
-  'DIAGNOSTIC', 'REPARATION', 'INSTALLATION', 'FORMATION', 'CONSULTATION', 'AUTRE',
-] as const;
-
-const WS_NOTE_TYPE_KEYS = [
-  'DIAGNOSTIC_FINDING', 'PROCEDURE', 'VISIBLE_CLIENT', 'INTERNE',
-] as const;
-
-const FOLLOWUP_TYPE_KEYS = [
-  'VERIFICATION_GARANTIE', 'RAPPEL_CLIENT', 'REVERIFICATION', 'ARRIVEE_PIECES', 'SUIVI_DEVIS',
-] as const;
 import { formatDateTime } from '../../lib/utils';
 import SignaturePad from '../../components/shared/SignaturePad';
 
@@ -335,7 +326,7 @@ export default function TechWorksheetDetail() {
   });
 
   const saveSignatureMutation = useMutation({
-    mutationFn: ({ type, signatureData }: { type: 'tech' | 'customer'; signatureData: string }) =>
+    mutationFn: ({ type, signatureData }: { type: 'tech'; signatureData: string }) =>
       api.worksheets.saveSignature(id!, type, signatureData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worksheet', id] });
@@ -1531,10 +1522,9 @@ export default function TechWorksheetDetail() {
                 )}
               </div>
             ) : isDraft ? (
-              <SignaturePad
-                onSave={(dataUrl) => saveSignatureMutation.mutate({ type: 'customer', signatureData: dataUrl })}
-                disabled={saveSignatureMutation.isPending}
-              />
+              <p className="text-sm text-muted-foreground">
+                {t('worksheet.customerSignatureDisabledStaff')}
+              </p>
             ) : (
               <p className="text-sm text-muted-foreground">{t('worksheet.noSignature')}</p>
             )}

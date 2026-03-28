@@ -19,6 +19,7 @@ const { mockPrisma, mockVerifyToken } = vi.hoisted(() => {
       ticket: {
         create: vi.fn(),
         findFirst: vi.fn(),
+        findUnique: vi.fn(),
         findMany: vi.fn(),
         count: vi.fn(),
         update: vi.fn(),
@@ -26,6 +27,7 @@ const { mockPrisma, mockVerifyToken } = vi.hoisted(() => {
       user: {
         findFirst: vi.fn(),
         findUnique: vi.fn(),
+        findMany: vi.fn(),
       },
     },
     mockVerifyToken: vi.fn(),
@@ -99,6 +101,7 @@ function setupAuth(user = adminUser) {
     lastName: user.lastName,
   });
   mockPrisma.user.findFirst.mockResolvedValue(user);
+  mockPrisma.user.findMany.mockResolvedValue([]);
 }
 
 beforeEach(() => {
@@ -162,12 +165,22 @@ describe('POST /api/tickets', () => {
 
     // Mock for generateTicketNumber (ticket.findFirst returns null = no existing ticket)
     mockPrisma.ticket.findFirst.mockResolvedValue(null);
+    mockPrisma.ticket.findUnique.mockResolvedValue(null);
     // Mock for createTicket
     mockPrisma.ticket.create.mockResolvedValue(createdTicket);
-    // When admin creates a ticket, the customer is verified via user.findFirst
-    // user.findFirst is already mocked by setupAuth, but for customer lookup we need
-    // a second call. Use mockResolvedValueOnce for auth, then mockResolvedValue for customer.
-    // Actually, just mock user.findFirst to always return a truthy value (setupAuth already does this).
+    // First user.findFirst call is auth middleware; second validates the customer lookup.
+    mockPrisma.user.findFirst
+      .mockResolvedValueOnce(adminUser)
+      .mockResolvedValueOnce({
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        email: 'client@example.com',
+        role: 'CUSTOMER',
+        firstName: 'Client',
+        lastName: 'Test',
+        permissions: null,
+        isActive: true,
+        deletedAt: null,
+      });
 
     const res = await app.request('/api/tickets', {
       method: 'POST',

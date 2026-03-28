@@ -6,6 +6,7 @@ import { getPagination, buildPaginatedResponse } from '../types/index.js';
 import * as notificationService from './notification.service.js';
 import { sendEmail } from './email.service.js';
 import { logger } from '../lib/logger.js';
+import { getTicketAccessContext } from './ticket.service.js';
 
 const MESSAGE_INCLUDE = {
   author: {
@@ -16,6 +17,8 @@ const MESSAGE_INCLUDE = {
 const EDIT_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function getMessages(ticketId: string, query: any, userId: string, role: UserRole) {
+  await getTicketAccessContext(ticketId, userId, role);
+
   const { page, limit, skip } = getPagination({ page: query.page || 1, limit: query.limit || 50 });
 
   const where: any = { ticketId, deletedAt: null };
@@ -40,15 +43,7 @@ export async function getMessages(ticketId: string, query: any, userId: string, 
 }
 
 export async function createMessage(ticketId: string, data: CreateMessageInput, userId: string, role: UserRole) {
-  // Verify ticket exists and user has access
-  const ticket = await prisma.ticket.findFirst({
-    where: { id: ticketId, deletedAt: null },
-  });
-  if (!ticket) throw AppError.notFound('Billet introuvable');
-
-  if (role === 'CUSTOMER' && ticket.customerId !== userId) {
-    throw AppError.forbidden();
-  }
+  const ticket = await getTicketAccessContext(ticketId, userId, role);
 
   // Customers cannot create internal notes
   const isInternal = role === 'CUSTOMER' ? false : data.isInternal;

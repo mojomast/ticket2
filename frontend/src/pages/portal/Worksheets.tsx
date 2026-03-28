@@ -3,12 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, type WorksheetListItem } from '../../api/client';
 import { formatDate } from '../../lib/utils';
-import { WS_STATUS_COLORS } from '../../lib/constants';
+import { WS_STATUS_COLORS, WS_STATUS_KEYS } from '../../lib/constants';
 import { useTranslation } from '../../lib/i18n/hook';
-
-const WS_STATUS_KEYS = [
-  'BROUILLON', 'EN_COURS', 'SOUMISE', 'APPROUVEE', 'REFUSEE', 'ANNULEE',
-] as const;
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 

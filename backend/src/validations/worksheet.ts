@@ -179,7 +179,7 @@ export type UpdateFollowUpInput = z.infer<typeof updateFollowUpSchema>;
 // ─── Save Signature ───
 
 export const saveSignatureSchema = z.object({
-  type: z.enum(['tech', 'customer']),
+  type: z.literal('tech'),
   signatureData: z.string().min(1, 'Les données de signature sont requises').max(500000, 'La signature ne peut pas dépasser 500 Ko')
     .refine(
       (val) => val.startsWith('data:image/'),

@@ -12,6 +12,9 @@ const { mockPrisma } = vi.hoisted(() => {
         findFirst: vi.fn(),
         update: vi.fn(),
       },
+      user: {
+        findUnique: vi.fn(),
+      },
       appointment: {
         create: vi.fn(),
         findFirst: vi.fn(),
@@ -29,10 +32,14 @@ vi.mock('../lib/prisma.js', () => ({
 import {
   getAvailability,
   createAppointment,
+  getAppointments,
+  getDaySchedule,
+  cancelAppointment,
 } from './scheduling.service.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrisma.user.findUnique.mockResolvedValue({ permissions: null });
 });
 
 // ─── getAvailability Tests ───
@@ -109,6 +116,32 @@ describe('getAvailability', () => {
 
 // ─── createAppointment Tests ───
 describe('createAppointment', () => {
+  it('throws BAD_REQUEST when scheduled end is before scheduled start', async () => {
+    const ticket = {
+      id: 'ticket-1',
+      technicianId: 'tech-1',
+      customerId: 'customer-1',
+      status: 'APPROUVEE',
+      deletedAt: null,
+      customer: { id: 'customer-1' },
+    };
+
+    mockPrisma.ticket.findFirst.mockResolvedValue(ticket);
+
+    await expect(
+      createAppointment(
+        {
+          ticketId: 'ticket-1',
+          scheduledStart: '2026-03-26T15:00:00Z',
+          scheduledEnd: '2026-03-26T14:00:00Z',
+          travelBuffer: 0,
+        },
+        'admin-1',
+        'ADMIN'
+      )
+    ).rejects.toThrow(/fin.*après.*début/i);
+  });
+
   it('throws CONFLICT when technician has overlapping appointment', async () => {
     const ticket = {
       id: 'ticket-1',
@@ -176,6 +209,33 @@ describe('createAppointment', () => {
     expect(mockPrisma.appointment.create).toHaveBeenCalledOnce();
   });
 
+  it('prevents technicians from creating appointments for another technician via payload override', async () => {
+    const ticket = {
+      id: 'ticket-1',
+      technicianId: 'tech-1',
+      customerId: 'customer-1',
+      status: 'APPROUVEE',
+      deletedAt: null,
+      customer: { id: 'customer-1' },
+    };
+
+    mockPrisma.ticket.findFirst.mockResolvedValue(ticket);
+
+    await expect(
+      createAppointment(
+        {
+          ticketId: 'ticket-1',
+          technicianId: 'tech-2',
+          scheduledStart: '2026-03-26T14:00:00Z',
+          scheduledEnd: '2026-03-26T15:00:00Z',
+          travelBuffer: 0,
+        },
+        'tech-1',
+        'TECHNICIAN'
+      )
+    ).rejects.toThrow(/vous-même/i);
+  });
+
   it('throws NOT_FOUND for missing ticket', async () => {
     mockPrisma.ticket.findFirst.mockResolvedValue(null);
 
@@ -191,5 +251,70 @@ describe('createAppointment', () => {
         'ADMIN'
       )
     ).rejects.toThrow('Billet introuvable');
+  });
+});
+
+describe('role-based appointment scoping', () => {
+  it('ignores technicianId query override for technician appointment list', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ permissions: null });
+    mockPrisma.appointment.findMany.mockResolvedValue([]);
+    mockPrisma.appointment.count.mockResolvedValue(0);
+
+    await getAppointments({ technicianId: 'other-tech', page: 1, limit: 20 }, 'tech-1', 'TECHNICIAN');
+
+    expect(mockPrisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ technicianId: 'tech-1' }),
+      })
+    );
+  });
+
+  it('limits day schedule to the requesting technician when query overrides technicianId', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ permissions: null });
+    mockPrisma.appointment.findMany.mockResolvedValue([]);
+
+    await getDaySchedule('2026-03-26', 'other-tech', 'tech-1', 'TECHNICIAN');
+
+    expect(mockPrisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ technicianId: 'tech-1' }),
+      })
+    );
+  });
+
+  it('keeps customer ticket scoping even when technicianId is supplied', async () => {
+    mockPrisma.appointment.findMany.mockResolvedValue([]);
+    mockPrisma.appointment.count.mockResolvedValue(0);
+
+    await getAppointments({ technicianId: 'tech-99', page: 1, limit: 20 }, 'customer-1', 'CUSTOMER');
+
+    expect(mockPrisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          technicianId: 'tech-99',
+          ticket: { customerId: 'customer-1', deletedAt: null },
+        }),
+      })
+    );
+  });
+});
+
+describe('cancelAppointment', () => {
+  it('rejects cancellation for appointments already in progress', async () => {
+    mockPrisma.appointment.findFirst.mockResolvedValue({
+      id: 'appt-1',
+      status: 'EN_COURS',
+      technicianId: 'tech-1',
+      ticket: {
+        id: 'ticket-1',
+        ticketNumber: 'TKT-001',
+        title: 'Test',
+        status: 'PLANIFIEE',
+        customerId: 'customer-1',
+        technicianId: 'tech-1',
+      },
+    });
+
+    await expect(cancelAppointment('appt-1', 'customer-1', 'CUSTOMER')).rejects.toThrow(/planifie.*confirme/i);
   });
 });

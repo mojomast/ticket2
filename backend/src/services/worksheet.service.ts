@@ -1172,14 +1172,13 @@ export async function saveSignature(worksheetId: string, data: SaveSignatureInpu
 
   requireOwnership(ws, userId, role);
 
-  const updatePayload: any = {};
-  if (data.type === 'tech') {
-    updatePayload.techSignature = data.signatureData;
-    updatePayload.techSignedAt = new Date();
-  } else {
-    updatePayload.custSignature = data.signatureData;
-    updatePayload.custSignedAt = new Date();
+  if (data.type !== 'tech') {
+    throw AppError.forbidden('La signature client doit être capturée via un parcours client dédié');
   }
+
+  const updatePayload: any = {};
+  updatePayload.techSignature = data.signatureData;
+  updatePayload.techSignedAt = new Date();
 
   const updated = await prisma.worksheet.update({
     where: { id: worksheetId },
@@ -1193,7 +1192,7 @@ export async function saveSignature(worksheetId: string, data: SaveSignatureInpu
     entityId: worksheetId,
     action: 'SIGNATURE_SAVED',
     userId,
-    newValue: { type: data.type, signedAt: updatePayload.techSignedAt || updatePayload.custSignedAt },
+    newValue: { type: data.type, signedAt: updatePayload.techSignedAt },
   }).catch(() => {});
 
   return updated;

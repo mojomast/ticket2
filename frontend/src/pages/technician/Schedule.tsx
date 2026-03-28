@@ -176,7 +176,7 @@ export default function TechSchedule() {
     return status === 'EN_COURS';
   }
   function canCancelAppointment(status: string): boolean {
-    return canCancel && status !== 'TERMINE' && status !== 'ANNULE';
+    return canCancel && (status === 'PLANIFIE' || status === 'CONFIRME');
   }
 
   // ── Navigation ──────────────────────────────────────────────────

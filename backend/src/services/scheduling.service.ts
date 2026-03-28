@@ -2,7 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import type { CreateAppointmentInput, UpdateAppointmentInput, CreateProposalInput, RespondProposalInput } from '../validations/appointment.js';
 import type { AppointmentStatus, UserRole, TicketStatus } from '@prisma/client';
-import { getPagination, buildPaginatedResponse } from '../types/index.js';
+import { getPagination, buildPaginatedResponse, parseTechPermissions } from '../types/index.js';
 import { sendEmail } from './email.service.js';
 import { sendSms } from './sms.service.js';
 import { logger } from '../lib/logger.js';
@@ -38,6 +38,76 @@ const APPOINTABLE_STATUSES: TicketStatus[] = ['APPROUVEE', 'PLANIFIEE', 'EN_COUR
 // Statuses that allow proposal creation (slightly broader - includes APPROUVEE before scheduling)
 const PROPOSABLE_STATUSES: TicketStatus[] = ['APPROUVEE', 'PLANIFIEE', 'EN_COURS'];
 
+const CANCELLABLE_APPOINTMENT_STATUSES: AppointmentStatus[] = ['PLANIFIE', 'CONFIRME'];
+
+type AppointmentAccessTarget = {
+  technicianId: string | null;
+  ticket: {
+    customerId: string | null;
+    technicianId?: string | null;
+  };
+};
+
+async function getTechnicianPermissions(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { permissions: true },
+  });
+
+  return parseTechPermissions(user?.permissions);
+}
+
+async function assertAppointmentAccess(target: AppointmentAccessTarget, userId: string, role: UserRole) {
+  if (role === 'CUSTOMER' && target.ticket.customerId !== userId) {
+    throw AppError.forbidden('Accès refusé');
+  }
+
+  if (role === 'TECHNICIAN') {
+    const perms = await getTechnicianPermissions(userId);
+
+    if (!perms.can_view_all_tickets) {
+      const isAssignedAppointment = target.technicianId === userId;
+      const isAssignedTicket = target.ticket.technicianId === userId;
+
+      if (!isAssignedAppointment && !isAssignedTicket) {
+        throw AppError.forbidden('Accès refusé');
+      }
+    }
+  }
+}
+
+function assertChronologicalRange(start: Date, end: Date, fieldLabel: string) {
+  if (end.getTime() <= start.getTime()) {
+    throw AppError.badRequest(`${fieldLabel} doit être après la date de début`);
+  }
+}
+
+async function getScopedTechnicianFilter(queryTechnicianId: string | undefined, userId: string, role: UserRole) {
+  if (role !== 'TECHNICIAN') return queryTechnicianId;
+
+  const perms = await getTechnicianPermissions(userId);
+  if (perms.can_view_all_tickets) {
+    return queryTechnicianId;
+  }
+
+  return userId;
+}
+
+async function getRoleScopedAppointmentWhere(userId: string, role: UserRole) {
+  if (role === 'CUSTOMER') {
+    return { ticket: { customerId: userId, deletedAt: null } };
+  }
+
+  if (role === 'TECHNICIAN') {
+    const scopedTechnicianId = await getScopedTechnicianFilter(undefined, userId, role);
+    if (scopedTechnicianId) {
+      return { technicianId: scopedTechnicianId };
+    }
+  }
+
+  return {};
+}
+
 // ─── Appointment CRUD ───
 
 export async function createAppointment(data: CreateAppointmentInput, userId: string, role: UserRole) {
@@ -60,18 +130,37 @@ export async function createAppointment(data: CreateAppointmentInput, userId: st
     throw AppError.forbidden('Vous ne pouvez créer un rendez-vous que pour vos propres billets');
   }
 
+  if (role === 'TECHNICIAN') {
+    const perms = await getTechnicianPermissions(userId);
+    const scopedTechnicianId = data.technicianId ?? ticket.technicianId ?? userId;
+
+    if (!perms.can_view_all_tickets) {
+      if (ticket.technicianId !== userId) {
+        throw AppError.forbidden('Vous ne pouvez créer des rendez-vous que pour vos propres billets assignés');
+      }
+
+      if (scopedTechnicianId !== userId) {
+        throw AppError.forbidden('Vous ne pouvez créer des rendez-vous que pour vous-même');
+      }
+    }
+  }
+
+  const scheduledStart = new Date(data.scheduledStart);
+  const scheduledEnd = new Date(data.scheduledEnd);
+  assertChronologicalRange(scheduledStart, scheduledEnd, 'La date de fin');
+
   const techId = data.technicianId || ticket.technicianId;
 
   // Check for conflicts
   if (techId) {
     const conflict = await prisma.appointment.findFirst({
       where: {
-        technicianId: techId,
-        deletedAt: null,
-        status: { notIn: ['ANNULE', 'TERMINE'] },
-        AND: [
-          { scheduledStart: { lt: new Date(data.scheduledEnd) } },
-          { scheduledEnd: { gt: new Date(data.scheduledStart) } },
+          technicianId: techId,
+          deletedAt: null,
+          status: { notIn: ['ANNULE', 'TERMINE'] },
+          AND: [
+          { scheduledStart: { lt: scheduledEnd } },
+          { scheduledEnd: { gt: scheduledStart } },
         ],
       },
     });
@@ -82,8 +171,8 @@ export async function createAppointment(data: CreateAppointmentInput, userId: st
     data: {
       ticketId: data.ticketId,
       technicianId: techId,
-      scheduledStart: new Date(data.scheduledStart),
-      scheduledEnd: new Date(data.scheduledEnd),
+      scheduledStart,
+      scheduledEnd,
       travelBuffer: data.travelBuffer || 0,
       notes: data.notes,
     },
@@ -129,20 +218,17 @@ export async function getAppointments(query: any, userId: string, role: UserRole
 
   const where: any = { deletedAt: null };
 
-  if (role === 'CUSTOMER') {
-    where.ticket = { customerId: userId, deletedAt: null };
-  } else if (role === 'TECHNICIAN') {
-    where.technicianId = userId;
-  }
-
   if (query.ticketId) where.ticketId = query.ticketId;
-  if (query.technicianId) where.technicianId = query.technicianId;
+  const scopedTechnicianId = await getScopedTechnicianFilter(query.technicianId, userId, role);
+  if (scopedTechnicianId) where.technicianId = scopedTechnicianId;
   if (query.status) where.status = query.status;
   if (query.from || query.to) {
     where.scheduledStart = {};
     if (query.from) where.scheduledStart.gte = new Date(query.from);
     if (query.to) where.scheduledStart.lte = new Date(query.to);
   }
+
+  Object.assign(where, await getRoleScopedAppointmentWhere(userId, role));
 
   const [appointments, total] = await Promise.all([
     prisma.appointment.findMany({
@@ -158,24 +244,63 @@ export async function getAppointments(query: any, userId: string, role: UserRole
   return buildPaginatedResponse(appointments, total, page, limit);
 }
 
-export async function getAppointmentById(id: string) {
+export async function getAppointmentById(id: string, userId?: string, role?: UserRole) {
   const appointment = await prisma.appointment.findFirst({
     where: { id, deletedAt: null },
-    include: APPOINTMENT_INCLUDE,
+    include: {
+      ...APPOINTMENT_INCLUDE,
+      ticket: { select: { id: true, ticketNumber: true, title: true, status: true, customerId: true, technicianId: true } },
+    },
   });
   if (!appointment) throw AppError.notFound('Rendez-vous introuvable');
+
+  if (userId && role) {
+    await assertAppointmentAccess(appointment, userId, role);
+  }
+
   return appointment;
 }
 
-export async function updateAppointment(id: string, data: UpdateAppointmentInput) {
-  const appointment = await getAppointmentById(id);
+export async function updateAppointment(id: string, data: UpdateAppointmentInput, userId: string, role: UserRole) {
+  const appointment = await getAppointmentById(id, userId, role);
+
+  const nextStart = data.scheduledStart ? new Date(data.scheduledStart) : new Date(appointment.scheduledStart);
+  const nextEnd = data.scheduledEnd ? new Date(data.scheduledEnd) : new Date(appointment.scheduledEnd);
+  assertChronologicalRange(nextStart, nextEnd, 'La date de fin');
+
+  if (role === 'TECHNICIAN') {
+    const perms = await getTechnicianPermissions(userId);
+    const nextTechnicianId = data.technicianId ?? appointment.technicianId ?? appointment.ticket.technicianId ?? null;
+
+    if (!perms.can_view_all_tickets && nextTechnicianId !== userId) {
+      throw AppError.forbidden('Vous ne pouvez modifier que vos propres rendez-vous');
+    }
+  }
 
   const updateData: any = {};
-  if (data.scheduledStart) updateData.scheduledStart = new Date(data.scheduledStart);
-  if (data.scheduledEnd) updateData.scheduledEnd = new Date(data.scheduledEnd);
+  if (data.scheduledStart) updateData.scheduledStart = nextStart;
+  if (data.scheduledEnd) updateData.scheduledEnd = nextEnd;
   if (data.travelBuffer !== undefined) updateData.travelBuffer = data.travelBuffer;
   if (data.notes !== undefined) updateData.notes = data.notes;
   if (data.technicianId) updateData.technicianId = data.technicianId;
+
+  const conflictTechnicianId = updateData.technicianId ?? appointment.technicianId;
+  if (conflictTechnicianId) {
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        id: { not: id },
+        technicianId: conflictTechnicianId,
+        deletedAt: null,
+        status: { notIn: ['ANNULE', 'TERMINE'] },
+        AND: [
+          { scheduledStart: { lt: nextEnd } },
+          { scheduledEnd: { gt: nextStart } },
+        ],
+      },
+    });
+
+    if (conflict) throw AppError.conflict('Le technicien a deja un rendez-vous a cette heure');
+  }
 
   return prisma.appointment.update({
     where: { id },
@@ -194,9 +319,21 @@ export async function cancelAppointment(id: string, userId?: string, role?: User
   });
   if (!appointment) throw AppError.notFound('Rendez-vous introuvable');
 
-  // Customers can only cancel appointments on their own tickets
-  if (role === 'CUSTOMER' && appointment.ticket.customerId !== userId) {
-    throw AppError.forbidden('Vous ne pouvez annuler que vos propres rendez-vous');
+  if (userId && role) {
+    await assertAppointmentAccess(appointment, userId, role);
+  }
+
+  if (!CANCELLABLE_APPOINTMENT_STATUSES.includes(appointment.status)) {
+    throw AppError.badRequest(
+      `Seuls les rendez-vous aux statuts ${CANCELLABLE_APPOINTMENT_STATUSES.join(', ')} peuvent être annulés`
+    );
+  }
+
+  if (role === 'TECHNICIAN' && userId) {
+    const perms = await getTechnicianPermissions(userId);
+    if (!perms.can_cancel_appointments) {
+      throw AppError.forbidden('Vous n\'avez pas la permission d\'annuler des rendez-vous');
+    }
   }
 
   return prisma.appointment.update({
@@ -206,8 +343,23 @@ export async function cancelAppointment(id: string, userId?: string, role?: User
   });
 }
 
-export async function changeAppointmentStatus(id: string, status: AppointmentStatus, cancelReason?: string) {
-  const appointment = await getAppointmentById(id);
+export async function changeAppointmentStatus(id: string, status: AppointmentStatus, cancelReason: string | undefined, userId: string, role: UserRole) {
+  const appointment = await getAppointmentById(id, userId, role);
+
+  if (status === 'ANNULE') {
+    if (role === 'TECHNICIAN') {
+      const perms = await getTechnicianPermissions(userId);
+      if (!perms.can_cancel_appointments) {
+        throw AppError.forbidden('Vous n\'avez pas la permission d\'annuler des rendez-vous');
+      }
+    }
+
+    if (!CANCELLABLE_APPOINTMENT_STATUSES.includes(appointment.status)) {
+      throw AppError.badRequest(
+        `Seuls les rendez-vous aux statuts ${CANCELLABLE_APPOINTMENT_STATUSES.join(', ')} peuvent être annulés`
+      );
+    }
+  }
 
   const data: any = { status };
   if (status === 'ANNULE' && cancelReason) {
@@ -267,16 +419,19 @@ export async function getAvailability(date: string, technicianId?: string, durat
 
 // ─── Day Schedule (for inline calendar view) ───
 
-export async function getDaySchedule(date: string, technicianId?: string) {
+export async function getDaySchedule(date: string, technicianId: string | undefined, userId: string, role: UserRole) {
   const dayStart = new Date(`${date}T00:00:00`);
   const dayEnd = new Date(`${date}T23:59:59`);
+  const scopedTechnicianId = await getScopedTechnicianFilter(technicianId, userId, role);
 
   const where: any = {
     deletedAt: null,
     status: { notIn: ['ANNULE'] },
     scheduledStart: { gte: dayStart, lte: dayEnd },
   };
-  if (technicianId) where.technicianId = technicianId;
+  if (scopedTechnicianId) where.technicianId = scopedTechnicianId;
+
+  Object.assign(where, await getRoleScopedAppointmentWhere(userId, role));
 
   const appointments = await prisma.appointment.findMany({
     where,
@@ -312,6 +467,19 @@ export async function createProposal(data: CreateProposalInput, userId: string, 
     throw AppError.forbidden('Vous ne pouvez proposer un rendez-vous que pour vos propres billets');
   }
 
+  if (role === 'TECHNICIAN') {
+    const perms = await getTechnicianPermissions(userId);
+    if (!perms.can_view_all_tickets) {
+      if (ticket.technicianId !== userId) {
+        throw AppError.forbidden('Vous ne pouvez proposer des rendez-vous que pour vos propres billets assignés');
+      }
+    }
+  }
+
+  const proposedStart = new Date(data.proposedStart);
+  const proposedEnd = new Date(data.proposedEnd);
+  assertChronologicalRange(proposedStart, proposedEnd, 'La date de fin proposée');
+
   // If this is a counter-proposal, validate parent exists and is in PROPOSEE status
   if (data.parentId) {
     const parent = await prisma.appointmentProposal.findFirst({
@@ -327,8 +495,8 @@ export async function createProposal(data: CreateProposalInput, userId: string, 
     data: {
       ticketId: data.ticketId,
       proposedById: userId,
-      proposedStart: new Date(data.proposedStart),
-      proposedEnd: new Date(data.proposedEnd),
+      proposedStart,
+      proposedEnd,
       message: data.message || null,
       parentId: data.parentId || null,
     },
@@ -345,6 +513,11 @@ export async function getProposals(ticketId: string, status?: string, userId?: s
   // Customers only see proposals for their own tickets
   if (role === 'CUSTOMER') {
     where.ticket = { customerId: userId, deletedAt: null };
+  } else if (role === 'TECHNICIAN' && userId) {
+    const perms = await getTechnicianPermissions(userId);
+    if (!perms.can_view_all_tickets) {
+      where.ticket = { technicianId: userId, deletedAt: null };
+    }
   }
 
   const proposals = await prisma.appointmentProposal.findMany({
@@ -381,6 +554,13 @@ export async function acceptProposal(proposalId: string, data: RespondProposalIn
   // Customer can only accept proposals on their own tickets
   if (role === 'CUSTOMER' && proposal.ticket.customerId !== userId) {
     throw AppError.forbidden('Vous ne pouvez accepter que les propositions concernant vos propres billets');
+  }
+
+  if (role === 'TECHNICIAN') {
+    const perms = await getTechnicianPermissions(userId);
+    if (!perms.can_view_all_tickets && proposal.ticket.technicianId !== userId) {
+      throw AppError.forbidden('Vous ne pouvez accepter que les propositions concernant vos propres billets assignés');
+    }
   }
 
   const techId = proposal.ticket.technicianId;
@@ -482,7 +662,7 @@ export async function rejectProposal(proposalId: string, data: RespondProposalIn
   const proposal = await prisma.appointmentProposal.findFirst({
     where: { id: proposalId, deletedAt: null },
     include: {
-      ticket: { select: { id: true, customerId: true } },
+      ticket: { select: { id: true, customerId: true, technicianId: true } },
     },
   });
   if (!proposal) throw AppError.notFound('Proposition introuvable');
@@ -498,6 +678,13 @@ export async function rejectProposal(proposalId: string, data: RespondProposalIn
   // Customer can only reject proposals on their own tickets
   if (role === 'CUSTOMER' && proposal.ticket.customerId !== userId) {
     throw AppError.forbidden('Vous ne pouvez rejeter que les propositions concernant vos propres billets');
+  }
+
+  if (role === 'TECHNICIAN') {
+    const perms = await getTechnicianPermissions(userId);
+    if (!perms.can_view_all_tickets && proposal.ticket.technicianId !== userId) {
+      throw AppError.forbidden('Vous ne pouvez rejeter que les propositions concernant vos propres billets assignés');
+    }
   }
 
   const updatedProposal = await prisma.appointmentProposal.update({

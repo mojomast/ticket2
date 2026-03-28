@@ -19,6 +19,7 @@ import { useTranslation } from '../../lib/i18n/hook';
 
 // Statuses where a customer can book an appointment
 const BOOKABLE_STATUSES = ['APPROUVEE', 'PLANIFIEE', 'EN_COURS'];
+const CANCELLABLE_APPOINTMENT_STATUSES = ['PLANIFIE', 'CONFIRME'];
 
 function formatSlotTime(isoString: string): string {
   const d = new Date(isoString);
@@ -228,6 +229,7 @@ export default function PortalTicketDetail() {
   };
 
   const availableSlots = (slots || []).filter((s: any) => s.available);
+  const canCancelAppointment = (status: string) => CANCELLABLE_APPOINTMENT_STATUSES.includes(status);
 
   return (
     <div className="space-y-6">
@@ -303,16 +305,18 @@ export default function PortalTicketDetail() {
                     {apt.notes && <p className="text-xs text-muted-foreground mt-1">{apt.notes}</p>}
                     <StatusBadge status={apt.status} type="appointment" />
                   </div>
-                  <HelpTooltip content={t('portal.ticketDetail.cancelApptTooltip')} side="left">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setAppointmentToCancel(apt.id)}
-                      disabled={cancelAppointmentMutation.isPending}
-                    >
-                      {cancelAppointmentMutation.isPending ? t('common.loadingEllipsis') : t('portal.ticketDetail.cancelAppt')}
-                    </Button>
-                  </HelpTooltip>
+                  {canCancelAppointment(apt.status) && (
+                    <HelpTooltip content={t('portal.ticketDetail.cancelApptTooltip')} side="left">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setAppointmentToCancel(apt.id)}
+                        disabled={cancelAppointmentMutation.isPending}
+                      >
+                        {cancelAppointmentMutation.isPending ? t('common.loadingEllipsis') : t('portal.ticketDetail.cancelAppt')}
+                      </Button>
+                    </HelpTooltip>
+                  )}
                 </div>
               ))}
             </div>

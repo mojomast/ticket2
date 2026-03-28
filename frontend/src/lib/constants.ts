@@ -165,6 +165,22 @@ export const WO_KANBAN_COLUMNS = [
 
 // ─── Worksheet Status ───
 
+export const WS_STATUS_KEYS = [
+  'BROUILLON', 'SOUMISE', 'REVISEE', 'APPROUVEE', 'FACTUREE', 'ANNULEE',
+] as const;
+
+export const LABOR_TYPE_KEYS = [
+  'DIAGNOSTIC', 'REPARATION', 'INSTALLATION', 'CONSULTATION', 'GARANTIE', 'REPRISE',
+] as const;
+
+export const WS_NOTE_TYPE_KEYS = [
+  'INTERNE', 'VISIBLE_CLIENT', 'DIAGNOSTIC_FINDING', 'PROCEDURE',
+] as const;
+
+export const FOLLOWUP_TYPE_KEYS = [
+  'VERIFICATION_GARANTIE', 'RAPPEL_CLIENT', 'REVERIFICATION', 'ARRIVEE_PIECES', 'SUIVI_DEVIS',
+] as const;
+
 export const WS_STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   BROUILLON: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' },
   SOUMISE: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },

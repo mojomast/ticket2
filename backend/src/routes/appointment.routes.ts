@@ -36,8 +36,9 @@ app.get('/availability', validateQuery(availabilityQuerySchema), async (c) => {
 // ─── Day Schedule (for inline calendar view) ───
 
 app.get('/day-schedule', validateQuery(dayScheduleQuerySchema), async (c) => {
+  const session = c.get('session');
   const query = c.get('query') as any;
-  const appointments = await schedulingService.getDaySchedule(query.date, query.technicianId);
+  const appointments = await schedulingService.getDaySchedule(query.date, query.technicianId, session.user.id, session.user.role);
   return c.json({ data: appointments, error: null });
 });
 
@@ -80,13 +81,15 @@ app.delete('/proposals/:id', async (c) => {
 // ─── Appointment Detail ───
 
 app.get('/:id', async (c) => {
-  const appointment = await schedulingService.getAppointmentById(c.req.param('id'));
+  const session = c.get('session');
+  const appointment = await schedulingService.getAppointmentById(c.req.param('id'), session.user.id, session.user.role);
   return c.json({ data: appointment, error: null });
 });
 
 app.patch('/:id', requireRole('ADMIN', 'TECHNICIAN'), validateBody(updateAppointmentSchema), async (c) => {
+  const session = c.get('session');
   const data = c.get('body') as any;
-  const appointment = await schedulingService.updateAppointment(c.req.param('id'), data);
+  const appointment = await schedulingService.updateAppointment(c.req.param('id'), data, session.user.id, session.user.role);
   return c.json({ data: appointment, error: null });
 });
 
@@ -101,8 +104,9 @@ app.delete('/:id', async (c) => {
 });
 
 app.patch('/:id/status', requireRole('ADMIN', 'TECHNICIAN'), validateBody(appointmentStatusSchema), async (c) => {
+  const session = c.get('session');
   const data = c.get('body') as any;
-  const appointment = await schedulingService.changeAppointmentStatus(c.req.param('id'), data.status, data.cancelReason);
+  const appointment = await schedulingService.changeAppointmentStatus(c.req.param('id'), data.status, data.cancelReason, session.user.id, session.user.role);
   return c.json({ data: appointment, error: null });
 });
 

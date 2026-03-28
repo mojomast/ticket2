@@ -52,6 +52,8 @@ const ALL_STATUSES: AppointmentStatus[] = [
   'ANNULE',
 ];
 
+const CANCELLABLE_STATUSES: AppointmentStatus[] = ['PLANIFIE', 'CONFIRME'];
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function toDateString(d: Date): string {
@@ -78,6 +80,10 @@ function getStatusDotColor(status: string): string {
 function getStatusBlockColor(status: string): string {
   const c = APPOINTMENT_STATUS_COLORS[status];
   return c ? `${c.bg} ${c.text}` : 'bg-gray-100 text-gray-800';
+}
+
+function canCancelAppointment(status: string): boolean {
+  return CANCELLABLE_STATUSES.includes(status as AppointmentStatus);
 }
 
 /** Convert an ISO datetime string to the format expected by <input type="datetime-local"> */
@@ -1164,7 +1170,7 @@ function AdminAppointmentCard({
                 aria-label={t('admin.calendar.changeStatusLabel')}
               >
                 <option value="">{t('admin.calendar.changeStatusOption')}</option>
-                {ALL_STATUSES.filter((s) => s !== apt.status).map((s) => (
+                {ALL_STATUSES.filter((s) => s !== apt.status && (s !== 'ANNULE' || canCancelAppointment(apt.status))).map((s) => (
                   <option key={s} value={s}>
                     {t(`label.appointmentStatus.${s}`) || s}
                   </option>
@@ -1174,7 +1180,7 @@ function AdminAppointmentCard({
           )}
 
           {/* Cancel button */}
-          {apt.status !== 'ANNULE' && apt.status !== 'TERMINE' && (
+          {canCancelAppointment(apt.status) && (
             <HelpTooltip content={t('admin.calendar.cancelTooltip')} side="top">
               <Button
                 type="button"

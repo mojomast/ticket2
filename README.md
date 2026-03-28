@@ -96,6 +96,7 @@ A complete IT ticket management and in-shop repair work order system built for V
 - File attachments on tickets (drag-and-drop upload, download, delete) with 10MB limit and MIME validation
 - Database backup/restore (admin) with transactional restore and confirmation dialog
 - UI polish pass: inline form validation feedback, empty states for sparse views, responsive worksheet/backups tables, aria-label coverage for icon-only controls, reusable confirmation dialogs for destructive actions
+- Review hardening pass: ticket attachment/message authorization checks, appointment access validation, stricter scheduling chronology rules, safer demo reset logout, and worksheet enum/signature alignment
 - Audit logging for ticket, work order, and user changes
 - Full French/English internationalization (~1400 translation keys) wired into all 38 pages
 - Demo mode with persona selector (dropdown for customers) and data reset (admin-only)

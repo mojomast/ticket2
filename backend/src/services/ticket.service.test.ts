@@ -12,12 +12,14 @@ import {
 } from '../types/index.js';
 
 // ─── Mock Prisma using vi.hoisted ───
-const { mockPrisma } = vi.hoisted(() => {
+const { mockPrisma, mockHashPassword } = vi.hoisted(() => {
   return {
     mockPrisma: {
+      $transaction: vi.fn(),
       ticket: {
         create: vi.fn(),
         findFirst: vi.fn(),
+        findUnique: vi.fn(),
         findMany: vi.fn(),
         count: vi.fn(),
         update: vi.fn(),
@@ -25,8 +27,11 @@ const { mockPrisma } = vi.hoisted(() => {
       user: {
         findFirst: vi.fn(),
         findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
       },
     },
+    mockHashPassword: vi.fn(),
   };
 });
 
@@ -34,14 +39,62 @@ vi.mock('../lib/prisma.js', () => ({
   prisma: mockPrisma,
 }));
 
+vi.mock('../lib/auth.js', () => ({
+  hashPassword: mockHashPassword,
+  verifyPassword: vi.fn(),
+  createToken: vi.fn(),
+  verifyToken: vi.fn(),
+}));
+
+vi.mock('./audit.service.js', () => ({
+  createAuditLog: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('./notification.service.js', () => ({
+  notifyTicketCreated: vi.fn().mockResolvedValue(undefined),
+  notifyStatusChanged: vi.fn().mockResolvedValue(undefined),
+  notifyTechnicianAssigned: vi.fn().mockResolvedValue(undefined),
+  notifyQuoteSent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('./email.service.js', () => ({
+  sendEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('./sms.service.js', () => ({
+  sendSms: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../lib/logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 // Import service functions AFTER mocking
 import {
   createTicket,
   changeStatus,
+  createServiceRequest,
+  getTickets,
 } from './ticket.service.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrisma.ticket.findUnique.mockResolvedValue(null);
+  mockPrisma.user.findMany.mockResolvedValue([]);
+  mockPrisma.$transaction.mockImplementation(async (callback: any) => callback({
+    user: {
+      findFirst: mockPrisma.user.findFirst,
+      create: mockPrisma.user.create,
+    },
+    ticket: {
+      create: mockPrisma.ticket.create,
+    },
+  }));
 });
 
 // ─── ALLOWED_TRANSITIONS Tests ───
@@ -191,7 +244,76 @@ describe('createTicket', () => {
     expect(mockPrisma.ticket.create).toHaveBeenCalledOnce();
     // Verify ticket number was generated (starts with TKT-)
     const createCall = mockPrisma.ticket.create.mock.calls[0][0];
-    expect(createCall.data.ticketNumber).toMatch(/^TKT-\d{4}\d{2}$/);
+    expect(createCall.data.ticketNumber).toMatch(/^TKT-\d{7}$/);
+  });
+});
+
+describe('getTickets', () => {
+  it('prevents customerId query overrides for customers', async () => {
+    mockPrisma.ticket.findMany.mockResolvedValue([]);
+    mockPrisma.ticket.count.mockResolvedValue(0);
+
+    await getTickets({ customerId: 'other-customer', page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' }, 'customer-1', 'CUSTOMER');
+
+    expect(mockPrisma.ticket.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ customerId: 'customer-1' }),
+      })
+    );
+  });
+
+  it('prevents technicianId query overrides for restricted technicians', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ permissions: null });
+    mockPrisma.ticket.findMany.mockResolvedValue([]);
+    mockPrisma.ticket.count.mockResolvedValue(0);
+
+    await getTickets({ technicianId: 'other-tech', page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' }, 'tech-1', 'TECHNICIAN');
+
+    expect(mockPrisma.ticket.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ technicianId: 'tech-1' }),
+      })
+    );
+  });
+});
+
+describe('createServiceRequest', () => {
+  it('hashes generated passwords for newly created customers', async () => {
+    mockHashPassword.mockResolvedValue('$argon2id$hashed-random-password');
+    mockPrisma.user.findFirst.mockResolvedValue(null);
+    mockPrisma.user.create.mockResolvedValue({
+      id: 'customer-1',
+      email: 'customer@test.com',
+      firstName: 'Test',
+      lastName: 'Customer',
+    });
+    mockPrisma.ticket.create.mockResolvedValue({
+      id: 'ticket-1',
+      ticketNumber: 'TKT-260301',
+      customerId: 'customer-1',
+    });
+    mockPrisma.ticket.findFirst.mockResolvedValueOnce(null);
+
+    await createServiceRequest({
+      customerFirstName: 'Test',
+      customerLastName: 'Customer',
+      customerEmail: 'customer@test.com',
+      customerPhone: '555-0100',
+      title: 'Need help',
+      description: 'Printer is offline',
+      priority: 'NORMALE',
+      serviceMode: 'EN_CUBICULE',
+      serviceCategory: 'REPARATION',
+    });
+
+    expect(mockHashPassword).toHaveBeenCalledOnce();
+    expect(mockPrisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          passwordHash: '$argon2id$hashed-random-password',
+        }),
+      })
+    );
   });
 });
 

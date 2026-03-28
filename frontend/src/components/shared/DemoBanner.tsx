@@ -10,7 +10,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { useTranslation } from '../../lib/i18n/hook';
 
 export default function DemoBanner() {
-  const { user, demoLogin } = useAuth();
+  const { user, demoLogin, logout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -19,9 +19,10 @@ export default function DemoBanner() {
 
   const resetMutation = useMutation({
     mutationFn: () => api.demo.reset(),
-    onSuccess: () => {
-      queryClient.invalidateQueries();
+    onSuccess: async () => {
+      queryClient.clear();
       toast.success(t('demo.resetSuccess'));
+      logout();
     },
     onError: () => toast.error(t('demo.resetError')),
   });

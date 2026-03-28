@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { deleteCookie } from 'hono/cookie';
 import { AppError } from '../lib/errors.js';
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
 import { prisma } from '../lib/prisma.js';
@@ -66,6 +67,8 @@ app.post('/reset', requireAuth, requireRole('ADMIN'), async (c) => {
     const stderr = err?.stderr?.toString() || '';
     throw new AppError('INTERNAL_ERROR', `Erreur lors du re-seed: ${stderr.slice(0, 200)}`, 500);
   }
+
+  deleteCookie(c, 'valitek-auth', { path: '/' });
 
   return c.json({ data: { message: 'Demo reset complete' }, error: null });
 });
